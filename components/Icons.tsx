@@ -1,0 +1,30 @@
+import React from 'react';
+import Svg, { Path, Rect } from 'react-native-svg';
+
+export function Mail() {
+  return (
+    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a961" strokeWidth="1.5">
+      <Rect x="2" y="4" width="20" height="16" rx="2" />
+      <Path d="M22 7L13.03 12.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </Svg>
+  );
+}
+
+export function Apple() {
+  return (
+    <Svg width="20" height="20" viewBox="0 0 24 24" fill="#4a4a4a" stroke="#4a4a4a" strokeWidth="1.5">
+      <Path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z" />
+      <Path d="M10 2c1 .5 2 2 2 5" />
+    </Svg>
+  );
+}
+
+export function Instagram() {
+  return (
+    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a961" strokeWidth="1.5">
+      <Rect x="2" y="2" width="20" height="20" rx="5" />
+      <Path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <Path d="M17.5 6.5h.01" strokeLinecap="round" />
+    </Svg>
+  );
+}

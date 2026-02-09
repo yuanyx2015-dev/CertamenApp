@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "CertamenApp",
+    "slug": "certamenapp",
+    "version": "1.0.0",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ziyou.certamenapp"
+    },
+    "plugins": [
+      [
+        "@react-native-google-signin/google-signin",
+        {
+       "iosUrlScheme": "com.googleusercontent.apps.290144994186-eonod5dhlslcslt2l69ie2j8lu7l0ojm"
+        }
+      ]
+    ]
+  }
+}
