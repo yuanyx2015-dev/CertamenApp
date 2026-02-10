@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { LoginScreen } from './LoginScreen';
+import { MainMenuScreen } from './MainMenuScreen';
 import { LaurelBranches } from './LaurelBranches';
 import { MeanderBorder } from './MeanderBorder';
 
 const { height } = Dimensions.get('window');
 
-export function RomanBackground({ children }: { children: React.ReactNode }) {
+export function RomanBackground() {
   return (
     <View style={styles.container}>
       {/* Parchment background */}
@@ -19,7 +19,7 @@ export function RomanBackground({ children }: { children: React.ReactNode }) {
 
       {/* Main content area */}
       <View style={styles.contentContainer}>
-        {children}
+        <MainMenuScreen />
       </View>
 
       {/* Bottom footer with meander border */}

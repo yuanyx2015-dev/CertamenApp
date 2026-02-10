@@ -21,6 +21,6 @@ const handleGoogleLogin = async () => {
 
 export default function App() {
   return (
-    <LoginScreen onGoogleLogin={handleGoogleLogin} />
+    <RomanBackground />
   );
 }
