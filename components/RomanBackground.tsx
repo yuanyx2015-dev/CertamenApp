@@ -5,6 +5,7 @@ import { LaurelBranches } from './LaurelBranches';
 import { MeanderBorder } from './MeanderBorder';
 import { ProfileStatsScreen } from './ProfileStatsScreen';
 import { MatchSelectionScreen } from './MatchSelectionScreen';
+import { CreateMatchScreen } from './CreateMatchScreen';
 
 const { height } = Dimensions.get('window');
 
@@ -21,7 +22,7 @@ export function RomanBackground() {
 
       {/* Main content area */}
       <View style={styles.contentContainer}>
-        <MatchSelectionScreen />
+        <CreateMatchScreen />
       </View>
 
       {/* Bottom footer with meander border */}
