@@ -59,11 +59,11 @@ export function FriendlyMatchScreen() {
     <View style={styles.container}>
       {/* Centered Content */}
       <View style={styles.contentContainer}>
-        {/* Enter Friend's Name Button */}
-        <AnimatedButton label="Enter Friend's Name" onPress={() => {}} />
+        {/* Join Match Button */}
+        <AnimatedButton label="Join Match" onPress={() => {}} />
 
         {/* Create Match Button */}
-        <AnimatedButton label="Create match" onPress={() => {}} />
+        <AnimatedButton label="Create Match" onPress={() => {}} />
       </View>
     </View>
   );

@@ -8,6 +8,8 @@ import { MatchSelectionScreen } from './MatchSelectionScreen';
 import { FriendlyMatchScreen } from './FriendlyMatchScreen';
 import { RandomMatchScreen } from './RandomMatchScreen';
 import { LoginScreen } from './LoginScreen';
+import { VisitorMatchScreen } from './VisitorMatchScreen';
+import { HomeMatchScreen } from './HomeMatchScreen';
 
 const { height } = Dimensions.get('window');
 
@@ -24,7 +26,7 @@ export function RomanBackground() {
 
       {/* Main content area */}
       <View style={styles.contentContainer}>
-        <FriendlyMatchScreen />
+        <HomeMatchScreen />
       </View>
 
       {/* Bottom footer with meander border */}

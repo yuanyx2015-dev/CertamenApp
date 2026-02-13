@@ -103,7 +103,7 @@ export function RandomMatchScreen() {
             { transform: [{ translateX: textPosition }] }
           ]}
         >
-          Searching for the enemy
+          Searching For The Enemy
         </Animated.Text>
 
         {/* Binocular Emoji with Animation */}
