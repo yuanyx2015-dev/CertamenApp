@@ -30,8 +30,8 @@ export function ProfileStatsScreen() {
           </View>
         </View>
 
-        {/* Win Streak Field - Larger */}
-        <View style={[styles.statBox, styles.winStreakBox]}>
+        {/* Win Streak Field */}
+        <View style={styles.statBox}>
           <View style={styles.statRow}>
             <Text style={styles.labelText}>Win Streak:</Text>
             <Text style={styles.valueText}>___</Text>
@@ -67,10 +67,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-  },
-  winStreakBox: {
-    paddingVertical: 24,
-    marginTop: 8,
   },
   statRow: {
     flexDirection: 'row',

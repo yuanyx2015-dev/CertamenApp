@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import Svg, { Path, Rect, Circle, G } from 'react-native-svg';
 
 // Single Sword Icon
@@ -177,50 +177,163 @@ function RoundShieldIcon() {
   );
 }
 
-// Settings Icon (simplified version without lucide-react)
-function SettingsIcon() {
+// Profile Icon (user icon) - smaller version
+function ProfileIcon() {
   return (
-    <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <Circle cx="12" cy="12" r="3" stroke="#9d856b" strokeWidth="1.5" />
-      <Path 
-        d="M12 2L12 5M12 19L12 22M22 12L19 12M5 12L2 12M18.36 5.64L16.95 7.05M7.05 16.95L5.64 18.36M18.36 18.36L16.95 16.95M7.05 7.05L5.64 5.64" 
+    <Svg width="24" height="24" viewBox="0 0 60 60" fill="none">
+      {/* Head */}
+      <Circle 
+        cx="30" 
+        cy="20" 
+        r="8" 
+        fill="#c9a961" 
         stroke="#9d856b" 
-        strokeWidth="1.5" 
-        strokeLinecap="round"
+        strokeWidth="1.5"
+      />
+      {/* Body/Shoulders */}
+      <Path 
+        d="M 15 45 Q 15 32 30 32 Q 45 32 45 45 L 15 45 Z" 
+        fill="#c9a961" 
+        stroke="#9d856b" 
+        strokeWidth="1.5"
       />
     </Svg>
   );
 }
 
+// Animated Button Component
+function AnimatedModeButton({ icon, label, onPress }: { icon: React.ReactNode; label: string; onPress: () => void }) {
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const bgColorAnim = React.useRef(new Animated.Value(0)).current;
+
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bgColorAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bgColorAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const backgroundColor = bgColorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
+  });
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity 
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        activeOpacity={1}
+      >
+        <Animated.View style={[styles.modeButton, { backgroundColor }]}>
+          {icon}
+          <Text style={styles.modeButtonText}>{label}</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 export function MainMenuScreen() {
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const bgColorAnim = React.useRef(new Animated.Value(0)).current;
+
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bgColorAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bgColorAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const backgroundColor = bgColorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
+  });
+
   return (
     <View style={styles.container}>
-      {/* Settings Button - Top Right */}
-      <View style={styles.settingsContainer}>
-        <TouchableOpacity style={styles.settingsButton}>
-          <SettingsIcon />
-        </TouchableOpacity>
+      {/* Profile Button - Top Right */}
+      <View style={styles.profileContainer}>
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+          <TouchableOpacity 
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            onPress={() => console.log('Profile button pressed!')}
+            activeOpacity={1}
+          >
+            <Animated.View style={[styles.profileButton, { backgroundColor }]}>
+              <ProfileIcon />
+              <Text style={styles.profileButtonText}>Profile</Text>
+            </Animated.View>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       {/* Center Game Mode Buttons */}
       <View style={styles.centerContainer}>
         {/* Practice Mode Button */}
-        <TouchableOpacity style={styles.modeButton}>
-          <SingleSwordIcon />
-          <Text style={styles.modeButtonText}>Practice Mode</Text>
-        </TouchableOpacity>
+        <AnimatedModeButton 
+          icon={<SingleSwordIcon />} 
+          label="Practice Mode" 
+          onPress={() => {}} 
+        />
 
         {/* PvP Mode Button */}
-        <TouchableOpacity style={styles.modeButton}>
-          <CrossedSwordsIcon />
-          <Text style={styles.modeButtonText}>PvP Mode</Text>
-        </TouchableOpacity>
+        <AnimatedModeButton 
+          icon={<CrossedSwordsIcon />} 
+          label="PvP Mode" 
+          onPress={() => {}} 
+        />
 
         {/* Offline Mode Button */}
-        <TouchableOpacity style={styles.modeButton}>
-          <RoundShieldIcon />
-          <Text style={styles.modeButtonText}>Offline Mode</Text>
-        </TouchableOpacity>
+        <AnimatedModeButton 
+          icon={<RoundShieldIcon />} 
+          label="Offline Mode" 
+          onPress={() => {}} 
+        />
       </View>
     </View>
   );
@@ -234,23 +347,34 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingHorizontal: 24,
     width: '100%',
+    position: 'relative',
   },
-  settingsContainer: {
+  profileContainer: {
+    position: 'absolute',
+    top: 90,
+    right: 24,
+    zIndex: 100,
+  },
+  profileButton: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 32,
-  },
-  settingsButton: {
-    padding: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
-    borderRadius: 8,
+    borderRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  profileButtonText: {
+    fontSize: 14,
+    color: '#3a3a3a',
+    letterSpacing: 0.5,
   },
   centerContainer: {
     flex: 1,

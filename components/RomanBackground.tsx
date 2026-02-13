@@ -5,7 +5,9 @@ import { LaurelBranches } from './LaurelBranches';
 import { MeanderBorder } from './MeanderBorder';
 import { ProfileStatsScreen } from './ProfileStatsScreen';
 import { MatchSelectionScreen } from './MatchSelectionScreen';
-import { CreateMatchScreen } from './CreateMatchScreen';
+import { FriendlyMatchScreen } from './FriendlyMatchScreen';
+import { RandomMatchScreen } from './RandomMatchScreen';
+import { LoginScreen } from './LoginScreen';
 
 const { height } = Dimensions.get('window');
 
@@ -22,7 +24,7 @@ export function RomanBackground() {
 
       {/* Main content area */}
       <View style={styles.contentContainer}>
-        <CreateMatchScreen />
+        <FriendlyMatchScreen />
       </View>
 
       {/* Bottom footer with meander border */}
@@ -56,7 +58,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 24,
-    zIndex: 5,
+    zIndex: 50,
   },
   footerContainer: {
     position: 'absolute',

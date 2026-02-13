@@ -39,7 +39,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   });
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, { width: '100%' }]}>
       <TouchableOpacity 
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -54,7 +54,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   );
 }
 
-export function CreateMatchScreen() {
+export function FriendlyMatchScreen() {
   return (
     <View style={styles.container}>
       {/* Centered Content */}
@@ -72,7 +72,7 @@ export function CreateMatchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    maxWidth: 400,
+    maxWidth: 500,
     alignSelf: 'center',
     width: '100%',
     justifyContent: 'center',
@@ -81,16 +81,16 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     width: '100%',
-    gap: 24,
+    gap: 32,
     alignItems: 'center',
   },
   button: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
-    borderRadius: 12,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
+    borderRadius: 16,
+    paddingHorizontal: 48,
+    paddingVertical: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -99,10 +99,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    minHeight: 80,
   },
   buttonText: {
     color: '#3a3a3a',
-    fontSize: 16,
+    fontSize: 18,
     letterSpacing: 0.5,
   },
 });
