@@ -3,6 +3,8 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 import { MainMenuScreen } from './MainMenuScreen';
 import { LaurelBranches } from './LaurelBranches';
 import { MeanderBorder } from './MeanderBorder';
+import { ProfileStatsScreen } from './ProfileStatsScreen';
+import { MatchSelectionScreen } from './MatchSelectionScreen';
 
 const { height } = Dimensions.get('window');
 
@@ -19,7 +21,7 @@ export function RomanBackground() {
 
       {/* Main content area */}
       <View style={styles.contentContainer}>
-        <MainMenuScreen />
+        <MatchSelectionScreen />
       </View>
 
       {/* Bottom footer with meander border */}
