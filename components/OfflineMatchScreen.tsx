@@ -39,7 +39,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   });
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, { width: '100%' }]}>
       <TouchableOpacity 
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -54,19 +54,39 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   );
 }
 
-export function MatchSelectionScreen() {
+export function OfflineMatchScreen() {
   return (
     <View style={styles.container}>
-      {/* Centered Buttons */}
-      <View style={styles.buttonContainer}>
+      {/* Settings Button - Top Right */}
+      <View style={styles.settingsContainer}>
+        <TouchableOpacity style={styles.settingsButton}>
+          <Text style={styles.settingsButtonText}>Settings</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Centered Content */}
+      <View style={styles.contentContainer}>
         {/* Title Text */}
-        <Text style={styles.titleText}>PvP Mode</Text>
+        <Text style={styles.titleText}>Offline Mode</Text>
 
-        {/* Join Random Match Button */}
-        <AnimatedButton label="Join Random Match" onPress={() => {}} />
+        {/* Difficulty Label */}
+        <Text style={styles.difficultyLabel}>Difficulty Level</Text>
 
-        {/* Play with a Friend Button */}
-        <AnimatedButton label="Play with a Friend" onPress={() => {}} />
+        {/* Easy Button */}
+        <AnimatedButton label="Easy" onPress={() => {}} />
+
+        {/* Normal Button */}
+        <AnimatedButton label="Normal" onPress={() => {}} />
+
+        {/* Hard Button */}
+        <AnimatedButton label="Hard" onPress={() => {}} />
+      </View>
+
+      {/* Tip Text - At Bottom */}
+      <View style={styles.bottomContainer}>
+        <Text style={styles.tipText}>
+          Further adjustments can be made through the Settings button in the top right!
+        </Text>
       </View>
     </View>
   );
@@ -81,10 +101,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
+    position: 'relative',
   },
-  buttonContainer: {
+  settingsContainer: {
+    position: 'absolute',
+    top: 80,
+    right: 18,
+    zIndex: 100,
+  },
+  settingsButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.3)',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  settingsButtonText: {
+    color: '#3a3a3a',
+    fontSize: 13,
+    letterSpacing: 0.5,
+  },
+  contentContainer: {
     width: '100%',
     gap: 24,
+    alignItems: 'center',
   },
   titleText: {
     color: '#3a3a3a',
@@ -93,6 +139,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 8,
+  },
+  difficultyLabel: {
+    color: '#5a5a5a',
+    fontSize: 16,
+    letterSpacing: 0.3,
+    textAlign: 'left',
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  bottomContainer: {
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 24,
+  },
+  tipText: {
+    color: '#7a7a7a',
+    fontSize: 14,
+    letterSpacing: 0.3,
+    textAlign: 'center',
+    lineHeight: 20,
+    opacity: 0.8,
   },
   button: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
@@ -108,6 +177,7 @@ const styles = StyleSheet.create({
     elevation: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   buttonText: {
     color: '#3a3a3a',

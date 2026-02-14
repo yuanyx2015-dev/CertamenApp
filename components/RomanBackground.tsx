@@ -10,6 +10,8 @@ import { RandomMatchScreen } from './RandomMatchScreen';
 import { LoginScreen } from './LoginScreen';
 import { VisitorMatchScreen } from './VisitorMatchScreen';
 import { HomeMatchScreen } from './HomeMatchScreen';
+import { OfflineMatchScreen } from './OfflineMatchScreen';
+import { PracticeModeScreen } from './PracticeModeScreen';
 
 const { height } = Dimensions.get('window');
 
