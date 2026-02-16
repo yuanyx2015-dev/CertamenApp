@@ -12,6 +12,7 @@ import { VisitorMatchScreen } from './VisitorMatchScreen';
 import { HomeMatchScreen } from './HomeMatchScreen';
 import { OfflineMatchScreen } from './OfflineMatchScreen';
 import { PracticeModeScreen } from './PracticeModeScreen';
+import { SettingsScreen } from './SettingsScreen';
 
 const { height } = Dimensions.get('window');
 
@@ -28,7 +29,7 @@ export function RomanBackground() {
 
       {/* Main content area */}
       <View style={styles.contentContainer}>
-        <HomeMatchScreen />
+        <FriendlyMatchScreen />
       </View>
 
       {/* Bottom footer with meander border */}
