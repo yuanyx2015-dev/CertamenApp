@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { MainMenuScreen } from './MainMenuScreen';
 import { LaurelBranches } from './LaurelBranches';
@@ -13,12 +13,48 @@ import { HomeMatchScreen } from './HomeMatchScreen';
 import { OfflineMatchScreen } from './OfflineMatchScreen';
 import { PracticeModeScreen } from './PracticeModeScreen';
 import { SettingsScreen } from './SettingsScreen';
+import { getSession, signOut, onAuthStateChange } from '../services/authService';
 
 const { height } = Dimensions.get('window');
 
 export function RomanBackground() {
-  const [currentScreen, setCurrentScreen] = useState('main');
-  const previousScreen = useRef('main');
+  const [currentScreen, setCurrentScreen] = useState('login');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const previousScreen = useRef('login');
+
+  // Check for existing session on mount and listen for auth state changes
+  useEffect(() => {
+    checkSession();
+
+    // Listen for auth state changes
+    const { data: authListener } = onAuthStateChange((event, session) => {
+      if (session) {
+        setIsAuthenticated(true);
+        if (currentScreen === 'login') {
+          setCurrentScreen('main');
+        }
+      } else {
+        setIsAuthenticated(false);
+        setCurrentScreen('login');
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  const checkSession = async () => {
+    const session = await getSession();
+    if (session) {
+      // User is already logged in, go to main menu
+      setIsAuthenticated(true);
+      setCurrentScreen('main');
+    } else {
+      setIsAuthenticated(false);
+      setCurrentScreen('login');
+    }
+  };
 
   const handleNavigate = (screen: string) => {
     // Only update previous screen if we're not already on settings
@@ -33,7 +69,21 @@ export function RomanBackground() {
     handleNavigate('main');
   };
 
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      console.error('Logout error:', error.message);
+    }
+    // Auth state listener will handle navigation to login screen
+  };
+
   const renderScreen = () => {
+    // If not authenticated, always show login screen
+    if (!isAuthenticated) {
+      return <LoginScreen navigation={null} onLoginSuccess={handleGoogleLogin} />;
+    }
+
+    // If authenticated, show the requested screen
     switch (currentScreen) {
       case 'practice':
         return <PracticeModeScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
@@ -44,7 +94,7 @@ export function RomanBackground() {
       case 'profile':
         return <ProfileStatsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'settings':
-        return <SettingsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+        return <SettingsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} onLogout={handleLogout} />;
       case 'random':
         return <RandomMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'friendly':
@@ -53,6 +103,7 @@ export function RomanBackground() {
         return <VisitorMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'home':
         return <HomeMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'login':
       case 'main':
       default:
         return <MainMenuScreen onNavigate={handleNavigate} />;
@@ -71,7 +122,7 @@ export function RomanBackground() {
 
       {/* Main content area */}
       <View style={styles.contentContainer}>
-        <LoginScreen onGoogleLogin={handleGoogleLogin} />
+        {renderScreen()}
       </View>
 
       {/* Bottom footer with meander border */}

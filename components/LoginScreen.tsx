@@ -4,100 +4,33 @@ import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { Mail, Apple, Instagram } from './Icons';
 import { supabase } from '../lib/supabase';
+import { signInWithGoogle } from '../services/authService';
 
 // Required for Expo
 WebBrowser.maybeCompleteAuthSession();
+interface LoginScreenProps {
+  navigation: any;
+  onLoginSuccess: () => void;
+}
 
-export function LoginScreen({ onGoogleLogin }: { onGoogleLogin: () => void }) {
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Set up auth state listener
-  useEffect(() => {
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        Alert.alert('Success', 'Logged in successfully!');
-        onGoogleLogin();
-      }
-    });
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, [onGoogleLogin]);
+export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
+   const [isLoading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Create the redirect URI
-      const redirectUrl = makeRedirectUri({
-        scheme: 'certamenapp',
-        path: 'auth/callback',
-      });
+    setLoading(true);
 
-      console.log('Redirect URL:', redirectUrl);
-      
-      // Sign in with Google OAuth
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: false,
-        },
-      });
+    const { user, error } = await signInWithGoogle();
 
-      if (error) {
-        Alert.alert('Login Error', error.message);
-        setIsLoading(false);
-        return;
-      }
+    setLoading(false);
 
-      // Open the OAuth URL in browser
-      if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(
-          data.url,
-          redirectUrl,
-          {
-            showInRecents: true,
-          }
-        );
-
-        if (result.type === 'success' && result.url) {
-          // The URL will contain tokens in the hash fragment
-          const url = result.url;
-          
-          // Check if we have tokens in the URL
-          if (url.includes('access_token')) {
-            // Extract tokens from URL hash
-            const params = new URLSearchParams(url.split('#')[1]);
-            const access_token = params.get('access_token');
-            const refresh_token = params.get('refresh_token');
-
-            if (access_token && refresh_token) {
-              // Set the session with the tokens
-              const { error: sessionError } = await supabase.auth.setSession({
-                access_token,
-                refresh_token,
-              });
-
-              if (sessionError) {
-                Alert.alert('Session Error', sessionError.message);
-              } else {
-                Alert.alert('Success', 'Logged in successfully!');
-                onGoogleLogin();
-              }
-            }
-          }
-        } else if (result.type === 'cancel') {
-          Alert.alert('Cancelled', 'Login was cancelled');
-        }
-      }
-    } catch (error: any) {
-      Alert.alert('Login Error', error.message || 'Failed to sign in with Google');
-      console.error('Google login error:', error);
-    } finally {
-      setIsLoading(false);
+    if (error) {
+      Alert.alert('Google Login Failed', error.message);
+      return;
+    }
+    if (user) {
+      Alert.alert('Success', 'Logged in with Google successfully!');
+      onLoginSuccess();
     }
   };
 
