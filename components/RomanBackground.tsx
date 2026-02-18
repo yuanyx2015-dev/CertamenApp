@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { MainMenuScreen } from './MainMenuScreen';
 import { LaurelBranches } from './LaurelBranches';
@@ -17,6 +17,43 @@ import { SettingsScreen } from './SettingsScreen';
 const { height } = Dimensions.get('window');
 
 export function RomanBackground() {
+  const [currentScreen, setCurrentScreen] = useState('main');
+  const previousScreen = useRef('main');
+
+  const handleNavigate = (screen: string) => {
+    // Only update previous screen if we're not already on settings
+    if (currentScreen !== 'settings') {
+      previousScreen.current = currentScreen;
+    }
+    setCurrentScreen(screen);
+  };
+
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'practice':
+        return <PracticeModeScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'pvp':
+        return <MatchSelectionScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'offline':
+        return <OfflineMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'profile':
+        return <ProfileStatsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'settings':
+        return <SettingsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'random':
+        return <RandomMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'friendly':
+        return <FriendlyMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'visitor':
+        return <VisitorMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'home':
+        return <HomeMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'main':
+      default:
+        return <MainMenuScreen onNavigate={handleNavigate} />;
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Parchment background */}
@@ -29,7 +66,7 @@ export function RomanBackground() {
 
       {/* Main content area */}
       <View style={styles.contentContainer}>
-        <FriendlyMatchScreen />
+        {renderScreen()}
       </View>
 
       {/* Bottom footer with meander border */}

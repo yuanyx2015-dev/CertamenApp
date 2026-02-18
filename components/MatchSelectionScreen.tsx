@@ -54,7 +54,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   );
 }
 
-export function MatchSelectionScreen() {
+export function MatchSelectionScreen({ onNavigate, previousScreen }: { onNavigate?: (screen: string) => void; previousScreen?: string }) {
   return (
     <View style={styles.container}>
       {/* Centered Buttons */}
@@ -63,10 +63,15 @@ export function MatchSelectionScreen() {
         <Text style={styles.titleText}>PvP Mode</Text>
 
         {/* Join Random Match Button */}
-        <AnimatedButton label="Join Random Match" onPress={() => {}} />
+        <AnimatedButton label="Join Random Match" onPress={() => onNavigate?.('random')} />
 
         {/* Play with a Friend Button */}
-        <AnimatedButton label="Play with a Friend" onPress={() => {}} />
+        <AnimatedButton label="Play with a Friend" onPress={() => onNavigate?.('friendly')} />
+      </View>
+
+      {/* Back Button - At Bottom */}
+      <View style={styles.bottomContainer}>
+        <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
       </View>
     </View>
   );
@@ -81,6 +86,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
+    position: 'relative',
   },
   buttonContainer: {
     width: '100%',
@@ -113,5 +119,13 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     fontSize: 16,
     letterSpacing: 0.5,
+  },
+  bottomContainer: {
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 24,
+    alignItems: 'center',
   },
 });

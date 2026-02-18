@@ -1,7 +1,60 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 
-export function HomeMatchScreen() {
+function AnimatedButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const bgColorAnim = React.useRef(new Animated.Value(0)).current;
+
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bgColorAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bgColorAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const backgroundColor = bgColorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
+  });
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity 
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        activeOpacity={1}
+      >
+        <Animated.View style={[styles.button, { backgroundColor }]}>
+          <Text style={styles.buttonText}>{label}</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+export function HomeMatchScreen({ onNavigate, previousScreen }: { onNavigate?: (screen: string) => void; previousScreen?: string }) {
   const [dots, setDots] = useState('');
 
   useEffect(() => {
@@ -30,6 +83,10 @@ export function HomeMatchScreen() {
         <Text style={styles.instructionsText}>
           Want to play with a friend? Just have them enter your name on their "Join Match" screen to get started!
         </Text>
+        {/* Back Button */}
+        <View style={styles.backButtonContainer}>
+          <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
+        </View>
       </View>
     </View>
   );
@@ -76,6 +133,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 32,
+    gap: 16,
+    alignItems: 'center',
   },
   instructionsText: {
     color: '#7a7a7a',
@@ -84,5 +143,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     opacity: 0.8,
+  },
+  backButtonContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  button: {
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.3)',
+    borderRadius: 12,
+    paddingHorizontal: 48,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  buttonText: {
+    color: '#3a3a3a',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
 });

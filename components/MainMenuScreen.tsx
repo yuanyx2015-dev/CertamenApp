@@ -256,7 +256,7 @@ function AnimatedModeButton({ icon, label, onPress }: { icon: React.ReactNode; l
   );
 }
 
-export function MainMenuScreen() {
+export function MainMenuScreen({ onNavigate }: { onNavigate?: (screen: string) => void }) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -301,7 +301,7 @@ export function MainMenuScreen() {
           <TouchableOpacity 
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
-            onPress={() => console.log('Profile button pressed!')}
+            onPress={() => onNavigate?.('profile')}
             activeOpacity={1}
           >
             <Animated.View style={[styles.profileButton, { backgroundColor }]}>
@@ -318,21 +318,21 @@ export function MainMenuScreen() {
         <AnimatedModeButton 
           icon={<SingleSwordIcon />} 
           label="Practice Mode" 
-          onPress={() => {}} 
+          onPress={() => onNavigate?.('practice')} 
         />
 
         {/* PvP Mode Button */}
         <AnimatedModeButton 
           icon={<CrossedSwordsIcon />} 
           label="PvP Mode" 
-          onPress={() => {}} 
+          onPress={() => onNavigate?.('pvp')} 
         />
 
         {/* Offline Mode Button */}
         <AnimatedModeButton 
           icon={<RoundShieldIcon />} 
           label="Offline Mode" 
-          onPress={() => {}} 
+          onPress={() => onNavigate?.('offline')} 
         />
       </View>
     </View>
