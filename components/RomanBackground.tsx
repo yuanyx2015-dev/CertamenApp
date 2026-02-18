@@ -28,6 +28,11 @@ export function RomanBackground() {
     setCurrentScreen(screen);
   };
 
+  const handleGoogleLogin = () => {
+    // After successful Google login, navigate to main menu
+    handleNavigate('main');
+  };
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'practice':
@@ -66,7 +71,7 @@ export function RomanBackground() {
 
       {/* Main content area */}
       <View style={styles.contentContainer}>
-        {renderScreen()}
+        <LoginScreen onGoogleLogin={handleGoogleLogin} />
       </View>
 
       {/* Bottom footer with meander border */}

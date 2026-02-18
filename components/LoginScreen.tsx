@@ -1,8 +1,106 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import { Mail, Apple, Instagram } from './Icons';
+import { supabase } from '../lib/supabase';
+
+// Required for Expo
+WebBrowser.maybeCompleteAuthSession();
 
 export function LoginScreen({ onGoogleLogin }: { onGoogleLogin: () => void }) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Set up auth state listener
+  useEffect(() => {
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        Alert.alert('Success', 'Logged in successfully!');
+        onGoogleLogin();
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, [onGoogleLogin]);
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Create the redirect URI
+      const redirectUrl = makeRedirectUri({
+        scheme: 'certamenapp',
+        path: 'auth/callback',
+      });
+
+      console.log('Redirect URL:', redirectUrl);
+      
+      // Sign in with Google OAuth
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: false,
+        },
+      });
+
+      if (error) {
+        Alert.alert('Login Error', error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Open the OAuth URL in browser
+      if (data?.url) {
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          redirectUrl,
+          {
+            showInRecents: true,
+          }
+        );
+
+        if (result.type === 'success' && result.url) {
+          // The URL will contain tokens in the hash fragment
+          const url = result.url;
+          
+          // Check if we have tokens in the URL
+          if (url.includes('access_token')) {
+            // Extract tokens from URL hash
+            const params = new URLSearchParams(url.split('#')[1]);
+            const access_token = params.get('access_token');
+            const refresh_token = params.get('refresh_token');
+
+            if (access_token && refresh_token) {
+              // Set the session with the tokens
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token,
+                refresh_token,
+              });
+
+              if (sessionError) {
+                Alert.alert('Session Error', sessionError.message);
+              } else {
+                Alert.alert('Success', 'Logged in successfully!');
+                onGoogleLogin();
+              }
+            }
+          }
+        } else if (result.type === 'cancel') {
+          Alert.alert('Cancelled', 'Login was cancelled');
+        }
+      }
+    } catch (error: any) {
+      Alert.alert('Login Error', error.message || 'Failed to sign in with Google');
+      console.error('Google login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Welcome Section */}
@@ -24,20 +122,26 @@ export function LoginScreen({ onGoogleLogin }: { onGoogleLogin: () => void }) {
 
         {/* Login Buttons */}
         <View style={styles.buttonsContainer}>
-        <LoginButton icon={<Mail />} label="Gmail" onPress={onGoogleLogin} />
-<LoginButton icon={<Apple />} label="Apple" onPress={() => {}} />
-<LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} />
+          <LoginButton 
+            icon={<Mail />} 
+            label={isLoading ? "Signing in..." : "Gmail"} 
+            onPress={handleGoogleLogin}
+            disabled={isLoading}
+          />
+          <LoginButton icon={<Apple />} label="Apple" onPress={() => {}} />
+          <LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} />
         </View>
       </View>
     </View>
   );
 }
 
-function LoginButton({ icon, label, onPress }: { icon: React.ReactNode; label: string; onPress: () => void }) {
+function LoginButton({ icon, label, onPress, disabled }: { icon: React.ReactNode; label: string; onPress: () => void; disabled?: boolean }) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
   const handlePressIn = () => {
+    if (disabled) return;
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 0.95,
@@ -52,6 +156,7 @@ function LoginButton({ icon, label, onPress }: { icon: React.ReactNode; label: s
   };
 
   const handlePressOut = () => {
+    if (disabled) return;
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 1,
@@ -71,12 +176,13 @@ function LoginButton({ icon, label, onPress }: { icon: React.ReactNode; label: s
   });
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: disabled ? 0.6 : 1 }}>
      <TouchableOpacity 
   onPressIn={handlePressIn}
   onPressOut={handlePressOut}
   onPress={onPress}
   activeOpacity={1}
+  disabled={disabled}
 >
         <Animated.View style={[styles.button, { backgroundColor }]}>
           <View style={styles.iconContainer}>{icon}</View>
