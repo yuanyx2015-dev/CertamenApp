@@ -87,10 +87,6 @@ export function OfflineMatchScreen({ onNavigate, previousScreen }: { onNavigate?
         <Text style={styles.tipText}>
           Further adjustments can be made through the Settings button in the top right!
         </Text>
-        {/* Back Button */}
-        <View style={styles.backButtonContainer}>
-          <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
-        </View>
       </View>
     </View>
   );
@@ -158,7 +154,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 24,
-    gap: 16,
     alignItems: 'center',
   },
   tipText: {
@@ -168,10 +163,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     opacity: 0.8,
-  },
-  backButtonContainer: {
-    width: '100%',
-    alignItems: 'center',
   },
   button: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',

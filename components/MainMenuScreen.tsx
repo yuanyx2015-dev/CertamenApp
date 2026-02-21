@@ -257,61 +257,8 @@ function AnimatedModeButton({ icon, label, onPress }: { icon: React.ReactNode; l
 }
 
 export function MainMenuScreen({ onNavigate }: { onNavigate?: (screen: string) => void }) {
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
-  const bgColorAnim = React.useRef(new Animated.Value(0)).current;
-
-  const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 0.95,
-        useNativeDriver: true,
-      }),
-      Animated.timing(bgColorAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-      }),
-      Animated.timing(bgColorAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  };
-
-  const backgroundColor = bgColorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
-  });
-
   return (
     <View style={styles.container}>
-      {/* Profile Button - Top Right */}
-      <View style={styles.profileContainer}>
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          <TouchableOpacity 
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
-            onPress={() => onNavigate?.('profile')}
-            activeOpacity={1}
-          >
-            <Animated.View style={[styles.profileButton, { backgroundColor }]}>
-              <ProfileIcon />
-              <Text style={styles.profileButtonText}>Profile</Text>
-            </Animated.View>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-
       {/* Center Game Mode Buttons */}
       <View style={styles.centerContainer}>
         {/* Practice Mode Button */}
@@ -348,33 +295,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     width: '100%',
     position: 'relative',
-  },
-  profileContainer: {
-    position: 'absolute',
-    top: 90,
-    right: 24,
-    zIndex: 100,
-  },
-  profileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    borderWidth: 1,
-    borderColor: 'rgba(201, 169, 97, 0.3)',
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  profileButtonText: {
-    fontSize: 14,
-    color: '#3a3a3a',
-    letterSpacing: 0.5,
+    overflow: 'visible',
   },
   centerContainer: {
     flex: 1,

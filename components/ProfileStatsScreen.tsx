@@ -54,7 +54,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   );
 }
 
-export function ProfileStatsScreen({ onNavigate, previousScreen }: { onNavigate?: (screen: string) => void; previousScreen?: string }) {
+export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { onNavigate?: (screen: string) => void; previousScreen?: string; onLogout?: () => void }) {
   return (
     <View style={styles.container}>
       {/* Stats Container */}
@@ -92,9 +92,14 @@ export function ProfileStatsScreen({ onNavigate, previousScreen }: { onNavigate?
         </View>
       </View>
 
-      {/* Back Button - At Bottom */}
+      {/* Logout Button - At Bottom */}
       <View style={styles.bottomContainer}>
-        <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
+        {onLogout && (
+          <AnimatedButton 
+            label="Logout" 
+            onPress={onLogout}
+          />
+        )}
       </View>
     </View>
   );

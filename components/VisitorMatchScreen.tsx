@@ -75,9 +75,9 @@ export function VisitorMatchScreen({ onNavigate, previousScreen }: { onNavigate?
         </View>
       </View>
 
-      {/* Back Button - At Bottom */}
-      <View style={styles.bottomContainer}>
-        <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
+      {/* Exit Match Button - At Bottom */}
+      <View style={styles.exitButtonContainer}>
+        <AnimatedButton label="Exit Match" onPress={() => onNavigate?.('friendly')} />
       </View>
     </View>
   );
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.5,
   },
-  bottomContainer: {
+  exitButtonContainer: {
     position: 'absolute',
     bottom: 80,
     left: 0,

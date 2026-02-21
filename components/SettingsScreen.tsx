@@ -54,7 +54,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   );
 }
 
-export function SettingsScreen({ onNavigate, previousScreen, onLogout }: { onNavigate?: (screen: string) => void; previousScreen?: string; onLogout?: () => void }) {
+export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (screen: string) => void; previousScreen?: string }) {
   const [wrongQuestionsOnly, setWrongQuestionsOnly] = React.useState(false);
 
   return (
@@ -83,16 +83,8 @@ export function SettingsScreen({ onNavigate, previousScreen, onLogout }: { onNav
         </View>
       </View>
 
-      {/* Back and Logout Buttons - At Bottom */}
+      {/* Back Button - At Bottom */}
       <View style={styles.bottomContainer}>
-        {onLogout && (
-          <View style={styles.logoutButtonContainer}>
-            <AnimatedButton 
-              label="Logout" 
-              onPress={onLogout}
-            />
-          </View>
-        )}
         <AnimatedButton 
           label="Back" 
           onPress={() => onNavigate?.(previousScreen || 'main')} 
@@ -144,11 +136,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 24,
-    alignItems: 'center',
-    gap: 16,
-  },
-  logoutButtonContainer: {
-    width: '100%',
     alignItems: 'center',
   },
   button: {

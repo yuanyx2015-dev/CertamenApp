@@ -66,9 +66,9 @@ export function FriendlyMatchScreen({ onNavigate, previousScreen }: { onNavigate
         <AnimatedButton label="Create Match" onPress={() => onNavigate?.('home')} />
       </View>
 
-      {/* Back Button - At Bottom */}
-      <View style={styles.bottomContainer}>
-        <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} isBackButton />
+      {/* Exit Match Button - At Bottom */}
+      <View style={styles.exitButtonContainer}>
+        <AnimatedButton label="Exit Match" onPress={() => onNavigate?.('pvp')} isBackButton />
       </View>
     </View>
   );
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: 0.5,
   },
-  bottomContainer: {
+  exitButtonContainer: {
     position: 'absolute',
     bottom: 80,
     left: 0,
@@ -125,13 +125,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 12,
-    paddingHorizontal: 48,
+    paddingHorizontal: 32,
     paddingVertical: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   backButtonText: {
     color: '#3a3a3a',

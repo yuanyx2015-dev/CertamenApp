@@ -68,11 +68,6 @@ export function MatchSelectionScreen({ onNavigate, previousScreen }: { onNavigat
         {/* Play with a Friend Button */}
         <AnimatedButton label="Play with a Friend" onPress={() => onNavigate?.('friendly')} />
       </View>
-
-      {/* Back Button - At Bottom */}
-      <View style={styles.bottomContainer}>
-        <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
-      </View>
     </View>
   );
 }
@@ -119,13 +114,5 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     fontSize: 16,
     letterSpacing: 0.5,
-  },
-  bottomContainer: {
-    position: 'absolute',
-    bottom: 80,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 24,
-    alignItems: 'center',
   },
 });

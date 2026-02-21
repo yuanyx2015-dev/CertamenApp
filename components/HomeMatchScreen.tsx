@@ -83,9 +83,9 @@ export function HomeMatchScreen({ onNavigate, previousScreen }: { onNavigate?: (
         <Text style={styles.instructionsText}>
           Want to play with a friend? Just have them enter your name on their "Join Match" screen to get started!
         </Text>
-        {/* Back Button */}
-        <View style={styles.backButtonContainer}>
-          <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
+        {/* Exit Match Button */}
+        <View style={styles.exitButtonContainer}>
+          <AnimatedButton label="Exit Match" onPress={() => onNavigate?.('friendly')} />
         </View>
       </View>
     </View>
@@ -133,8 +133,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 32,
-    gap: 16,
     alignItems: 'center',
+    gap: 16,
   },
   instructionsText: {
     color: '#7a7a7a',
@@ -144,16 +144,17 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     opacity: 0.8,
   },
-  backButtonContainer: {
+  exitButtonContainer: {
     width: '100%',
     alignItems: 'center',
+    marginTop: 8,
   },
   button: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 12,
-    paddingHorizontal: 48,
+    paddingHorizontal: 32,
     paddingVertical: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

@@ -163,16 +163,16 @@ export function RandomMatchScreen({ onNavigate, previousScreen }: { onNavigate?:
         <Animated.Text 
           style={[
             styles.emojiText,
-            { transform: [{ translateX: emojiPosition }] }
+            { transform: [{ translateX: emojiPosition }], marginTop: -27 }
           ]}
         >
           🔍
         </Animated.Text>
       </View>
 
-      {/* Back Button - At Bottom */}
-      <View style={styles.bottomContainer}>
-        <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
+      {/* Exit Match Button - At Bottom */}
+      <View style={styles.exitButtonContainer}>
+        <AnimatedButton label="Exit Match" onPress={() => onNavigate?.('pvp')} />
       </View>
     </View>
   );
@@ -241,9 +241,9 @@ const styles = StyleSheet.create({
     fontSize: 40,
     textAlign: 'center',
   },
-  bottomContainer: {
+  exitButtonContainer: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 64,
     left: 0,
     right: 0,
     paddingHorizontal: 24,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 12,
-    paddingHorizontal: 48,
+    paddingHorizontal: 32,
     paddingVertical: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
