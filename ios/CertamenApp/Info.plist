@@ -27,13 +27,8 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
+          <string>certamenapp</string>
           <string>com.ziyou.certamenapp</string>
-        </array>
-      </dict>
-      <dict>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>com.googleusercontent.apps.290144994186-eonod5dhlslcslt2l69ie2j8lu7l0ojm</string>
         </array>
       </dict>
     </array>

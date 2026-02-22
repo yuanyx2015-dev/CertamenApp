@@ -1,8 +1,56 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import { Mail, Apple, Instagram } from './Icons';
+import { supabase } from '../lib/supabase';
+import { signInWithGoogle, signInWithApple } from '../services/authService';
 
-export function LoginScreen({ onGoogleLogin }: { onGoogleLogin: () => void }) {
+// Required for Expo
+WebBrowser.maybeCompleteAuthSession();
+interface LoginScreenProps {
+  navigation: any;
+  onLoginSuccess: () => void;
+}
+
+
+export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
+   const [isLoading, setLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+
+    const { user, error } = await signInWithGoogle();
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Google Login Failed', error.message);
+      return;
+    }
+    if (user) {
+      Alert.alert('Success!', 'Welcome to CertamenApp!');
+      onLoginSuccess();
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setLoading(true);
+
+    const { user, error } = await signInWithApple();
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Apple Login Failed', error.message);
+      return;
+    }
+    if (user) {
+      Alert.alert('Success!', 'Welcome to CertamenApp!');
+      onLoginSuccess();
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Welcome Section */}
@@ -15,7 +63,7 @@ export function LoginScreen({ onGoogleLogin }: { onGoogleLogin: () => void }) {
           <View style={styles.dividerLine} />
         </View>
         
-        <Text style={styles.appName}>Certatio</Text>
+        <Text style={styles.appName}>CertamenApp</Text>
       </View>
 
       {/* Login Section */}
@@ -24,20 +72,31 @@ export function LoginScreen({ onGoogleLogin }: { onGoogleLogin: () => void }) {
 
         {/* Login Buttons */}
         <View style={styles.buttonsContainer}>
-        <LoginButton icon={<Mail />} label="Gmail" onPress={onGoogleLogin} />
-<LoginButton icon={<Apple />} label="Apple" onPress={() => {}} />
-<LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} />
+          <LoginButton 
+            icon={<Mail />} 
+            label={isLoading ? "Signing in..." : "Gmail"} 
+            onPress={handleGoogleLogin}
+            disabled={isLoading}
+          />
+          <LoginButton 
+            icon={<Apple />} 
+            label={isLoading ? "Signing in..." : "Apple"} 
+            onPress={handleAppleLogin}
+            disabled={isLoading}
+          />
+          <LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} disabled={isLoading} />
         </View>
       </View>
     </View>
   );
 }
 
-function LoginButton({ icon, label, onPress }: { icon: React.ReactNode; label: string; onPress: () => void }) {
+function LoginButton({ icon, label, onPress, disabled }: { icon: React.ReactNode; label: string; onPress: () => void; disabled?: boolean }) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
   const handlePressIn = () => {
+    if (disabled) return;
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 0.95,
@@ -52,6 +111,7 @@ function LoginButton({ icon, label, onPress }: { icon: React.ReactNode; label: s
   };
 
   const handlePressOut = () => {
+    if (disabled) return;
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 1,
@@ -71,12 +131,13 @@ function LoginButton({ icon, label, onPress }: { icon: React.ReactNode; label: s
   });
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: disabled ? 0.6 : 1 }}>
      <TouchableOpacity 
   onPressIn={handlePressIn}
   onPressOut={handlePressOut}
   onPress={onPress}
   activeOpacity={1}
+  disabled={disabled}
 >
         <Animated.View style={[styles.button, { backgroundColor }]}>
           <View style={styles.iconContainer}>{icon}</View>
