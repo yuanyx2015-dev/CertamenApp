@@ -72,7 +72,6 @@ export const signIn = async (
 export const signInWithGoogle = async (): Promise<AuthResponse> => {
   try {
     const redirectUrl = makeRedirectUri({
-      scheme: 'supa-auth-demo',
       path: 'auth/callback',
     });
 
@@ -146,6 +145,83 @@ export const signInWithGoogle = async (): Promise<AuthResponse> => {
     console.error('Google sign-in error:', error);
     return {
       error: { message: 'An unexpected error occurred during Google sign in' },
+    };
+  }
+};
+
+// Sign in with Apple OAuth
+export const signInWithApple = async (): Promise<AuthResponse> => {
+  try {
+    const redirectUrl = makeRedirectUri({
+      path: 'auth/callback',
+    });
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: redirectUrl,
+        skipBrowserRedirect: false,
+      },
+    });
+
+    if (error) {
+      return { error: { message: error.message } };
+    }
+
+    console.log('Apple OAuth data:', data);
+
+    // Open the OAuth URL in browser
+    if (data?.url) {
+      const result = await WebBrowser.openAuthSessionAsync(
+        data.url,
+        redirectUrl
+      );
+
+      if (result.type === 'success') {
+        const url = result.url;
+                
+        // Supabase OAuth returns tokens in URL fragment (after #), not query params
+        let accessToken: string | null = null;
+        let refreshToken: string | null = null;
+        
+        // Extract fragment (everything after #)
+        if (url.includes('#')) {
+          const fragment = url.split('#')[1];
+          const params = new URLSearchParams(fragment);
+          accessToken = params.get('access_token');
+          refreshToken = params.get('refresh_token');
+        }
+        
+        if (accessToken && refreshToken) {
+          // Set the session using the tokens from OAuth callback
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          
+          if (sessionError) {
+            console.error('Error setting session:', sessionError);
+            return { error: { message: sessionError.message } };
+          }
+          
+          console.log('Apple session set successfully:', !!sessionData.session);
+          return {
+            user: sessionData.user || undefined,
+            session: sessionData.session || undefined,
+          };
+        }
+        
+        return { error: { message: 'No tokens found in OAuth callback' } };
+      } else {
+        return { error: { message: 'Apple sign-in was cancelled' } };
+      }
+    }
+
+    return { error: { message: 'No OAuth URL returned' } };
+  } catch (error) {
+    console.error('Apple sign-in error:', error);
+    return {
+      error: { message: 'An unexpected error occurred during Apple sign in' },
     };
   }
 };

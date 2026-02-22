@@ -83,6 +83,12 @@ export function RomanBackground() {
     outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
   });
 
+  // Reset Profile button animation when screen changes
+  useEffect(() => {
+    scaleAnim.setValue(1);
+    bgColorAnim.setValue(0);
+  }, [currentScreen]);
+
   // Check for existing session on mount and listen for auth state changes
   useEffect(() => {
     checkSession();
@@ -290,7 +296,6 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 20,

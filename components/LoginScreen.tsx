@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { Mail, Apple, Instagram } from './Icons';
 import { supabase } from '../lib/supabase';
-import { signInWithGoogle } from '../services/authService';
+import { signInWithGoogle, signInWithApple } from '../services/authService';
 
 // Required for Expo
 WebBrowser.maybeCompleteAuthSession();
@@ -29,7 +29,24 @@ export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
       return;
     }
     if (user) {
-      Alert.alert('Success', 'Logged in with Google successfully!');
+      Alert.alert('Success!', 'Welcome to CertamenApp!');
+      onLoginSuccess();
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setLoading(true);
+
+    const { user, error } = await signInWithApple();
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Apple Login Failed', error.message);
+      return;
+    }
+    if (user) {
+      Alert.alert('Success!', 'Welcome to CertamenApp!');
       onLoginSuccess();
     }
   };
@@ -46,7 +63,7 @@ export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
           <View style={styles.dividerLine} />
         </View>
         
-        <Text style={styles.appName}>Certatio</Text>
+        <Text style={styles.appName}>CertamenApp</Text>
       </View>
 
       {/* Login Section */}
@@ -61,8 +78,13 @@ export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
             onPress={handleGoogleLogin}
             disabled={isLoading}
           />
-          <LoginButton icon={<Apple />} label="Apple" onPress={() => {}} />
-          <LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} />
+          <LoginButton 
+            icon={<Apple />} 
+            label={isLoading ? "Signing in..." : "Apple"} 
+            onPress={handleAppleLogin}
+            disabled={isLoading}
+          />
+          <LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} disabled={isLoading} />
         </View>
       </View>
     </View>
