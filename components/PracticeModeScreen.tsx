@@ -70,7 +70,7 @@ export function PracticeModeScreen({ onNavigate, previousScreen }: { onNavigate?
         <Text style={styles.titleText}>Practice Mode</Text>
 
         {/* Start Game Button */}
-        <AnimatedButton label="Start Game" onPress={() => {}} />
+        <AnimatedButton label="Start Practice Game" onPress={() => onNavigate?.('practice-game')} />
       </View>
 
       {/* Tip Text - At Bottom */}
