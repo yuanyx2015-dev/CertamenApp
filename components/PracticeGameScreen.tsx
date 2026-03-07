@@ -38,34 +38,74 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       setLoadError(null);
       
       // Load user stats first
+      let currentRank = 'Miles';
       const user = await getCurrentUser();
       if (user) {
         const { data: stats } = await getOrCreateUserStats(user.id);
         if (stats) {
           setScore(stats.score);
           setRank(stats.rank);
+          currentRank = stats.rank;
         }
       }
       
-      // Get 10 random questions from database (any category, any difficulty)
-      const { data, error } = await getRandomQuestions(undefined, undefined, 10);
+      // Get question distribution based on rank
+      const distribution = getQuestionDistribution(currentRank, 10);
       
-      if (error) {
+      // Fetch questions for each difficulty level
+      const allQuestions: Question[] = [];
+      
+      try {
+        // Fetch easy questions
+        if (distribution.easy > 0) {
+          const { data: easyQuestions, error: easyError } = await getRandomQuestions(
+            undefined, 
+            'easy', 
+            distribution.easy
+          );
+          if (easyError) throw easyError;
+          if (easyQuestions) allQuestions.push(...easyQuestions);
+        }
+        
+        // Fetch medium questions
+        if (distribution.medium > 0) {
+          const { data: mediumQuestions, error: mediumError } = await getRandomQuestions(
+            undefined, 
+            'medium', 
+            distribution.medium
+          );
+          if (mediumError) throw mediumError;
+          if (mediumQuestions) allQuestions.push(...mediumQuestions);
+        }
+        
+        // Fetch hard questions
+        if (distribution.hard > 0) {
+          const { data: hardQuestions, error: hardError } = await getRandomQuestions(
+            undefined, 
+            'hard', 
+            distribution.hard
+          );
+          if (hardError) throw hardError;
+          if (hardQuestions) allQuestions.push(...hardQuestions);
+        }
+        
+        if (allQuestions.length === 0) {
+          setLoadError('No questions found in database');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Shuffle all questions together
+        const shuffledQuestions = shuffleArray(allQuestions);
+        setQuestions(shuffledQuestions);
+        setIsLoading(false);
+        setStatusText('Ready...');
+        
+      } catch (error) {
         console.error('Error loading questions:', error);
         setLoadError('Failed to load questions from database');
         setIsLoading(false);
-        return;
       }
-      
-      if (!data || data.length === 0) {
-        setLoadError('No questions found in database');
-        setIsLoading(false);
-        return;
-      }
-      
-      setQuestions(data);
-      setIsLoading(false);
-      setStatusText('Ready...');
     };
     
     loadQuestionsAndStats();
@@ -90,6 +130,27 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     if (totalScore >= 1500) return 'Optio';
     if (totalScore >= 500) return 'Decanus';
     return 'Miles';
+  };
+
+  // Get question difficulty distribution based on rank
+  const getQuestionDistribution = (rank: string, totalQuestions: number = 10) => {
+    const distributions: Record<string, { easy: number; medium: number; hard: number }> = {
+      'Miles': { easy: 0.9, medium: 0.1, hard: 0 },
+      'Decanus': { easy: 0.7, medium: 0.25, hard: 0.05 },
+      'Optio': { easy: 0.45, medium: 0.4, hard: 0.15 },
+      'Centurio': { easy: 0.2, medium: 0.6, hard: 0.2 },
+      'Primus Pilus': { easy: 0, medium: 0.5, hard: 0.5 },
+      'Praefectus Castrorum': { easy: 0, medium: 0.2, hard: 0.8 },
+      'Legatus Legionis': { easy: 0, medium: 0, hard: 1.0 }
+    };
+
+    const distribution = distributions[rank] || distributions['Miles'];
+    
+    return {
+      easy: Math.round(totalQuestions * distribution.easy),
+      medium: Math.round(totalQuestions * distribution.medium),
+      hard: Math.round(totalQuestions * distribution.hard)
+    };
   };
 
   // Start question
@@ -217,15 +278,30 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     if (!isLoading && questions.length > 0) {
       startQuestion();
     }
+    
+    // Cleanup function when component unmounts (user exits game)
     return () => {
+      // Clear all intervals
       if (streamIntervalRef.current) {
         clearInterval(streamIntervalRef.current);
       }
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
       }
+      
+      // Reset game state for fresh start on next entry
+      // This ensures a new game starts when user returns
     };
   }, [currentQuestionIndex, isLoading, questions]);
+
+  // Additional cleanup on unmount to ensure fresh game on return
+  useEffect(() => {
+    return () => {
+      // This cleanup runs when user exits the practice game screen
+      // All state will be reset on next mount, ensuring a new game starts
+      console.log('Practice game ended - will start fresh on next entry');
+    };
+  }, []);
 
   // Check if game is over
   const isGameOver = questions.length > 0 && currentQuestionIndex >= questions.length;
@@ -271,10 +347,52 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
           
           <TouchableOpacity 
             style={styles.restartButton}
-            onPress={() => {
+            onPress={async () => {
+              // Reset game state
               setCurrentQuestionIndex(0);
-              setScore(0);
-              setRank('Miles');
+              setQuestions([]);
+              setIsLoading(true);
+              
+              // Reload questions and stats for a fresh game
+              const user = await getCurrentUser();
+              let currentRank = 'Miles';
+              
+              if (user) {
+                const { data: stats } = await getOrCreateUserStats(user.id);
+                if (stats) {
+                  setScore(stats.score);
+                  setRank(stats.rank);
+                  currentRank = stats.rank;
+                }
+              }
+              
+              // Get new questions based on current rank
+              const distribution = getQuestionDistribution(currentRank, 10);
+              const allQuestions: Question[] = [];
+              
+              try {
+                if (distribution.easy > 0) {
+                  const { data: easyQuestions } = await getRandomQuestions(undefined, 'easy', distribution.easy);
+                  if (easyQuestions) allQuestions.push(...easyQuestions);
+                }
+                if (distribution.medium > 0) {
+                  const { data: mediumQuestions } = await getRandomQuestions(undefined, 'medium', distribution.medium);
+                  if (mediumQuestions) allQuestions.push(...mediumQuestions);
+                }
+                if (distribution.hard > 0) {
+                  const { data: hardQuestions } = await getRandomQuestions(undefined, 'hard', distribution.hard);
+                  if (hardQuestions) allQuestions.push(...hardQuestions);
+                }
+                
+                if (allQuestions.length > 0) {
+                  setQuestions(shuffleArray(allQuestions));
+                }
+              } catch (error) {
+                console.error('Error reloading questions:', error);
+              }
+              
+              setIsLoading(false);
+              setStatusText('Ready...');
             }}
           >
             <Text style={styles.restartButtonText}>Try Again</Text>
@@ -296,6 +414,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerText}>Rank: {rank}</Text>
+        <Text style={styles.headerText}>Question {currentQuestionIndex + 1}/{questions.length}</Text>
         <Text style={styles.headerText}>Score: {score}</Text>
       </View>
 

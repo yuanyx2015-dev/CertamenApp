@@ -114,10 +114,25 @@ export const getOrCreateUserStats = async (userId: string) => {
   // Try to get existing stats
   const { data, error } = await getUserStats(userId);
 
-  if (error && error.message?.includes('No rows')) {
+  // Check if error is because no stats exist (PGRST116 error code or "0 rows" message)
+  if (error && (error.code === 'PGRST116' || error.message?.includes('0 rows') || error.message?.includes('No rows'))) {
     // Stats don't exist, create them
+    console.log('Creating new user stats for user:', userId);
     return createUserStats(userId);
   }
 
-  return { data, error };
+  if (error) {
+    // Other error occurred
+    console.error('Error getting user stats:', error);
+    return { data: null, error };
+  }
+
+  // Fix old rank names (convert "Novice" or any invalid rank to "Miles")
+  if (data && (data.rank === 'Novice' || !['Miles', 'Decanus', 'Optio', 'Centurio', 'Primus Pilus', 'Praefectus Castrorum', 'Legatus Legionis'].includes(data.rank))) {
+    console.log('Fixing old rank name:', data.rank, '-> Miles');
+    await updateUserScore(userId, data.score, 'Miles');
+    data.rank = 'Miles';
+  }
+
+  return { data, error: null };
 };
