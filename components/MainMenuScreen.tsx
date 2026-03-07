@@ -6,9 +6,9 @@ import Svg, { Path, Rect, Circle, G } from 'react-native-svg';
 function SingleSwordIcon() {
   return (
     <Svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-      {/* Blade */}
+      {/* Blade - made longer */}
       <Path 
-        d="M 30 8 L 32 38 L 28 38 Z" 
+        d="M 30 5 L 32 40 L 28 40 Z" 
         fill="#c9a961" 
         stroke="#9d856b" 
         strokeWidth="0.5"
@@ -16,7 +16,7 @@ function SingleSwordIcon() {
       {/* Guard */}
       <Rect 
         x="22" 
-        y="37" 
+        y="39" 
         width="16" 
         height="3" 
         fill="#d4b76a" 
@@ -26,7 +26,7 @@ function SingleSwordIcon() {
       {/* Handle */}
       <Rect 
         x="28" 
-        y="40" 
+        y="42" 
         width="4" 
         height="10" 
         fill="#8b7355" 
@@ -36,7 +36,7 @@ function SingleSwordIcon() {
       {/* Pommel */}
       <Circle 
         cx="30" 
-        cy="52" 
+        cy="54" 
         r="3" 
         fill="#c9a961" 
         stroke="#9d856b" 
@@ -47,88 +47,47 @@ function SingleSwordIcon() {
 }
 
 // Crossed Swords Icon
-function CrossedSwordsIcon() {
+function CrossedSpearsIcon() {
+  // Define single spear perfectly centered at x=30 (viewBox center)
+  // All coordinates calculated for absolute bilateral symmetry
+  const Spear = ({ rotation }: { rotation: number }) => (
+    <G transform={`rotate(${rotation} 30 30)`}>
+      {/* Spear tip - perfectly symmetrical triangle centered at x=30 */}
+      <Path 
+        d="M 30 10 L 32 20 L 28 20 Z" 
+        fill="#c9a961" 
+        stroke="#9d856b" 
+        strokeWidth="0.5"
+      />
+      {/* Shaft - perfectly centered rectangle: x=29 to x=31 (center at 30) */}
+      <Rect 
+        x="29" 
+        y="20" 
+        width="2" 
+        height="30" 
+        fill="#8b7355" 
+        stroke="#6a5a4a" 
+        strokeWidth="0.5"
+      />
+      {/* Bottom cap - perfectly centered: x=28 to x=32 (center at 30) */}
+      <Rect 
+        x="28" 
+        y="50" 
+        width="4" 
+        height="2" 
+        fill="#9d856b" 
+        stroke="#6a5a4a" 
+        strokeWidth="0.5"
+      />
+    </G>
+  );
+
   return (
     <Svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-      {/* Left sword */}
-      <G transform="rotate(-25 30 30)">
-        {/* Blade */}
-        <Path 
-          d="M 22 10 L 24 35 L 20 35 Z" 
-          fill="#c9a961" 
-          stroke="#9d856b" 
-          strokeWidth="0.5"
-        />
-        {/* Guard */}
-        <Rect 
-          x="14" 
-          y="34" 
-          width="16" 
-          height="2.5" 
-          fill="#d4b76a" 
-          stroke="#9d856b" 
-          strokeWidth="0.5"
-        />
-        {/* Handle */}
-        <Rect 
-          x="20" 
-          y="36.5" 
-          width="4" 
-          height="8" 
-          fill="#8b7355" 
-          stroke="#6a5a4a" 
-          strokeWidth="0.5"
-        />
-        {/* Pommel */}
-        <Circle 
-          cx="22" 
-          cy="46" 
-          r="2.5" 
-          fill="#c9a961" 
-          stroke="#9d856b" 
-          strokeWidth="0.5"
-        />
-      </G>
-      
-      {/* Right sword */}
-      <G transform="rotate(25 30 30)">
-        {/* Blade */}
-        <Path 
-          d="M 38 10 L 40 35 L 36 35 Z" 
-          fill="#c9a961" 
-          stroke="#9d856b" 
-          strokeWidth="0.5"
-        />
-        {/* Guard */}
-        <Rect 
-          x="30" 
-          y="34" 
-          width="16" 
-          height="2.5" 
-          fill="#d4b76a" 
-          stroke="#9d856b" 
-          strokeWidth="0.5"
-        />
-        {/* Handle */}
-        <Rect 
-          x="36" 
-          y="36.5" 
-          width="4" 
-          height="8" 
-          fill="#8b7355" 
-          stroke="#6a5a4a" 
-          strokeWidth="0.5"
-        />
-        {/* Pommel */}
-        <Circle 
-          cx="38" 
-          cy="46" 
-          r="2.5" 
-          fill="#c9a961" 
-          stroke="#9d856b" 
-          strokeWidth="0.5"
-        />
-      </G>
+      {/* Left spear rotated -45° around center point (30, 30) */}
+      <Spear rotation={-45} />
+      {/* Right spear rotated +45° around center point (30, 30) - perfect mirror */}
+      <Spear rotation={45} />
     </Svg>
   );
 }
@@ -270,7 +229,7 @@ export function MainMenuScreen({ onNavigate }: { onNavigate?: (screen: string) =
 
         {/* PvP Mode Button */}
         <AnimatedModeButton 
-          icon={<CrossedSwordsIcon />} 
+          icon={<CrossedSpearsIcon />} 
           label="PvP Mode" 
           onPress={() => onNavigate?.('pvp')} 
         />

@@ -13,6 +13,7 @@ import { VisitorMatchScreen } from './VisitorMatchScreen';
 import { HomeMatchScreen } from './HomeMatchScreen';
 import { OfflineMatchScreen } from './OfflineMatchScreen';
 import { PracticeModeScreen } from './PracticeModeScreen';
+import { PracticeGameScreen } from './PracticeGameScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
 
@@ -154,6 +155,8 @@ export function RomanBackground() {
     switch (currentScreen) {
       case 'practice':
         return <PracticeModeScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'practice-game':
+        return <PracticeGameScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'pvp':
         return <MatchSelectionScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'offline':
