@@ -1,5 +1,7 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import { getCurrentUser } from '../services/authService';
+import { getOrCreateUserStats, UserStats } from '../services/userStatsService';
 
 function AnimatedButton({ label, onPress }: { label: string; onPress: () => void }) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -55,6 +57,44 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
 }
 
 export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { onNavigate?: (screen: string) => void; previousScreen?: string; onLogout?: () => void }) {
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [userName, setUserName] = useState('___');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      setIsLoading(true);
+      
+      const user = await getCurrentUser();
+      if (user) {
+        // Get user name from email or metadata
+        const displayName = user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+        setUserName(displayName);
+
+        // Load user stats
+        const { data: stats } = await getOrCreateUserStats(user.id);
+        if (stats) {
+          setUserStats(stats);
+        }
+      }
+      
+      setIsLoading(false);
+    };
+
+    loadUserData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#c9a961" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Stats Container */}
@@ -63,7 +103,7 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
         <View style={styles.statBox}>
           <View style={styles.statRow}>
             <Text style={styles.labelText}>Name:</Text>
-            <Text style={styles.valueText}>___</Text>
+            <Text style={styles.valueText}>{userName}</Text>
           </View>
         </View>
 
@@ -71,7 +111,7 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
         <View style={styles.statBox}>
           <View style={styles.statRow}>
             <Text style={styles.labelText}>Score:</Text>
-            <Text style={styles.valueText}>___</Text>
+            <Text style={styles.valueText}>{userStats?.score || 0}</Text>
           </View>
         </View>
 
@@ -79,7 +119,7 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
         <View style={styles.statBox}>
           <View style={styles.statRow}>
             <Text style={styles.labelText}>Rank:</Text>
-            <Text style={styles.valueText}>___</Text>
+            <Text style={styles.valueText}>{userStats?.rank || 'Miles'}</Text>
           </View>
         </View>
 
@@ -87,7 +127,7 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
         <View style={styles.statBox}>
           <View style={styles.statRow}>
             <Text style={styles.labelText}>Win Streak:</Text>
-            <Text style={styles.valueText}>___</Text>
+            <Text style={styles.valueText}>{userStats?.win_streak || 0}</Text>
           </View>
         </View>
       </View>
@@ -114,6 +154,17 @@ const styles = StyleSheet.create({
     paddingVertical: 80,
     paddingHorizontal: 24,
     position: 'relative',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
   statsContainer: {
     marginTop: 32,

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { getRandomQuestions, Question } from '../services/questionService';
+import { getCurrentUser } from '../services/authService';
+import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
 
 const { width } = Dimensions.get('window');
 
@@ -21,17 +23,29 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [shuffledOptions, setShuffledOptions] = useState<Array<{text: string; isCorrect: boolean}>>([]);
   const [statusText, setStatusText] = useState('Loading questions...');
-  const [rank, setRank] = useState('TIRO (Beginner)');
+  const [rank, setRank] = useState('Miles');
+  const [timeRemaining, setTimeRemaining] = useState(15);
   
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fullTextRef = useRef('');
 
   // Load questions from database
   useEffect(() => {
-    const loadQuestions = async () => {
+    const loadQuestionsAndStats = async () => {
       setIsLoading(true);
       setLoadError(null);
+      
+      // Load user stats first
+      const user = await getCurrentUser();
+      if (user) {
+        const { data: stats } = await getOrCreateUserStats(user.id);
+        if (stats) {
+          setScore(stats.score);
+          setRank(stats.rank);
+        }
+      }
       
       // Get 10 random questions from database (any category, any difficulty)
       const { data, error } = await getRandomQuestions(undefined, undefined, 10);
@@ -54,7 +68,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       setStatusText('Ready...');
     };
     
-    loadQuestions();
+    loadQuestionsAndStats();
   }, []);
 
   // Shuffle function
@@ -65,6 +79,17 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
     }
     return newArray;
+  };
+
+  // Calculate rank based on cumulative score
+  const calculateRank = (totalScore: number): string => {
+    if (totalScore >= 10000) return 'Legatus Legionis';
+    if (totalScore >= 7000) return 'Praefectus Castrorum';
+    if (totalScore >= 5000) return 'Primus Pilus';
+    if (totalScore >= 3000) return 'Centurio';
+    if (totalScore >= 1500) return 'Optio';
+    if (totalScore >= 500) return 'Decanus';
+    return 'Miles';
   };
 
   // Start question
@@ -120,11 +145,42 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
 
     setIsBuzzed(true);
     setStatusText('Buzzed! Select your answer...');
+    setTimeRemaining(15);
+
+    // Start 15-second countdown timer
+    timerIntervalRef.current = setInterval(() => {
+      setTimeRemaining((prevTime) => {
+        if (prevTime <= 1) {
+          // Time's up! Auto-mark as wrong
+          if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+          }
+          handleTimeUp();
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000); // Decrease every second
+  };
+
+  // Handle time running out
+  const handleTimeUp = () => {
+    if (isAnswered) return;
+
+    setIsAnswered(true);
+    setSelectedAnswer(null); // No answer was selected
+    setDisplayedText(fullTextRef.current);
+    setStatusText("Time's up! No answer selected.");
   };
 
   // Handle answer selection
-  const handleAnswerSelect = (option: {text: string; isCorrect: boolean}) => {
+  const handleAnswerSelect = async (option: {text: string; isCorrect: boolean}) => {
     if (isAnswered) return;
+
+    // Stop the timer
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
 
     setIsAnswered(true);
     setSelectedAnswer(option.text);
@@ -133,13 +189,19 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     setDisplayedText(fullTextRef.current);
 
     if (option.isCorrect) {
-      setScore(score + 10);
+      const newScore = score + 10;
+      setScore(newScore);
       setStatusText('Correct! +10 points');
       
-      // Update rank based on score
-      const newScore = score + 10;
-      if (newScore >= 40) setRank('VETERAN (Advanced)');
-      else if (newScore >= 20) setRank('MILES (Intermediate)');
+      // Update rank based on new score
+      const newRank = calculateRank(newScore);
+      setRank(newRank);
+
+      // Save to database
+      const user = await getCurrentUser();
+      if (user) {
+        await updateUserScore(user.id, newScore, newRank);
+      }
     } else {
       setStatusText('Wrong! Better luck next time.');
     }
@@ -158,6 +220,9 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     return () => {
       if (streamIntervalRef.current) {
         clearInterval(streamIntervalRef.current);
+      }
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
       }
     };
   }, [currentQuestionIndex, isLoading, questions]);
@@ -209,7 +274,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
             onPress={() => {
               setCurrentQuestionIndex(0);
               setScore(0);
-              setRank('TIRO (Beginner)');
+              setRank('Miles');
             }}
           >
             <Text style={styles.restartButtonText}>Try Again</Text>
@@ -241,12 +306,17 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
         showsVerticalScrollIndicator={false}
       >
         {/* Status Text */}
-        <Text style={[
-          styles.statusText,
-          isBuzzed && styles.statusTextBuzzed
-        ]}>
-          {statusText}
-        </Text>
+        <View style={styles.statusContainer}>
+          <Text style={[
+            styles.statusText,
+            isBuzzed && styles.statusTextBuzzed
+          ]}>
+            {statusText}
+          </Text>
+          {isBuzzed && !isAnswered && (
+            <Text style={styles.timerText}>Time: {timeRemaining}s</Text>
+          )}
+        </View>
 
         {/* Question Box */}
         <View style={styles.questionBox}>
@@ -294,7 +364,8 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
                 style={[
                   styles.optionCard,
                   option.isCorrect && styles.optionCorrect,
-                  option.text === selectedAnswer && !option.isCorrect && styles.optionWrong
+                  option.text === selectedAnswer && !option.isCorrect && styles.optionWrong,
+                  !selectedAnswer && option.isCorrect && styles.optionCorrect // Highlight correct answer when time runs out
                 ]}
               >
                 <Text style={[
@@ -385,16 +456,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 600,
   },
+  statusContainer: {
+    alignItems: 'center',
+    marginBottom: 15,
+    minHeight: 50,
+  },
   statusText: {
     fontSize: 16,
     color: '#7a7a7a',
     fontStyle: 'italic',
-    marginBottom: 15,
     minHeight: 25,
   },
   statusTextBuzzed: {
     color: '#c9a961',
     fontWeight: '600',
+  },
+  timerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#c9a961',
+    marginTop: 5,
   },
   questionBox: {
     width: '100%',
