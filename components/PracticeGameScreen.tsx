@@ -1,10 +1,81 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, ActivityIndicator, Animated } from 'react-native';
+import Svg, { Path, Line, Circle } from 'react-native-svg';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
+import { getOrCreateUserSettings } from '../services/userSettingsService';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+// Ornate Roman-style Checkmark
+function RomanCheckmark() {
+  return (
+    <Svg width="250" height="250" viewBox="0 0 250 250">
+      {/* Main checkmark stroke with Roman style */}
+      <Path
+        d="M 60 130 L 100 180 L 200 60"
+        stroke="#7B8866"
+        strokeWidth="20"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      
+      {/* Inner highlight for depth */}
+      <Path
+        d="M 65 130 L 100 175 L 195 65"
+        stroke="#98A885"
+        strokeWidth="8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        opacity="0.7"
+      />
+    </Svg>
+  );
+}
+
+// Ornate Roman-style X
+function RomanCross() {
+  return (
+    <Svg width="250" height="250" viewBox="0 0 250 250">
+      {/* Main X strokes with Roman style */}
+      <Path
+        d="M 50 50 L 200 200"
+        stroke="#8B4C4C"
+        strokeWidth="20"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <Path
+        d="M 200 50 L 50 200"
+        stroke="#8B4C4C"
+        strokeWidth="20"
+        strokeLinecap="round"
+        fill="none"
+      />
+      
+      {/* Inner highlight for depth */}
+      <Path
+        d="M 55 55 L 195 195"
+        stroke="#A86464"
+        strokeWidth="8"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.7"
+      />
+      <Path
+        d="M 195 55 L 55 195"
+        stroke="#A86464"
+        strokeWidth="8"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.7"
+      />
+    </Svg>
+  );
+}
 
 interface PracticeGameScreenProps {
   onNavigate?: (screen: string) => void;
@@ -16,7 +87,8 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [score, setScore] = useState(0);
+  const [sessionScore, setSessionScore] = useState(0); // Score for this game session only
+  const [cumulativeScore, setCumulativeScore] = useState(0); // Total user score from database
   const [displayedText, setDisplayedText] = useState('');
   const [isBuzzed, setIsBuzzed] = useState(false);
   const [isAnswered, setIsAnswered] = useState(false);
@@ -25,11 +97,15 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
   const [statusText, setStatusText] = useState('Loading questions...');
   const [rank, setRank] = useState('Miles');
   const [timeRemaining, setTimeRemaining] = useState(15);
+  const [showFeedbackIcon, setShowFeedbackIcon] = useState(false);
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fullTextRef = useRef('');
+  const feedbackScaleAnim = useRef(new Animated.Value(0)).current;
+  const feedbackOpacityAnim = useRef(new Animated.Value(0)).current;
 
   // Load questions from database
   useEffect(() => {
@@ -37,23 +113,33 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       setIsLoading(true);
       setLoadError(null);
       
-      // Load user stats first
+      // Load user stats and settings first
       let currentRank = 'Miles';
+      let totalQuestions = 20; // Default
       const user = await getCurrentUser();
       if (user) {
         const { data: stats } = await getOrCreateUserStats(user.id);
         if (stats) {
-          setScore(stats.score);
+          setCumulativeScore(stats.score); // Store cumulative score
           setRank(stats.rank);
           currentRank = stats.rank;
+        }
+        
+        // Get user settings for number of tossups
+        const { data: settings } = await getOrCreateUserSettings(user.id);
+        if (settings) {
+          totalQuestions = settings.num_tossups;
         }
       }
       
       // Get question distribution based on rank
-      const distribution = getQuestionDistribution(currentRank, 10);
+      const distribution = getQuestionDistribution(currentRank, totalQuestions);
       
       // Fetch questions for each difficulty level
+      // Note: Each difficulty query returns unique questions, and since each question
+      // has only one difficulty level, there won't be duplicates across queries.
       const allQuestions: Question[] = [];
+      const seenIds = new Set<string>(); // Extra safeguard to prevent duplicates
       
       try {
         // Fetch easy questions
@@ -64,7 +150,15 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
             distribution.easy
           );
           if (easyError) throw easyError;
-          if (easyQuestions) allQuestions.push(...easyQuestions);
+          if (easyQuestions) {
+            // Filter out any duplicates (defensive programming)
+            easyQuestions.forEach(q => {
+              if (!seenIds.has(q.id)) {
+                allQuestions.push(q);
+                seenIds.add(q.id);
+              }
+            });
+          }
         }
         
         // Fetch medium questions
@@ -75,7 +169,14 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
             distribution.medium
           );
           if (mediumError) throw mediumError;
-          if (mediumQuestions) allQuestions.push(...mediumQuestions);
+          if (mediumQuestions) {
+            mediumQuestions.forEach(q => {
+              if (!seenIds.has(q.id)) {
+                allQuestions.push(q);
+                seenIds.add(q.id);
+              }
+            });
+          }
         }
         
         // Fetch hard questions
@@ -86,7 +187,14 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
             distribution.hard
           );
           if (hardError) throw hardError;
-          if (hardQuestions) allQuestions.push(...hardQuestions);
+          if (hardQuestions) {
+            hardQuestions.forEach(q => {
+              if (!seenIds.has(q.id)) {
+                allQuestions.push(q);
+                seenIds.add(q.id);
+              }
+            });
+          }
         }
         
         if (allQuestions.length === 0) {
@@ -234,6 +342,41 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     setStatusText("Time's up! No answer selected.");
   };
 
+  // Trigger feedback animation
+  const triggerFeedbackAnimation = (isCorrect: boolean) => {
+    setIsCorrectAnswer(isCorrect);
+    setShowFeedbackIcon(true);
+    
+    // Reset animation values
+    feedbackScaleAnim.setValue(0);
+    feedbackOpacityAnim.setValue(0);
+    
+    // Animate in and out
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(feedbackScaleAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.timing(feedbackOpacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.delay(800), // Show for 800ms
+      Animated.timing(feedbackOpacityAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowFeedbackIcon(false);
+    });
+  };
+
   // Handle answer selection
   const handleAnswerSelect = async (option: {text: string; isCorrect: boolean}) => {
     if (isAnswered) return;
@@ -249,19 +392,24 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     // Show full text
     setDisplayedText(fullTextRef.current);
 
+    // Trigger feedback animation
+    triggerFeedbackAnimation(option.isCorrect);
+
     if (option.isCorrect) {
-      const newScore = score + 10;
-      setScore(newScore);
+      const newSessionScore = sessionScore + 10;
+      setSessionScore(newSessionScore);
       setStatusText('Correct! +10 points');
       
-      // Update rank based on new score
-      const newRank = calculateRank(newScore);
-      setRank(newRank);
-
-      // Save to database
+      // Update cumulative score in database
       const user = await getCurrentUser();
       if (user) {
-        await updateUserScore(user.id, newScore, newRank);
+        const newCumulativeScore = cumulativeScore + 10;
+        const newRank = calculateRank(newCumulativeScore);
+        const { error } = await updateUserScore(user.id, newCumulativeScore, newRank);
+        if (!error) {
+          setCumulativeScore(newCumulativeScore);
+          setRank(newRank);
+        }
       }
     } else {
       setStatusText('Wrong! Better luck next time.');
@@ -342,7 +490,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       <View style={styles.container}>
         <View style={styles.gameOverContainer}>
           <Text style={styles.gameOverTitle}>Practice Complete!</Text>
-          <Text style={styles.gameOverScore}>Final Score: {score} / {questions.length * 10}</Text>
+          <Text style={styles.gameOverScore}>Final Score: {sessionScore} / {questions.length * 10}</Text>
           <Text style={styles.gameOverRank}>Rank: {rank}</Text>
           
           <TouchableOpacity 
@@ -350,38 +498,68 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
             onPress={async () => {
               // Reset game state
               setCurrentQuestionIndex(0);
+              setSessionScore(0); // Reset session score
               setQuestions([]);
               setIsLoading(true);
               
               // Reload questions and stats for a fresh game
               const user = await getCurrentUser();
               let currentRank = 'Miles';
+              let totalQuestions = 20; // Default
               
               if (user) {
                 const { data: stats } = await getOrCreateUserStats(user.id);
                 if (stats) {
-                  setScore(stats.score);
+                  setCumulativeScore(stats.score);
                   setRank(stats.rank);
                   currentRank = stats.rank;
                 }
+                
+                // Get user settings for number of tossups
+                const { data: settings } = await getOrCreateUserSettings(user.id);
+                if (settings) {
+                  totalQuestions = settings.num_tossups;
+                }
               }
               
-              // Get new questions based on current rank
-              const distribution = getQuestionDistribution(currentRank, 10);
+              // Get new questions based on current rank and settings
+              const distribution = getQuestionDistribution(currentRank, totalQuestions);
               const allQuestions: Question[] = [];
+              const seenIds = new Set<string>(); // Prevent duplicates within this game
               
               try {
                 if (distribution.easy > 0) {
                   const { data: easyQuestions } = await getRandomQuestions(undefined, 'easy', distribution.easy);
-                  if (easyQuestions) allQuestions.push(...easyQuestions);
+                  if (easyQuestions) {
+                    easyQuestions.forEach(q => {
+                      if (!seenIds.has(q.id)) {
+                        allQuestions.push(q);
+                        seenIds.add(q.id);
+                      }
+                    });
+                  }
                 }
                 if (distribution.medium > 0) {
                   const { data: mediumQuestions } = await getRandomQuestions(undefined, 'medium', distribution.medium);
-                  if (mediumQuestions) allQuestions.push(...mediumQuestions);
+                  if (mediumQuestions) {
+                    mediumQuestions.forEach(q => {
+                      if (!seenIds.has(q.id)) {
+                        allQuestions.push(q);
+                        seenIds.add(q.id);
+                      }
+                    });
+                  }
                 }
                 if (distribution.hard > 0) {
                   const { data: hardQuestions } = await getRandomQuestions(undefined, 'hard', distribution.hard);
-                  if (hardQuestions) allQuestions.push(...hardQuestions);
+                  if (hardQuestions) {
+                    hardQuestions.forEach(q => {
+                      if (!seenIds.has(q.id)) {
+                        allQuestions.push(q);
+                        seenIds.add(q.id);
+                      }
+                    });
+                  }
                 }
                 
                 if (allQuestions.length > 0) {
@@ -413,9 +591,8 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerText}>Rank: {rank}</Text>
         <Text style={styles.headerText}>Question {currentQuestionIndex + 1}/{questions.length}</Text>
-        <Text style={styles.headerText}>Score: {score}</Text>
+        <Text style={styles.headerText}>Score: {sessionScore}</Text>
       </View>
 
       {/* Game Area */}
@@ -509,6 +686,32 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Feedback Icon Overlay */}
+      {showFeedbackIcon && (
+        <Animated.View 
+          style={[
+            styles.feedbackOverlay,
+            {
+              opacity: feedbackOpacityAnim,
+              transform: [{ scale: feedbackScaleAnim }],
+            },
+          ]}
+          pointerEvents="none"
+        >
+          {isCorrectAnswer ? (
+            // Ornate Roman Green Checkmark
+            <View style={styles.checkmark}>
+              <RomanCheckmark />
+            </View>
+          ) : (
+            // Ornate Roman Red X
+            <View style={styles.cross}>
+              <RomanCross />
+            </View>
+          )}
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -550,7 +753,8 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around', // Changed from 'space-between' for more spacing
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: '#fff',
@@ -561,6 +765,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    gap: 30, // Add explicit gap between items
   },
   headerText: {
     fontSize: 18,
@@ -768,5 +973,33 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+  feedbackOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  checkmark: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#7B8866',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  cross: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#8B4C4C',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
 });
