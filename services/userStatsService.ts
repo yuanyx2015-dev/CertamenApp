@@ -4,6 +4,7 @@ import { getCurrentUser } from './authService';
 export interface UserStats {
   id: string;
   user_id: string;
+  username: string;
   score: number;
   rank: string;
   win_streak: number;
@@ -42,11 +43,12 @@ export const getCurrentUserStats = async () => {
 };
 
 // Create initial user stats
-export const createUserStats = async (userId: string) => {
+export const createUserStats = async (userId: string, username?: string) => {
   const { data, error } = await supabase
     .from('user_stats')
     .insert({
       user_id: userId,
+      username: username || 'User',
       score: 0,
       rank: 'Miles',
       win_streak: 0,
@@ -118,7 +120,12 @@ export const getOrCreateUserStats = async (userId: string) => {
   if (error && (error.code === 'PGRST116' || error.message?.includes('0 rows') || error.message?.includes('No rows'))) {
     // Stats don't exist, create them
     console.log('Creating new user stats for user:', userId);
-    return createUserStats(userId);
+    
+    // Try to get username from current user
+    const user = await getCurrentUser();
+    const username = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+    
+    return createUserStats(userId, username);
   }
 
   if (error) {
