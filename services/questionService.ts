@@ -22,7 +22,7 @@ export const getRandomQuestions = async (
   const { data, error } = await supabase.rpc('get_random_questions', {
     p_category: category || null,
     p_difficulty: difficulty || null,
-    p_limit: limit
+    p_limit: limit  // Matches the actual SQL function parameter name
   });
 
   if (error) {
@@ -129,36 +129,30 @@ export const deleteQuestion = async (id: string) => {
   return { error: null };
 };
 
-// Increment times_asked counter
+// Increment times_asked counter using PostgreSQL function
 export const incrementTimesAsked = async (id: string) => {
-  const { data, error } = await supabase
-    .from('questions')
-    .update({ times_asked: supabase.raw('times_asked + 1') })
-    .eq('id', id)
-    .select()
-    .single();
+  const { error } = await supabase.rpc('increment_times_asked', {
+    question_id: id
+  });
 
   if (error) {
     console.error('Error incrementing times_asked:', error);
-    return { data: null, error };
+    return { error };
   }
 
-  return { data, error: null };
+  return { error: null };
 };
 
-// Increment times_correct counter
+// Increment times_correct counter using PostgreSQL function
 export const incrementTimesCorrect = async (id: string) => {
-  const { data, error } = await supabase
-    .from('questions')
-    .update({ times_correct: supabase.raw('times_correct + 1') })
-    .eq('id', id)
-    .select()
-    .single();
+  const { error } = await supabase.rpc('increment_times_correct', {
+    question_id: id
+  });
 
   if (error) {
     console.error('Error incrementing times_correct:', error);
-    return { data: null, error };
+    return { error };
   }
 
-  return { data, error: null };
+  return { error: null };
 };
