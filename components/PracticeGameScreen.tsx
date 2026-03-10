@@ -243,11 +243,11 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
   // Get question difficulty distribution based on rank
   const getQuestionDistribution = (rank: string, totalQuestions: number = 10) => {
     const distributions: Record<string, { easy: number; medium: number; hard: number }> = {
-      'Miles': { easy: 0.9, medium: 0.1, hard: 0 },
-      'Decanus': { easy: 0.7, medium: 0.25, hard: 0.05 },
-      'Optio': { easy: 0.45, medium: 0.4, hard: 0.15 },
+      'Miles': { easy: 0.8, medium: 0.2, hard: 0 },
+      'Decanus': { easy: 0.6, medium: 0.4, hard: 0 },
+      'Optio': { easy: 0.4, medium: 0.6, hard: 0 },
       'Centurio': { easy: 0.2, medium: 0.6, hard: 0.2 },
-      'Primus Pilus': { easy: 0, medium: 0.5, hard: 0.5 },
+      'Primus Pilus': { easy: 0, medium: 0.4, hard: 0.6 },
       'Praefectus Castrorum': { easy: 0, medium: 0.2, hard: 0.8 },
       'Legatus Legionis': { easy: 0, medium: 0, hard: 1.0 }
     };
@@ -843,7 +843,7 @@ const styles = StyleSheet.create({
   optionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     width: '100%',
     maxWidth: 600,
     gap: 15,
