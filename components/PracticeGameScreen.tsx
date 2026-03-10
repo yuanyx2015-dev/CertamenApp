@@ -843,7 +843,7 @@ const styles = StyleSheet.create({
   optionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     width: '100%',
     maxWidth: 600,
     gap: 15,
