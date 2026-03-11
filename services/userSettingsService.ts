@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface UserSettings {
   user_id: string;
@@ -12,48 +12,42 @@ export interface UserSettings {
   updated_at?: string;
 }
 
-// Get user settings from database (or create default if doesn't exist)
+const STORAGE_KEY = 'user_settings';
+
+// Helper function to get storage key for a user
+const getUserStorageKey = (userId: string) => `${STORAGE_KEY}_${userId}`;
+
+// Default settings
+const getDefaultSettings = (userId: string): UserSettings => ({
+  user_id: userId,
+  num_tossups: 20,
+  wrong_questions_only: false,
+  sound_enabled: true,
+  notifications_enabled: true,
+  theme: 'light',
+  language: 'en',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+});
+
+// Get user settings from localStorage (or create default if doesn't exist)
 export const getOrCreateUserSettings = async (userId: string) => {
   try {
-    // Try to get existing settings
-    const { data, error } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    const storageKey = getUserStorageKey(userId);
+    const settingsJson = await AsyncStorage.getItem(storageKey);
 
-    if (error) {
-      // If no settings found, create default settings
-      if (error.code === 'PGRST116') {
-        const { data: newSettings, error: createError } = await supabase
-          .from('user_settings')
-          .insert({
-            user_id: userId,
-            num_tossups: 20,
-            wrong_questions_only: false,
-            sound_enabled: true,
-            notifications_enabled: true,
-            theme: 'light',
-            language: 'en',
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating user settings:', createError);
-          return { data: null, error: createError };
-        }
-
-        return { data: newSettings, error: null };
-      }
-
-      console.error('Error fetching user settings:', error);
-      return { data: null, error };
+    if (settingsJson) {
+      // Parse and return existing settings
+      const data = JSON.parse(settingsJson) as UserSettings;
+      return { data, error: null };
+    } else {
+      // Create default settings
+      const newSettings = getDefaultSettings(userId);
+      await AsyncStorage.setItem(storageKey, JSON.stringify(newSettings));
+      return { data: newSettings, error: null };
     }
-
-    return { data, error: null };
   } catch (error: any) {
-    console.error('Unexpected error in getOrCreateUserSettings:', error);
+    console.error('Error in getOrCreateUserSettings:', error);
     return { data: null, error };
   }
 };
@@ -64,21 +58,28 @@ export const updateUserSettings = async (
   settings: Partial<Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>>
 ) => {
   try {
-    const { data, error } = await supabase
-      .from('user_settings')
-      .update(settings)
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating user settings:', error);
-      return { data: null, error };
+    const storageKey = getUserStorageKey(userId);
+    
+    // Get existing settings
+    const { data: existingSettings, error: getError } = await getOrCreateUserSettings(userId);
+    
+    if (getError || !existingSettings) {
+      return { data: null, error: getError || new Error('Failed to get existing settings') };
     }
 
-    return { data, error: null };
+    // Merge with new settings
+    const updatedSettings: UserSettings = {
+      ...existingSettings,
+      ...settings,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Save to localStorage
+    await AsyncStorage.setItem(storageKey, JSON.stringify(updatedSettings));
+
+    return { data: updatedSettings, error: null };
   } catch (error: any) {
-    console.error('Unexpected error in updateUserSettings:', error);
+    console.error('Error updating user settings:', error);
     return { data: null, error };
   }
 };
