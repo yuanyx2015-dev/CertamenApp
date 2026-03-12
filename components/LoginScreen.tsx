@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import { signInWithGoogle, signInWithApple } from '../services/authService';
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
-import { migrateUserSettingsToLocalStorage } from '../services/settingsMigration';
+import { getOrCreateProfile } from '../services/profileService';
 
 // Required for Expo
 WebBrowser.maybeCompleteAuthSession();
@@ -32,10 +32,10 @@ export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
       return;
     }
     if (user) {
-      // First, migrate any existing settings from Supabase to localStorage
-      await migrateUserSettingsToLocalStorage(user.id);
+      // Create/update user profile in database
+      await getOrCreateProfile(user);
       
-      // Then initialize user stats and settings
+      // Initialize user stats and settings
       await getOrCreateUserStats(user.id);
       await getOrCreateUserSettings(user.id);
       
@@ -56,10 +56,10 @@ export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
       return;
     }
     if (user) {
-      // First, migrate any existing settings from Supabase to localStorage
-      await migrateUserSettingsToLocalStorage(user.id);
+      // Create/update user profile in database
+      await getOrCreateProfile(user);
       
-      // Then initialize user stats and settings
+      // Initialize user stats and settings
       await getOrCreateUserStats(user.id);
       await getOrCreateUserSettings(user.id);
       
