@@ -160,6 +160,49 @@ function ProfileIcon() {
   );
 }
 
+// Scroll/Book Icon for Review
+function ScrollIcon() {
+  return (
+    <Svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+      {/* Scroll roll left */}
+      <Circle 
+        cx="18" 
+        cy="30" 
+        r="4" 
+        fill="#8b7355" 
+        stroke="#6a5a4a" 
+        strokeWidth="1"
+      />
+      {/* Scroll roll right */}
+      <Circle 
+        cx="42" 
+        cy="30" 
+        r="4" 
+        fill="#8b7355" 
+        stroke="#6a5a4a" 
+        strokeWidth="1"
+      />
+      {/* Parchment center */}
+      <Rect 
+        x="18" 
+        y="18" 
+        width="24" 
+        height="24" 
+        fill="#f4e8d0" 
+        stroke="#c9a961" 
+        strokeWidth="1"
+      />
+      {/* Lines on parchment */}
+      <Path 
+        d="M 22 24 L 38 24 M 22 28 L 38 28 M 22 32 L 38 32 M 22 36 L 35 36" 
+        stroke="#9d856b" 
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 // Animated Button Component
 function AnimatedModeButton({ icon, label, onPress }: { icon: React.ReactNode; label: string; onPress: () => void }) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -216,8 +259,62 @@ function AnimatedModeButton({ icon, label, onPress }: { icon: React.ReactNode; l
 }
 
 export function MainMenuScreen({ onNavigate }: { onNavigate?: (screen: string) => void }) {
+  // Profile button animation
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const bgColorAnim = React.useRef(new Animated.Value(0)).current;
+
+  const handleProfilePressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bgColorAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const handleProfilePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.timing(bgColorAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const profileBackgroundColor = bgColorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
+  });
+
   return (
     <View style={styles.container}>
+      {/* Profile Button */}
+      <View style={styles.profileContainer}>
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+          <TouchableOpacity 
+            onPressIn={handleProfilePressIn}
+            onPressOut={handleProfilePressOut}
+            onPress={() => onNavigate?.('profile')}
+            activeOpacity={1}
+          >
+            <Animated.View style={[styles.profileButton, { backgroundColor: profileBackgroundColor }]}>
+              <ProfileIcon />
+              <Text style={styles.profileText}>Profile</Text>
+            </Animated.View>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+
       {/* Center Game Mode Buttons */}
       <View style={styles.centerContainer}>
         {/* Practice Mode Button */}
@@ -227,18 +324,11 @@ export function MainMenuScreen({ onNavigate }: { onNavigate?: (screen: string) =
           onPress={() => onNavigate?.('practice')} 
         />
 
-        {/* PvP Mode Button */}
+        {/* Review Button */}
         <AnimatedModeButton 
-          icon={<CrossedSpearsIcon />} 
-          label="PvP Mode" 
-          onPress={() => onNavigate?.('pvp')} 
-        />
-
-        {/* Offline Mode Button */}
-        <AnimatedModeButton 
-          icon={<RoundShieldIcon />} 
-          label="Offline Mode" 
-          onPress={() => onNavigate?.('offline')} 
+          icon={<ScrollIcon />} 
+          label="Review Questions" 
+          onPress={() => onNavigate?.('review')} 
         />
       </View>
     </View>
@@ -260,6 +350,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     gap: 24,
+    marginTop: -60,
+  },
+  profileContainer: {
+    alignItems: 'flex-end',
+    marginBottom: 24,
+  },
+  profileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.3)',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  profileText: {
+    fontSize: 14,
+    color: '#3a3a3a',
+    letterSpacing: 0.5,
   },
   modeButton: {
     width: '100%',

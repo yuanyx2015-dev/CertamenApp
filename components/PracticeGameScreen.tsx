@@ -5,6 +5,7 @@ import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
+import { markQuestionAsWrong } from '../services/questionReviewService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -413,6 +414,12 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       }
     } else {
       setStatusText('Wrong! Better luck next time.');
+      
+      // Track wrong answer in database
+      const user = await getCurrentUser();
+      if (user && questions[currentQuestionIndex]) {
+        await markQuestionAsWrong(user.id, questions[currentQuestionIndex].id);
+      }
     }
   };
 

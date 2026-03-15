@@ -54,7 +54,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   );
 }
 
-export function OfflineMatchScreen({ onNavigate, previousScreen }: { onNavigate?: (screen: string) => void; previousScreen?: string }) {
+export function SimulationMatchScreen({ onNavigate, previousScreen }: { onNavigate?: (screen: string) => void; previousScreen?: string }) {
   return (
     <View style={styles.container}>
       {/* Settings Button - Top Right */}
@@ -67,7 +67,7 @@ export function OfflineMatchScreen({ onNavigate, previousScreen }: { onNavigate?
       {/* Centered Content */}
       <View style={styles.contentContainer}>
         {/* Title Text */}
-        <Text style={styles.titleText}>Offline Mode</Text>
+        <Text style={styles.titleText}>Simulation Mode</Text>
 
         {/* Difficulty Label */}
         <Text style={styles.difficultyLabel}>Difficulty Level</Text>
