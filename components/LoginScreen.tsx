@@ -95,13 +95,14 @@ export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
             onPress={handleGoogleLogin}
             disabled={isLoading}
           />
-          <LoginButton 
+          {/* Temporarily removed Apple and Instagram login buttons */}
+          {/* <LoginButton 
             icon={<Apple />} 
             label={isLoading ? "Signing in..." : "Apple"} 
             onPress={handleAppleLogin}
             disabled={isLoading}
-          />
-          <LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} disabled={isLoading} />
+          /> */}
+          {/* <LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} disabled={isLoading} /> */}
         </View>
       </View>
     </View>
@@ -220,6 +221,7 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     gap: 12,
+    alignItems: 'center',
   },
   button: {
     flexDirection: 'row',
@@ -236,6 +238,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
+    minWidth: 200,
   },
   iconContainer: {
     width: 20,
