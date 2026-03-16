@@ -174,3 +174,27 @@ export const getProfileByEmail = async (email: string): Promise<{ data: Profile 
     return { data: null, error };
   }
 };
+
+/**
+ * Search for a user by username (for friend matches)
+ */
+export const searchUserByUsername = async (username: string): Promise<{ data: Profile | null; error: any }> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url')
+      .eq('username', username)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return { data: null, error: { message: 'User not found' } };
+      }
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  } catch (error: any) {
+    return { data: null, error };
+  }
+};

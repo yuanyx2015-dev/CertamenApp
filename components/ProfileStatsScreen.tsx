@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, UserStats } from '../services/userStatsService';
+import { getProfileByEmail, Profile } from '../services/profileService';
 
 function AnimatedButton({ label, onPress }: { label: string; onPress: () => void }) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -58,6 +59,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
 
 export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { onNavigate?: (screen: string) => void; previousScreen?: string; onLogout?: () => void }) {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [userName, setUserName] = useState('___');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -67,9 +69,20 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
       
       const user = await getCurrentUser();
       if (user) {
-        // Get user name from email or metadata
-        const displayName = user.user_metadata?.name || user.email?.split('@')[0] || 'User';
-        setUserName(displayName);
+        // Load profile from database
+        if (user.email) {
+          const { data: profileData } = await getProfileByEmail(user.email);
+          if (profileData) {
+            setProfile(profileData);
+            setUserName(profileData.display_name || profileData.username || 'User');
+          }
+        }
+
+        // Fallback to user metadata if profile not found
+        if (!profile) {
+          const displayName = user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+          setUserName(displayName);
+        }
 
         // Load user stats
         const { data: stats } = await getOrCreateUserStats(user.id);

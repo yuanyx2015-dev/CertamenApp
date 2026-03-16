@@ -11,84 +11,21 @@ import { RandomMatchScreen } from './RandomMatchScreen';
 import { LoginScreen } from './LoginScreen';
 import { VisitorMatchScreen } from './VisitorMatchScreen';
 import { HomeMatchScreen } from './HomeMatchScreen';
-import { OfflineMatchScreen } from './OfflineMatchScreen';
+import { SimulationMatchScreen } from './SimulationMatchScreen';
 import { PracticeModeScreen } from './PracticeModeScreen';
 import { PracticeGameScreen } from './PracticeGameScreen';
 import { SettingsScreen } from './SettingsScreen';
+import { ReviewCategoryScreen } from './ReviewCategoryScreen';
+import { CategoryQuestionsScreen } from './CategoryQuestionsScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
 
 const { height } = Dimensions.get('window');
 
-function ProfileIcon() {
-  return (
-    <Svg width="24" height="24" viewBox="0 0 60 60" fill="none">
-      {/* Head */}
-      <Circle 
-        cx="30" 
-        cy="20" 
-        r="8" 
-        fill="#c9a961" 
-        stroke="#9d856b" 
-        strokeWidth="1.5"
-      />
-      {/* Body/Shoulders */}
-      <Path 
-        d="M 15 45 Q 15 32 30 32 Q 45 32 45 45 L 15 45 Z" 
-        fill="#c9a961" 
-        stroke="#9d856b" 
-        strokeWidth="1.5"
-      />
-    </Svg>
-  );
-}
-
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const previousScreen = useRef('login');
-  
-  // Profile button animation
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const bgColorAnim = useRef(new Animated.Value(0)).current;
-
-  const handleProfilePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 0.95,
-        useNativeDriver: true,
-      }),
-      Animated.timing(bgColorAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  };
-
-  const handleProfilePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-      }),
-      Animated.timing(bgColorAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  };
-
-  const profileBackgroundColor = bgColorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
-  });
-
-  // Reset Profile button animation when screen changes
-  useEffect(() => {
-    scaleAnim.setValue(1);
-    bgColorAnim.setValue(0);
-  }, [currentScreen]);
 
   // Check for existing session on mount and listen for auth state changes
   useEffect(() => {
@@ -124,10 +61,13 @@ export function RomanBackground() {
     }
   };
 
-  const handleNavigate = (screen: string) => {
+  const handleNavigate = (screen: string, category?: string) => {
     // Only update previous screen if we're not already on settings
     if (currentScreen !== 'settings') {
       previousScreen.current = currentScreen;
+    }
+    if (category) {
+      setSelectedCategory(category);
     }
     setCurrentScreen(screen);
   };
@@ -160,11 +100,16 @@ export function RomanBackground() {
       case 'pvp':
         return <MatchSelectionScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'offline':
-        return <OfflineMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'simulation':
+        return <SimulationMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'profile':
         return <ProfileStatsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} onLogout={handleLogout} />;
       case 'settings':
         return <SettingsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+      case 'review':
+        return <ReviewCategoryScreen onNavigate={handleNavigate} />;
+      case 'categoryQuestions':
+        return <CategoryQuestionsScreen onNavigate={handleNavigate} category={selectedCategory} />;
       case 'random':
         return <RandomMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'friendly':
@@ -200,25 +145,6 @@ export function RomanBackground() {
       <View style={styles.headerContainer}>
         <LaurelBranches />
       </View>
-
-      {/* Profile Button - Only on main menu screen */}
-      {currentScreen === 'main' && (
-        <View style={styles.profileContainer}>
-          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-            <TouchableOpacity 
-              onPressIn={handleProfilePressIn}
-              onPressOut={handleProfilePressOut}
-              onPress={() => handleNavigate('profile')}
-              activeOpacity={1}
-            >
-              <Animated.View style={[styles.profileButton, { backgroundColor: profileBackgroundColor }]}>
-                <ProfileIcon />
-                <Text style={styles.profileText}>Profile</Text>
-              </Animated.View>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      )}
 
       {/* Main content area */}
       <View style={styles.contentContainer}>
@@ -286,31 +212,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     zIndex: 10,
-  },
-  profileContainer: {
-    position: 'absolute',
-    top: 125,
-    right: 48,
-    zIndex: 15,
-  },
-  profileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(201, 169, 97, 0.3)',
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  profileText: {
-    fontSize: 14,
-    color: '#3a3a3a',
-    letterSpacing: 0.5,
   },
 });

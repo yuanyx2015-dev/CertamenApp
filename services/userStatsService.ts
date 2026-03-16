@@ -5,6 +5,8 @@ export interface UserStats {
   id: string;
   user_id: string;
   username: string;
+  profile_id?: string;
+  email?: string;
   score: number;
   rank: string;
   win_streak: number;
@@ -43,12 +45,14 @@ export const getCurrentUserStats = async () => {
 };
 
 // Create initial user stats
-export const createUserStats = async (userId: string, username?: string) => {
+export const createUserStats = async (userId: string, username?: string, profileId?: string, email?: string) => {
   const { data, error } = await supabase
     .from('user_stats')
     .insert({
       user_id: userId,
       username: username || 'User',
+      profile_id: profileId || null,
+      email: email || null,
       score: 0,
       rank: 'Miles',
       win_streak: 0,
@@ -121,11 +125,26 @@ export const getOrCreateUserStats = async (userId: string) => {
     // Stats don't exist, create them
     console.log('Creating new user stats for user:', userId);
     
-    // Try to get username from current user
+    // Try to get username and profile info from current user
     const user = await getCurrentUser();
     const username = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+    const email = user?.email || null;
     
-    return createUserStats(userId, username);
+    // Try to get profile_id by email
+    let profileId = null;
+    if (email) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+      
+      if (profile) {
+        profileId = profile.id;
+      }
+    }
+    
+    return createUserStats(userId, username, profileId, email);
   }
 
   if (error) {
