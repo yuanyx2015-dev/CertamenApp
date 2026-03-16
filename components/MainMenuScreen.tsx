@@ -317,10 +317,10 @@ export function MainMenuScreen({ onNavigate }: { onNavigate?: (screen: string) =
 
       {/* Center Game Mode Buttons */}
       <View style={styles.centerContainer}>
-        {/* Practice Mode Button */}
+        {/* Practice Button */}
         <AnimatedModeButton 
           icon={<SingleSwordIcon />} 
-          label="Practice Mode" 
+          label="Practice" 
           onPress={() => onNavigate?.('practice')} 
         />
 
