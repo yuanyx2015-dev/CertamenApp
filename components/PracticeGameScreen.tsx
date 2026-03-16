@@ -926,6 +926,7 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     marginBottom: 20,
     letterSpacing: 1,
+    textAlign: 'center',
   },
   gameOverScore: {
     fontSize: 24,
