@@ -5,7 +5,7 @@ import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
-import { markQuestionAsWrong } from '../services/questionReviewService';
+import { markQuestionAsWrong, getAllWrongQuestions } from '../services/questionReviewService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -100,6 +100,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
   const [timeRemaining, setTimeRemaining] = useState(15);
   const [showFeedbackIcon, setShowFeedbackIcon] = useState(false);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
+  const [isWrongQuestionsMode, setIsWrongQuestionsMode] = useState(false); // Track if using wrong questions mode
   
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -117,6 +118,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       // Load user stats and settings first
       let currentRank = 'Miles';
       let totalQuestions = 20; // Default
+      let wrongQuestionsOnly = false;
       const user = await getCurrentUser();
       if (user) {
         const { data: stats } = await getOrCreateUserStats(user.id);
@@ -126,75 +128,92 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
           currentRank = stats.rank;
         }
         
-        // Get user settings for number of tossups
+        // Get user settings for number of tossups and wrong questions mode
         const { data: settings } = await getOrCreateUserSettings(user.id);
         if (settings) {
           totalQuestions = settings.num_tossups;
+          wrongQuestionsOnly = settings.wrong_questions_only;
+          setIsWrongQuestionsMode(wrongQuestionsOnly);
         }
       }
       
-      // Get question distribution based on rank
-      const distribution = getQuestionDistribution(currentRank, totalQuestions);
-      
-      // Fetch questions for each difficulty level
-      // Note: Each difficulty query returns unique questions, and since each question
-      // has only one difficulty level, there won't be duplicates across queries.
       const allQuestions: Question[] = [];
       const seenIds = new Set<string>(); // Extra safeguard to prevent duplicates
       
       try {
-        // Fetch easy questions
-        if (distribution.easy > 0) {
-          const { data: easyQuestions, error: easyError } = await getRandomQuestions(
-            undefined, 
-            'easy', 
-            distribution.easy
-          );
-          if (easyError) throw easyError;
-          if (easyQuestions) {
-            // Filter out any duplicates (defensive programming)
-            easyQuestions.forEach(q => {
+        if (wrongQuestionsOnly && user) {
+          // Fetch only wrong questions
+          const { data: wrongQuestions, error: wrongError } = await getAllWrongQuestions(user.id, totalQuestions);
+          if (wrongError) throw wrongError;
+          if (wrongQuestions && wrongQuestions.length > 0) {
+            wrongQuestions.forEach(q => {
               if (!seenIds.has(q.id)) {
                 allQuestions.push(q);
                 seenIds.add(q.id);
               }
             });
+          } else {
+            setLoadError('You have no wrong questions to review! Try practicing normally first.');
+            setIsLoading(false);
+            return;
           }
-        }
-        
-        // Fetch medium questions
-        if (distribution.medium > 0) {
-          const { data: mediumQuestions, error: mediumError } = await getRandomQuestions(
-            undefined, 
-            'medium', 
-            distribution.medium
-          );
-          if (mediumError) throw mediumError;
-          if (mediumQuestions) {
-            mediumQuestions.forEach(q => {
-              if (!seenIds.has(q.id)) {
-                allQuestions.push(q);
-                seenIds.add(q.id);
-              }
-            });
+        } else {
+          // Original logic: Get question distribution based on rank
+          const distribution = getQuestionDistribution(currentRank, totalQuestions);
+          
+          // Fetch easy questions
+          if (distribution.easy > 0) {
+            const { data: easyQuestions, error: easyError } = await getRandomQuestions(
+              undefined, 
+              'easy', 
+              distribution.easy
+            );
+            if (easyError) throw easyError;
+            if (easyQuestions) {
+              // Filter out any duplicates (defensive programming)
+              easyQuestions.forEach(q => {
+                if (!seenIds.has(q.id)) {
+                  allQuestions.push(q);
+                  seenIds.add(q.id);
+                }
+              });
+            }
           }
-        }
-        
-        // Fetch hard questions
-        if (distribution.hard > 0) {
-          const { data: hardQuestions, error: hardError } = await getRandomQuestions(
-            undefined, 
-            'hard', 
-            distribution.hard
-          );
-          if (hardError) throw hardError;
-          if (hardQuestions) {
-            hardQuestions.forEach(q => {
-              if (!seenIds.has(q.id)) {
-                allQuestions.push(q);
-                seenIds.add(q.id);
-              }
-            });
+          
+          // Fetch medium questions
+          if (distribution.medium > 0) {
+            const { data: mediumQuestions, error: mediumError } = await getRandomQuestions(
+              undefined, 
+              'medium', 
+              distribution.medium
+            );
+            if (mediumError) throw mediumError;
+            if (mediumQuestions) {
+              mediumQuestions.forEach(q => {
+                if (!seenIds.has(q.id)) {
+                  allQuestions.push(q);
+                  seenIds.add(q.id);
+                }
+              });
+            }
+          }
+          
+          // Fetch hard questions
+          if (distribution.hard > 0) {
+            const { data: hardQuestions, error: hardError } = await getRandomQuestions(
+              undefined, 
+              'hard', 
+              distribution.hard
+            );
+            if (hardError) throw hardError;
+            if (hardQuestions) {
+              hardQuestions.forEach(q => {
+                if (!seenIds.has(q.id)) {
+                  allQuestions.push(q);
+                  seenIds.add(q.id);
+                }
+              });
+            }
           }
         }
         
@@ -397,28 +416,37 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     triggerFeedbackAnimation(option.isCorrect);
 
     if (option.isCorrect) {
-      const newSessionScore = sessionScore + 10;
-      setSessionScore(newSessionScore);
-      setStatusText('Correct! +10 points');
-      
-      // Update cumulative score in database
-      const user = await getCurrentUser();
-      if (user) {
-        const newCumulativeScore = cumulativeScore + 10;
-        const newRank = calculateRank(newCumulativeScore);
-        const { error } = await updateUserScore(user.id, newCumulativeScore, newRank);
-        if (!error) {
-          setCumulativeScore(newCumulativeScore);
-          setRank(newRank);
+      // In wrong questions practice mode, don't award points or update database
+      if (isWrongQuestionsMode) {
+        setStatusText('Correct!');
+      } else {
+        // Normal mode: award points and update database
+        const pointsAwarded = 10;
+        const newSessionScore = sessionScore + pointsAwarded;
+        setSessionScore(newSessionScore);
+        setStatusText(`Correct! +${pointsAwarded} points`);
+        
+        // Update cumulative score in database
+        const user = await getCurrentUser();
+        if (user) {
+          const newCumulativeScore = cumulativeScore + pointsAwarded;
+          const newRank = calculateRank(newCumulativeScore);
+          const { error } = await updateUserScore(user.id, newCumulativeScore, newRank);
+          if (!error) {
+            setCumulativeScore(newCumulativeScore);
+            setRank(newRank);
+          }
         }
       }
     } else {
       setStatusText('Wrong! Better luck next time.');
       
-      // Track wrong answer in database
-      const user = await getCurrentUser();
-      if (user && questions[currentQuestionIndex]) {
-        await markQuestionAsWrong(user.id, questions[currentQuestionIndex].id);
+      // Only track wrong answers in normal mode (not in wrong questions practice mode)
+      if (!isWrongQuestionsMode) {
+        const user = await getCurrentUser();
+        if (user && questions[currentQuestionIndex]) {
+          await markQuestionAsWrong(user.id, questions[currentQuestionIndex].id);
+        }
       }
     }
   };
@@ -497,7 +525,11 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       <View style={styles.container}>
         <View style={styles.gameOverContainer}>
           <Text style={styles.gameOverTitle}>Practice Complete!</Text>
-          <Text style={styles.gameOverScore}>Final Score: {sessionScore} / {questions.length * 10}</Text>
+          {!isWrongQuestionsMode && (
+            <Text style={styles.gameOverScore}>
+              Final Score: {sessionScore} / {questions.length * 10}
+            </Text>
+          )}
           <Text style={styles.gameOverRank}>Rank: {rank}</Text>
           
           <TouchableOpacity 
@@ -597,9 +629,11 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isWrongQuestionsMode && styles.headerCentered]}>
         <Text style={styles.headerText}>Question {currentQuestionIndex + 1}/{questions.length}</Text>
-        <Text style={styles.headerText}>Score: {sessionScore}</Text>
+        {!isWrongQuestionsMode && (
+          <Text style={styles.headerText}>Score: {sessionScore}</Text>
+        )}
       </View>
 
       {/* Game Area */}
@@ -774,6 +808,9 @@ const styles = StyleSheet.create({
     elevation: 3,
     gap: 30, // Add explicit gap between items
   },
+  headerCentered: {
+    justifyContent: 'center', // Center when only one item (wrong questions mode)
+  },
   headerText: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -926,6 +963,7 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     marginBottom: 20,
     letterSpacing: 1,
+    textAlign: 'center',
   },
   gameOverScore: {
     fontSize: 24,

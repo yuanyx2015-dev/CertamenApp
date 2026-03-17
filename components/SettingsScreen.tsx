@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, Switch, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserSettings, updateSetting } from '../services/userSettingsService';
+import { getAllWrongQuestions } from '../services/questionReviewService';
 
 function AnimatedButton({ label, onPress }: { label: string; onPress: () => void }) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -61,25 +62,41 @@ export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (s
   const [numTossups, setNumTossups] = React.useState(20);
   const [isLoading, setIsLoading] = React.useState(true);
   const [userId, setUserId] = React.useState<string | null>(null);
+  const [wrongQuestionCount, setWrongQuestionCount] = React.useState(0);
 
-  // Load settings from database on mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      setIsLoading(true);
-      const user = await getCurrentUser();
-      if (user) {
-        setUserId(user.id);
-        const { data: settings, error } = await getOrCreateUserSettings(user.id);
-        if (settings && !error) {
-          setWrongQuestionsOnly(settings.wrong_questions_only);
-          setNumTossups(settings.num_tossups);
-        }
+  // Extract loading logic into reusable function
+  const loadSettingsData = React.useCallback(async () => {
+    setIsLoading(true);
+    const user = await getCurrentUser();
+    if (user) {
+      setUserId(user.id);
+      const { data: settings, error } = await getOrCreateUserSettings(user.id);
+      if (settings && !error) {
+        setWrongQuestionsOnly(settings.wrong_questions_only);
+        setNumTossups(settings.num_tossups);
       }
-      setIsLoading(false);
-    };
-
-    loadSettings();
+      
+      // Fetch wrong question count (always refresh)
+      const { data: wrongQuestions } = await getAllWrongQuestions(user.id, 1000);
+      if (wrongQuestions) {
+        setWrongQuestionCount(wrongQuestions.length);
+      }
+    }
+    setIsLoading(false);
   }, []);
+
+  // Load settings on mount AND whenever component becomes visible
+  useEffect(() => {
+    loadSettingsData();
+  }, []); // Run on mount
+
+  // Refresh data when navigating back to this screen
+  useEffect(() => {
+    if (previousScreen) {
+      // If we came from another screen, refresh the data
+      loadSettingsData();
+    }
+  }, [previousScreen, loadSettingsData]);
 
   // Handle toggle change and save to database
   const handleWrongQuestionsToggle = async (value: boolean) => {
@@ -88,12 +105,31 @@ export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (s
     if (userId) {
       await updateSetting(userId, 'wrong_questions_only', value);
     }
+    
+    // Auto-adjust number of questions when toggling
+    if (value && wrongQuestionCount > 0) {
+      // When toggling ON: set to wrong question count (capped at 50)
+      const newNumQuestions = Math.min(wrongQuestionCount, 50);
+      setNumTossups(newNumQuestions);
+      if (userId) {
+        await updateSetting(userId, 'num_tossups', newNumQuestions);
+      }
+    } else if (!value && numTossups < 10) {
+      // When toggling OFF: ensure minimum is 10
+      setNumTossups(10);
+      if (userId) {
+        await updateSetting(userId, 'num_tossups', 10);
+      }
+    }
   };
 
   // Handle number of tossups change
   const handleNumTossupsChange = async (newValue: number) => {
-    // Clamp between 10 and 50
-    const clampedValue = Math.max(10, Math.min(50, newValue));
+    // Calculate min and max based on wrong questions toggle
+    const minQuestions = wrongQuestionsOnly ? Math.min(5, wrongQuestionCount) : 10;
+    const maxQuestions = wrongQuestionsOnly ? Math.min(wrongQuestionCount, 50) : 50;
+    // Clamp between minQuestions and maxQuestions
+    const clampedValue = Math.max(minQuestions, Math.min(maxQuestions, newValue));
     setNumTossups(clampedValue);
     
     if (userId) {
@@ -118,9 +154,9 @@ export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (s
 
         {/* Settings Options */}
         <View style={styles.settingsContainer}>
-          {/* # of tossups with counter */}
+          {/* # of questions with counter */}
           <View style={styles.counterRow}>
-            <Text style={styles.optionText}># of tossups</Text>
+            <Text style={styles.optionText}># of questions</Text>
             <View style={styles.counterControls}>
               <TouchableOpacity 
                 style={styles.counterButton}
@@ -139,6 +175,11 @@ export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (s
               </TouchableOpacity>
             </View>
           </View>
+          {wrongQuestionsOnly && (
+            <Text style={styles.helperText}>
+              Max: {Math.min(wrongQuestionCount, 50)} (based on your wrong questions)
+            </Text>
+          )}
 
           {/* Wrong questions only with toggle */}
           <View style={styles.toggleRow}>
@@ -146,8 +187,8 @@ export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (s
             <Switch
               value={wrongQuestionsOnly}
               onValueChange={handleWrongQuestionsToggle}
-              trackColor={{ false: '#d4d4d4', true: 'rgba(234, 186, 175, 0.7)' }}
-              thumbColor={wrongQuestionsOnly ? '#E5C66A' : '#f4f3f4'}
+              trackColor={{ false: '#d4d4d4', true: '#c9a961' }}
+              thumbColor={wrongQuestionsOnly ? '#d4b76a' : '#f4f3f4'}
               ios_backgroundColor="#d4d4d4"
             />
           </View>
@@ -195,6 +236,12 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     fontSize: 16,
     letterSpacing: 0.5,
+  },
+  helperText: {
+    color: '#8b7355',
+    fontSize: 12,
+    marginTop: -16,
+    fontStyle: 'italic',
   },
   toggleRow: {
     flexDirection: 'row',
