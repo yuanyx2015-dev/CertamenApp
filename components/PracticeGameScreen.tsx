@@ -161,58 +161,25 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
           // Original logic: Get question distribution based on rank
           const distribution = getQuestionDistribution(currentRank, totalQuestions);
           
-          // Fetch easy questions
-          if (distribution.easy > 0) {
-            const { data: easyQuestions, error: easyError } = await getRandomQuestions(
-              undefined, 
-              'easy', 
-              distribution.easy
-            );
-            if (easyError) throw easyError;
-            if (easyQuestions) {
-              // Filter out any duplicates (defensive programming)
-              easyQuestions.forEach(q => {
-                if (!seenIds.has(q.id)) {
-                  allQuestions.push(q);
-                  seenIds.add(q.id);
-                }
-              });
-            }
-          }
-          
-          // Fetch medium questions
-          if (distribution.medium > 0) {
-            const { data: mediumQuestions, error: mediumError } = await getRandomQuestions(
-              undefined, 
-              'medium', 
-              distribution.medium
-            );
-            if (mediumError) throw mediumError;
-            if (mediumQuestions) {
-              mediumQuestions.forEach(q => {
-                if (!seenIds.has(q.id)) {
-                  allQuestions.push(q);
-                  seenIds.add(q.id);
-                }
-              });
-            }
-          }
-          
-          // Fetch hard questions
-          if (distribution.hard > 0) {
-            const { data: hardQuestions, error: hardError } = await getRandomQuestions(
-              undefined, 
-              'hard', 
-              distribution.hard
-            );
-            if (hardError) throw hardError;
-            if (hardQuestions) {
-              hardQuestions.forEach(q => {
-                if (!seenIds.has(q.id)) {
-                  allQuestions.push(q);
-                  seenIds.add(q.id);
-                }
-              });
+          // Fetch questions for each difficulty level
+          const difficulties: Array<{ level: 'easy' | 'medium' | 'hard', count: number }> = [
+            { level: 'easy', count: distribution.easy },
+            { level: 'medium', count: distribution.medium },
+            { level: 'hard', count: distribution.hard },
+          ];
+
+          for (const { level, count } of difficulties) {
+            if (count > 0) {
+              const { data: questions, error } = await getRandomQuestions(undefined, level, count);
+              if (error) throw error;
+              if (questions) {
+                questions.forEach(q => {
+                  if (!seenIds.has(q.id)) {
+                    allQuestions.push(q);
+                    seenIds.add(q.id);
+                  }
+                });
+              }
             }
           }
         }
