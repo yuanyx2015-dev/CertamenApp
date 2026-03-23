@@ -5,7 +5,7 @@ import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
-import { markQuestionAsWrong, getAllWrongQuestions } from '../services/questionReviewService';
+import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -101,6 +101,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
   const [showFeedbackIcon, setShowFeedbackIcon] = useState(false);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   const [isWrongQuestionsMode, setIsWrongQuestionsMode] = useState(false); // Track if using wrong questions mode
+  const [isPreviouslyWrong, setIsPreviouslyWrong] = useState(false); // Track if current question was previously answered wrong
   
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -249,7 +250,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
   };
 
   // Start question
-  const startQuestion = () => {
+  const startQuestion = async () => {
     if (currentQuestionIndex >= questions.length) {
       // Game over
       setStatusText('Practice Complete!');
@@ -263,9 +264,21 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     setDisplayedText('');
     charIndexRef.current = 0;
     setStatusText('Reading question...');
+    setIsPreviouslyWrong(false); // Reset indicator
 
     const currentQuestion = questions[currentQuestionIndex];
     fullTextRef.current = currentQuestion.question_text;
+
+    // Check if this question was previously answered wrong (only in normal mode)
+    if (!isWrongQuestionsMode) {
+      const user = await getCurrentUser();
+      if (user) {
+        const { data: wasWrong } = await isQuestionWrong(user.id, currentQuestion.id);
+        if (wasWrong) {
+          setIsPreviouslyWrong(true);
+        }
+      }
+    }
 
     // Prepare shuffled options
     const options = [
@@ -624,6 +637,11 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
 
         {/* Question Box */}
         <View style={styles.questionBox}>
+          {isPreviouslyWrong && !isWrongQuestionsMode && (
+            <View style={styles.previouslyWrongIndicator}>
+              <Text style={styles.previouslyWrongText}>Previously Incorrect</Text>
+            </View>
+          )}
           <Text style={styles.questionText}>
             {displayedText}
             {!isBuzzed && !isAnswered && charIndexRef.current < fullTextRef.current.length && (
@@ -817,6 +835,23 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     minHeight: 150,
     marginBottom: 30,
+    position: 'relative',
+  },
+  previouslyWrongIndicator: {
+    position: 'absolute',
+    top: -8,
+    right: 0,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 76, 76, 0.3)',
+    backgroundColor: 'rgba(139, 76, 76, 0.05)',
+  },
+  previouslyWrongText: {
+    fontSize: 12,
+    color: '#8B4C4C',
+    fontWeight: '600',
   },
   questionText: {
     fontSize: 20,

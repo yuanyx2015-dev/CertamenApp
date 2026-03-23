@@ -203,6 +203,36 @@ function ScrollIcon() {
   );
 }
 
+// AI Brain Icon for AI Tutor
+function AIBrainIcon() {
+  return (
+    <Svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+      {/* Brain outline */}
+      <Path 
+        d="M 20 25 Q 15 25 15 30 Q 15 35 20 35 Q 20 40 25 42 Q 30 44 35 42 Q 40 40 40 35 Q 45 35 45 30 Q 45 25 40 25 Q 40 20 35 18 Q 30 16 25 18 Q 20 20 20 25 Z" 
+        fill="#c9a961" 
+        stroke="#9d856b" 
+        strokeWidth="2"
+      />
+      {/* Brain detail lines */}
+      <Path 
+        d="M 25 23 Q 28 25 30 23 M 30 28 Q 33 26 35 28 M 25 33 Q 27 35 30 33" 
+        stroke="#9d856b" 
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* AI sparkle */}
+      <Path 
+        d="M 38 22 L 40 24 M 40 22 L 38 24" 
+        stroke="#f4e8d0" 
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 // Animated Button Component
 function AnimatedModeButton({ icon, label, onPress }: { icon: React.ReactNode; label: string; onPress: () => void }) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;

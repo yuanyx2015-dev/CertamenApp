@@ -49,6 +49,7 @@ export const getQuestion = async (id: string) => {
   return { data, error: null };
 };
 
+//everything here after is technically unnecessary, but keeping it for
 // Get all questions (with optional filters)
 export const getQuestions = async (filters?: {
   category?: string;
