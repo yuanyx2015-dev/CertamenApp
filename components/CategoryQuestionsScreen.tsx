@@ -15,6 +15,8 @@ import {
   markQuestionAsCorrect,
   QuestionWithStats 
 } from '../services/questionReviewService';
+import { getQuestionExplanation } from '../services/aiExplanationService';
+import { askAITutor, getAITutorUsage } from '../services/aiTutorService';
 
 interface CategoryQuestionsScreenProps {
   onNavigate?: (screen: string) => void;
@@ -27,6 +29,13 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
   const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [userId, setUserId] = useState<string>('');
+  const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(null);
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
+  const [customQuestion, setCustomQuestion] = useState('');
+  const [customAnswer, setCustomAnswer] = useState<string | null>(null);
+  const [isLoadingCustom, setIsLoadingCustom] = useState(false);
+  const [remainingQuestions, setRemainingQuestions] = useState(2);
 
   useEffect(() => {
     loadQuestions();
@@ -47,6 +56,12 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       const { data: wrong } = await getWrongQuestionsByCategory(user.id, category, 200);
       if (wrong) {
         setWrongQuestions(wrong);
+      }
+
+      // Load remaining custom questions
+      const { data: usage } = await getAITutorUsage(user.id);
+      if (usage) {
+        setRemainingQuestions(usage.remaining_questions);
       }
     }
     
@@ -77,6 +92,80 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
 
     // Reload questions
     await loadQuestions();
+  };
+
+  const handleExplainQuestion = async (questionText: string, correctAnswer: string, questionId: string) => {
+    // Toggle off if already expanded
+    if (expandedQuestionId === questionId) {
+      setExpandedQuestionId(null);
+      setAiExplanation(null);
+      setCustomQuestion('');
+      setCustomAnswer(null);
+      return;
+    }
+
+    setExpandedQuestionId(questionId);
+    setIsLoadingExplanation(true);
+    setAiExplanation(null);
+    setCustomQuestion('');
+    setCustomAnswer(null);
+
+    const { data, error } = await getQuestionExplanation(questionText, correctAnswer);
+
+    setIsLoadingExplanation(false);
+
+    if (error || !data) {
+      Alert.alert('Error', 'Failed to get AI explanation. Please try again.');
+      setExpandedQuestionId(null);
+      return;
+    }
+
+    setAiExplanation(data.explanation);
+  };
+
+  const handleAskCustomQuestion = async (questionText: string, correctAnswer: string) => {
+    if (!customQuestion.trim() || !userId) return;
+
+    if (remainingQuestions <= 0) {
+      Alert.alert(
+        'Daily Limit Reached',
+        'You have used your 2 custom questions for today. Come back tomorrow!'
+      );
+      return;
+    }
+
+    if (customQuestion.length > 200) {
+      Alert.alert('Question Too Long', 'Please keep your question under 200 characters.');
+      return;
+    }
+
+    setIsLoadingCustom(true);
+
+    // Create context-aware question for AI
+    const contextualQuestion = `Regarding this Certamen question: "${questionText}" (Answer: "${correctAnswer}")
+
+User asks: ${customQuestion}
+
+Please answer the user's question specifically about this question.`;
+
+    const { data, error } = await askAITutor(userId, contextualQuestion);
+
+    setIsLoadingCustom(false);
+
+    if (error || !data) {
+      Alert.alert('Error', 'Failed to get answer from AI. Please try again.');
+      return;
+    }
+
+    if (data.limitReached) {
+      Alert.alert('Daily Limit Reached', data.message || 'You have reached your daily limit.');
+      setRemainingQuestions(0);
+      return;
+    }
+
+    setCustomAnswer(data.answer);
+    setRemainingQuestions(data.remainingQuestions);
+    setCustomQuestion('');
   };
 
   const categoryNames: Record<string, string> = {
@@ -155,14 +244,83 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
                 <Text style={styles.answerText}>{question.correct_answer}</Text>
               </View>
 
-              <TouchableOpacity
-                style={styles.markCorrectButton}
-                onPress={() => handleMarkCorrect(question.id)}
-              >
-                <Text style={styles.markCorrectButtonText}>
-                  ✓ Mark as Mastered
-                </Text>
-              </TouchableOpacity>
+              {/* AI Explanation Section */}
+              {expandedQuestionId === question.id && (
+                <View style={styles.explanationContainer}>
+                  {isLoadingExplanation ? (
+                    <View style={styles.explanationLoading}>
+                      <ActivityIndicator size="small" color="#c9a961" />
+                      <Text style={styles.explanationLoadingText}>Getting AI explanation...</Text>
+                    </View>
+                  ) : aiExplanation ? (
+                    <>
+                      <Text style={styles.explanationText}>{aiExplanation}</Text>
+                      
+                      {/* Custom Question Input */}
+                      <View style={styles.customQuestionContainer}>
+                        <Text style={styles.customQuestionLabel}>
+                          Have a follow-up question? ({remainingQuestions}/2 remaining today)
+                        </Text>
+                        <View style={styles.customQuestionRow}>
+                          <TextInput
+                            style={styles.customQuestionInput}
+                            placeholder="Ask about this question..."
+                            placeholderTextColor="#999"
+                            value={customQuestion}
+                            onChangeText={setCustomQuestion}
+                            maxLength={200}
+                            editable={!isLoadingCustom && remainingQuestions > 0}
+                          />
+                          <TouchableOpacity
+                            style={[
+                              styles.askButton,
+                              (!customQuestion.trim() || isLoadingCustom || remainingQuestions <= 0) && styles.askButtonDisabled
+                            ]}
+                            onPress={() => handleAskCustomQuestion(question.question_text, question.correct_answer)}
+                            disabled={!customQuestion.trim() || isLoadingCustom || remainingQuestions <= 0}
+                          >
+                            <Text style={styles.askButtonText}>Ask</Text>
+                          </TouchableOpacity>
+                        </View>
+                        
+                        {/* Custom Answer */}
+                        {isLoadingCustom && (
+                          <View style={styles.customAnswerLoading}>
+                            <ActivityIndicator size="small" color="#c9a961" />
+                            <Text style={styles.customAnswerLoadingText}>Getting answer...</Text>
+                          </View>
+                        )}
+                        {customAnswer && (
+                          <View style={styles.customAnswerBox}>
+                            <Text style={styles.customAnswerText}>{customAnswer}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </>
+                  ) : null}
+                </View>
+              )}
+
+              {/* Action Buttons */}
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={styles.explainButton}
+                  onPress={() => handleExplainQuestion(question.question_text, question.correct_answer, question.id)}
+                >
+                  <Text style={styles.explainButtonText}>
+                    {expandedQuestionId === question.id ? '✕ Hide' : '🤖 Explain with AI'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.markCorrectButton}
+                  onPress={() => handleMarkCorrect(question.id)}
+                >
+                  <Text style={styles.markCorrectButtonText}>
+                    ✓ Mark as Mastered
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))
         )}
@@ -287,7 +445,120 @@ const styles = StyleSheet.create({
     color: '#c9a961',
     fontWeight: '500',
   },
+  explanationContainer: {
+    marginTop: 12,
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: 'rgba(201, 169, 97, 0.1)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#c9a961',
+    borderRadius: 6,
+  },
+  explanationLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  explanationLoadingText: {
+    fontSize: 14,
+    color: '#6a6a6a',
+    fontStyle: 'italic',
+  },
+  explanationText: {
+    fontSize: 14,
+    color: '#3a3a3a',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  customQuestionContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(201, 169, 97, 0.3)',
+  },
+  customQuestionLabel: {
+    fontSize: 12,
+    color: '#6a6a6a',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  customQuestionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  customQuestionInput: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.3)',
+    borderRadius: 8,
+    fontSize: 14,
+    color: '#3a3a3a',
+  },
+  askButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#c9a961',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  askButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  askButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  customAnswerLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  customAnswerLoadingText: {
+    fontSize: 14,
+    color: '#6a6a6a',
+    fontStyle: 'italic',
+  },
+  customAnswerBox: {
+    marginTop: 8,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderLeftWidth: 3,
+    borderLeftColor: '#c9a961',
+    borderRadius: 6,
+  },
+  customAnswerText: {
+    fontSize: 14,
+    color: '#3a3a3a',
+    lineHeight: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  explainButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(201, 169, 97, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.4)',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  explainButtonText: {
+    fontSize: 14,
+    color: '#8a7040',
+    letterSpacing: 0.5,
+    fontWeight: '500',
+  },
   markCorrectButton: {
+    flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 16,
     backgroundColor: 'rgba(100, 180, 100, 0.15)',
