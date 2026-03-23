@@ -101,7 +101,7 @@ Keep your answers clear, concise (2-4 sentences), and educational. If a question
 
     // Call Gemini API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
       {
         method: 'POST',
         headers: {
@@ -137,7 +137,7 @@ Keep your answers clear, concise (2-4 sentences), and educational. If a question
     const answer = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate an answer.'
 
     // Increment usage count
-    const { data: incrementData, error: incrementError } = await supabase.rpc('increment_ai_tutor_usage', {
+    const { error: incrementError } = await supabase.rpc('increment_ai_tutor_usage', {
       p_user_id: userId
     })
 

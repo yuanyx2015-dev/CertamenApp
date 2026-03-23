@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 
 export interface AITutorResponse {
   answer: string;
@@ -49,16 +49,29 @@ export const askAITutor = async (
   question: string
 ): Promise<{ data: AITutorResponse | null; error: any }> => {
   try {
-    const { data, error } = await supabase.functions.invoke('ai-tutor', {
-      body: {
-        userId,
-        question,
-      },
-    });
+    const { data: { session } } = await supabase.auth.getSession();
+    const authToken = session?.access_token ?? SUPABASE_ANON_KEY;
 
-    if (error) {
-      console.error('Error calling ai-tutor function:', error);
-      return { data: null, error };
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/ai-tutor`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ userId, question }),
+      }
+    );
+
+    const data = await response.json();
+    console.log(data);
+
+    if (!response.ok) {
+      const err = data.error ?? 'Request failed';
+      console.error('Error calling ai-tutor function:', err);
+      return { data: null, error: err };
     }
 
     return { data, error: null };

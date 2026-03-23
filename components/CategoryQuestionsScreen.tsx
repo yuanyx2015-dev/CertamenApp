@@ -110,7 +110,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
     setCustomQuestion('');
     setCustomAnswer(null);
 
-    const { data, error } = await getQuestionExplanation(questionText, correctAnswer);
+    const { data, error } = await getQuestionExplanation(questionText, correctAnswer)
 
     setIsLoadingExplanation(false);
 
