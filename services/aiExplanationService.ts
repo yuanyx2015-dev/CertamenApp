@@ -17,8 +17,6 @@ export const getQuestionExplanation = async (
   correctAnswer: string
 ): Promise<{ data: AIExplanationResponse | null; error: any }> => {
   try {
-    console.log('Calling explain-question with:', { questionText, correctAnswer });
-    
     const { data, error } = await supabase.functions.invoke('explain-question', {
       body: {
         questionText,
@@ -26,11 +24,20 @@ export const getQuestionExplanation = async (
       },
     });
 
-    console.log('Response from explain-question:', { data, error });
-
     if (error) {
       console.error('Error calling explain-question function:', error);
       console.error('Error details:', JSON.stringify(error, null, 2));
+      // Try to read the actual error body from the edge function
+      try {
+        const context = (error as any)?.context;
+        if (context?._bodyBlob || context?._bodyInit) {
+          const blob = context._bodyBlob ?? context._bodyInit;
+          const text = await new Response(blob).text();
+          console.error('Edge function error body:', text);
+        }
+      } catch (readErr) {
+        console.error('Could not read error body:', readErr);
+      }
       return { data: null, error };
     }
 
