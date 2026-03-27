@@ -27,7 +27,7 @@ export const getUserStats = async (userId: string) => {
     .single();
 
   if (error) {
-    console.error('Error fetching user stats:', error);
+    console.log('No existing user stats found (expected for new users):', error);
     return { data: null, error };
   }
 

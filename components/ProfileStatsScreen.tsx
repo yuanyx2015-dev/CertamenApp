@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Modal } from 'react-native';
-import { getCurrentUser } from '../services/authService';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Modal, Alert } from 'react-native';
+import { getCurrentUser, signOut } from '../services/authService';
 import { getOrCreateUserStats, UserStats } from '../services/userStatsService';
-import { getProfileByEmail, Profile } from '../services/profileService';
+import { getProfileByEmail, Profile, deleteAccount } from '../services/profileService';
+import Svg, { Path } from 'react-native-svg';
 
 function AnimatedButton({ label, onPress }: { label: string; onPress: () => void }) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -54,6 +55,27 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
         </Animated.View>
       </TouchableOpacity>
     </Animated.View>
+  );
+}
+
+function TrashIcon({ size = 20, color = '#d32f2f' }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M10 11v6M14 11v6"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 
@@ -117,6 +139,8 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userName, setUserName] = useState('___');
   const [isLoading, setIsLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -151,6 +175,62 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
 
     loadUserData();
   }, []);
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    
+    try {
+      // Get current user to pass their ID
+      const user = await getCurrentUser();
+      
+      if (!user) {
+        Alert.alert(
+          'Error',
+          'Could not verify user identity.',
+          [{ text: 'OK' }]
+        );
+        setIsDeleting(false);
+        setShowDeleteModal(false);
+        return;
+      }
+
+      console.log('Deleting account for auth user:', user.id);
+      console.log('Profile ID:', profile?.id);
+
+      // Call the Edge Function to delete account (handles both DB and Auth)
+      const { error: deleteError } = await deleteAccount();
+      
+      if (deleteError) {
+        console.error('Delete account error details:', deleteError);
+        Alert.alert(
+          'Error',
+          `Failed to delete account: ${deleteError.message || 'Unknown error'}. Please try again or contact support.`,
+          [{ text: 'OK' }]
+        );
+        setIsDeleting(false);
+        setShowDeleteModal(false);
+        return;
+      }
+
+      // Sign out locally (account is already deleted from Supabase)
+      await signOut();
+
+      // Close modal and navigate back to login
+      setShowDeleteModal(false);
+      if (onLogout) {
+        onLogout();
+      }
+    } catch (error: any) {
+      console.error('Error during account deletion:', error);
+      Alert.alert(
+        'Error',
+        `An unexpected error occurred: ${error.message || 'Unknown error'}. Please try again.`,
+        [{ text: 'OK' }]
+      );
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -215,7 +295,7 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
         })}
       </View>
 
-      {/* Logout Button - At Bottom */}
+      {/* Logout Button - At Bottom Center */}
       <View style={styles.bottomContainer}>
         {onLogout && (
           <AnimatedButton 
@@ -224,6 +304,54 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
           />
         )}
       </View>
+
+      {/* Delete Account Button - Bottom Left Corner */}
+      <TouchableOpacity 
+        style={styles.deleteIconButton}
+        onPress={() => setShowDeleteModal(true)}
+        activeOpacity={0.7}
+      >
+        <TrashIcon size={20} color="#d32f2f" />
+      </TouchableOpacity>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => !isDeleting && setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Account?</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete your account? All of your information, including your score, rank, and progress will be permanently lost. This action cannot be undone.
+            </Text>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.confirmDeleteButton]}
+                onPress={handleDeleteAccount}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.confirmDeleteButtonText}>Delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -289,6 +417,7 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 24,
     alignItems: 'center',
+    gap: 12,
   },
   button: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
@@ -372,5 +501,87 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: 'center',
     fontWeight: '500',
+  },
+  deleteIconButton: {
+    position: 'absolute',
+    bottom: 0,
+    left: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(211, 47, 47, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#3a3a3a',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: '#6a6a6a',
+    lineHeight: 22,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  cancelButton: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  cancelButtonText: {
+    color: '#3a3a3a',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmDeleteButton: {
+    backgroundColor: '#d32f2f',
+  },
+  confirmDeleteButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
