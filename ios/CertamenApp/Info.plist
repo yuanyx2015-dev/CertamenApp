@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>certamenapp</string>
-          <string>com.ziyou.certamenapp</string>
+          <string>com.ziyouyuan.certamenapp</string>
         </array>
       </dict>
     </array>

@@ -1,10 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-// TODO: Replace with your actual Supabase credentials
-export const SUPABASE_URL = 'https://wacgrqymaxoosciypebm.supabase.co'; // Your Supabase project URL
-// ⚠️ IMPORTANT: This should be the "anon public" key, not the publishable key
-// Get it from: Supabase Dashboard → Settings → API → Project API keys → anon/public
-// It should start with 'eyJ...'
-export const SUPABASE_ANON_KEY = 'sb_publishable_yNRU8xu5AkoR2uq50vwmyw_jOho-v_R'; // Your anon key for this project
+export const SUPABASE_URL = 'https://wacgrqymaxoosciypebm.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY2dycXltYXhvb3NjaXlwZWJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNTg1ODcsImV4cCI6MjA4NjYzNDU4N30.nWBJMVaPUIpg-5_vFCUPWF4zY3FUkCrn4rJ6wPA16d0';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

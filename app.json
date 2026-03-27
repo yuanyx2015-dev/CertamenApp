@@ -6,13 +6,18 @@
     "scheme": "certamenapp",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ziyou.certamenapp"
+      "package": "com.ziyouyuan.certamenapp"
     },
     "plugins": [
       "expo-web-browser"
     ],
     "android": {
       "package": "com.ziyou.certamenapp"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "94b7d258-bd01-4749-817f-c13a3e8a184c"
+      }
     }
   }
 }

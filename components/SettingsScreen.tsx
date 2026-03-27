@@ -114,11 +114,11 @@ export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (s
       if (userId) {
         await updateSetting(userId, 'num_tossups', newNumQuestions);
       }
-    } else if (!value && numTossups < 10) {
-      // When toggling OFF: ensure minimum is 10
-      setNumTossups(10);
+    } else if (!value && numTossups < 5) {
+      // When toggling OFF: ensure minimum is 5
+      setNumTossups(5);
       if (userId) {
-        await updateSetting(userId, 'num_tossups', 10);
+        await updateSetting(userId, 'num_tossups', 5);
       }
     }
   };
@@ -126,7 +126,7 @@ export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (s
   // Handle number of tossups change
   const handleNumTossupsChange = async (newValue: number) => {
     // Calculate min and max based on wrong questions toggle
-    const minQuestions = wrongQuestionsOnly ? Math.min(5, wrongQuestionCount) : 10;
+    const minQuestions = wrongQuestionsOnly ? Math.min(5, wrongQuestionCount) : 5;
     const maxQuestions = wrongQuestionsOnly ? Math.min(wrongQuestionCount, 50) : 50;
     // Clamp between minQuestions and maxQuestions
     const clampedValue = Math.max(minQuestions, Math.min(maxQuestions, newValue));

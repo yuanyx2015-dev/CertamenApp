@@ -198,3 +198,38 @@ export const searchUserByUsername = async (username: string): Promise<{ data: Pr
     return { data: null, error };
   }
 };
+
+/**
+ * Delete user account completely (profile data + auth user)
+ * Uses a PostgreSQL RPC function with SECURITY DEFINER to handle:
+ * 1. Deleting profile from database (cascades to stats and wrong_answers)
+ * 2. Deleting user from auth.users table
+ */
+export const deleteAccount = async (): Promise<{ error: any }> => {
+  try {
+    console.log('Calling delete_user_account RPC function...');
+
+    // Call the database RPC function
+    const { data, error } = await supabase.rpc('delete_user_account');
+
+    console.log('RPC response data:', data);
+    console.log('RPC response error:', error);
+
+    if (error) {
+      console.error('Error calling delete_user_account:', error);
+      return { error };
+    }
+
+    // Check if the function returned an error in the data
+    if (data?.error) {
+      console.error('Error from delete_user_account:', data.error);
+      return { error: { message: data.error } };
+    }
+
+    console.log('Account deleted successfully via RPC');
+    return { error: null };
+  } catch (error: any) {
+    console.error('Unexpected error deleting account:', error);
+    return { error };
+  }
+};
