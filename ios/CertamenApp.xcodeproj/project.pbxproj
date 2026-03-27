@@ -259,7 +259,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.ziyou.certamenapp";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ziyouyuan.certamenapp";
 				PRODUCT_NAME = "CertamenApp";
 				SWIFT_OBJC_BRIDGING_HEADER = "CertamenApp/CertamenApp-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -288,7 +288,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.ziyou.certamenapp";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ziyouyuan.certamenapp";
 				PRODUCT_NAME = "CertamenApp";
 				SWIFT_OBJC_BRIDGING_HEADER = "CertamenApp/CertamenApp-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;

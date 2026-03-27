@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Modal } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, UserStats } from '../services/userStatsService';
 import { getProfileByEmail, Profile } from '../services/profileService';
@@ -54,6 +54,61 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
         </Animated.View>
       </TouchableOpacity>
     </Animated.View>
+  );
+}
+
+interface RankInfo {
+  name: string;
+  abbreviation: string;
+  minScore: number;
+  maxScore: number | null;
+}
+
+const RANKS: RankInfo[] = [
+  { name: 'Miles', abbreviation: 'M', minScore: 0, maxScore: 500 },
+  { name: 'Decanus', abbreviation: 'D', minScore: 501, maxScore: 1500 },
+  { name: 'Optio', abbreviation: 'O', minScore: 1501, maxScore: 3000 },
+  { name: 'Centurio', abbreviation: 'C', minScore: 3001, maxScore: 5000 },
+  { name: 'Primus Pilus', abbreviation: 'PP', minScore: 5001, maxScore: 7000 },
+  { name: 'Praefectus Castrorum', abbreviation: 'PC', minScore: 7001, maxScore: 10000 },
+  { name: 'Legatus Legionis', abbreviation: 'LL', minScore: 10001, maxScore: null },
+];
+
+function RankBadge({ rank, isActive, currentScore }: { rank: RankInfo; isActive: boolean; currentScore: number }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  const formatRange = () => {
+    if (rank.maxScore === null) {
+      return `${rank.name} (${rank.minScore.toLocaleString()}+)`;
+    }
+    return `${rank.name} (${rank.minScore.toLocaleString()}-${rank.maxScore.toLocaleString()})`;
+  };
+
+  return (
+    <View style={styles.badgeWrapper}>
+      <TouchableOpacity
+        onPress={() => setShowTooltip(!showTooltip)}
+        activeOpacity={0.7}
+      >
+        <View style={[
+          styles.rankBadge,
+          isActive ? styles.rankBadgeActive : styles.rankBadgeInactive
+        ]}>
+          <Text style={[
+            styles.rankBadgeText,
+            isActive ? styles.rankBadgeTextActive : styles.rankBadgeTextInactive
+          ]}>
+            {rank.abbreviation}
+          </Text>
+        </View>
+      </TouchableOpacity>
+      
+      {showTooltip && (
+        <View style={styles.tooltip}>
+          <Text style={styles.tooltipText}>{formatRange()}</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -136,13 +191,28 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
           </View>
         </View>
 
-        {/* Win Streak Field */}
-        <View style={styles.statBox}>
+        {/* Win Streak Field - Hidden for now */}
+        <View style={[styles.statBox, { opacity: 0, height: 0 }]}>
           <View style={styles.statRow}>
             <Text style={styles.labelText}>Win Streak:</Text>
             <Text style={styles.valueText}>{userStats?.win_streak || 0}</Text>
           </View>
         </View>
+      </View>
+
+      {/* Rank Progression Badges - Hanging Style */}
+      <View style={styles.rankBadgesRow}>
+        {RANKS.map((rank) => {
+          const isActive = userStats?.rank === rank.name;
+          return (
+            <RankBadge
+              key={rank.name}
+              rank={rank}
+              isActive={isActive}
+              currentScore={userStats?.score || 0}
+            />
+          );
+        })}
       </View>
 
       {/* Logout Button - At Bottom */}
@@ -214,7 +284,7 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 10,
     left: 0,
     right: 0,
     paddingHorizontal: 24,
@@ -237,5 +307,70 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     fontSize: 16,
     letterSpacing: 0.5,
+  },
+  rankBadgesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 32,
+    marginBottom: 80,
+    paddingHorizontal: 8,
+  },
+  badgeWrapper: {
+    alignItems: 'center',
+    position: 'relative',
+  },
+  rankBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  rankBadgeActive: {
+    backgroundColor: '#c9a961',
+    borderColor: '#9d856b',
+  },
+  rankBadgeInactive: {
+    backgroundColor: '#e0e0e0',
+    borderColor: '#bbb',
+  },
+  rankBadgeText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  rankBadgeTextActive: {
+    color: '#fff',
+  },
+  rankBadgeTextInactive: {
+    color: '#999',
+  },
+  tooltip: {
+    position: 'absolute',
+    top: -36,
+    backgroundColor: 'rgba(58, 58, 58, 0.95)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    minWidth: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  tooltipText: {
+    color: '#fff',
+    fontSize: 11,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
