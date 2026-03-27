@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     if (!questionText || !correctAnswer) {
       return new Response(
         JSON.stringify({ error: 'Missing questionText or correctAnswer' }),
-        { 
+        {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
@@ -27,33 +27,35 @@ Deno.serve(async (req) => {
 
     // Get Gemini API key from environment variables
     const geminiKey = Deno.env.get('GEMINI_API_KEY')
-    
     if (!geminiKey) {
       return new Response(
         JSON.stringify({ error: 'Gemini API key not configured' }),
-        { 
+        {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
-    // Split question by commas to identify clues
-    const clues = questionText.split(',').map((clue: string) => clue.trim()).filter((clue: string) => clue.length > 0)
+    // Count clues (separated by commas or sentence boundaries)
+    const clues = questionText.split(/,(?![^(]*\))/).filter((c: string) => c.trim().length > 0)
+    const clueCount = clues.length
 
-    // Create prompt for Gemini
-    const prompt = `You are a Latin/Roman Certamen expert helping students understand quiz questions. 
+    const prompt = `You are a knowledgeable Latin and Roman Certamen tutor. A student just answered a Certamen question and you need to explain it clearly.
 
 Question: "${questionText}"
-Answer: "${correctAnswer}"
+Correct Answer: ${correctAnswer}
 
-The question contains ${clues.length} clue(s) separated by commas. Please explain how EACH clue relates to the answer "${correctAnswer}" in a clear, concise, and educational way.
+Please provide a clear, educational explanation that:
+1. Confirms why "${correctAnswer}" is correct
+2. Briefly explains each clue in the question and how it points to the answer
+3. Adds any interesting mythological, historical, or cultural context
 
-Format your response as a numbered list, with one explanation per clue. Keep each explanation to 1-2 sentences maximum.`
+Keep the explanation concise (3-5 sentences total), engaging, and educational. Format it as a single flowing paragraph.`
 
     // Call Gemini API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
       {
         method: 'POST',
         headers: {
@@ -66,8 +68,8 @@ Format your response as a numbered list, with one explanation per clue. Keep eac
             }]
           }],
           generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 500,
+            temperature: 0.5,
+            maxOutputTokens: 400,
           }
         }),
       }
@@ -75,12 +77,10 @@ Format your response as a numbered list, with one explanation per clue. Keep eac
 
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('Gemini API error:', errorText)
       return new Response(
-        JSON.stringify({ 
-          error: 'Failed to get explanation from Gemini',
-          details: errorText 
-        }),
-        { 
+        JSON.stringify({ error: 'Failed to get explanation from AI' }),
+        {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
@@ -88,14 +88,12 @@ Format your response as a numbered list, with one explanation per clue. Keep eac
     }
 
     const aiResponse = await response.json()
-    const explanation = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || 'No explanation generated'
+    const explanation = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text
+      || 'Sorry, I could not generate an explanation.'
 
     return new Response(
-      JSON.stringify({ 
-        explanation,
-        clueCount: clues.length 
-      }),
-      { 
+      JSON.stringify({ explanation, clueCount }),
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
@@ -104,7 +102,7 @@ Format your response as a numbered list, with one explanation per clue. Keep eac
     console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
+      {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
