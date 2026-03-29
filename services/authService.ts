@@ -73,8 +73,11 @@ export interface AuthResponse {
 export const signInWithGoogle = async (): Promise<AuthResponse> => {
   try {
     const redirectUrl = makeRedirectUri({
+      scheme: 'certamenapp',
       path: 'auth/callback',
     });
+
+    console.log('Redirect URL:', redirectUrl);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -153,6 +156,7 @@ export const signInWithGoogle = async (): Promise<AuthResponse> => {
 export const signInWithApple = async (): Promise<AuthResponse> => {
   try {
     const redirectUrl = makeRedirectUri({
+      scheme: 'certamenapp',
       path: 'auth/callback',
     });
 
