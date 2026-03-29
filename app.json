@@ -3,16 +3,38 @@
     "name": "CertamenApp",
     "slug": "certamenapp",
     "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f5efe3"
+    },
     "scheme": "certamenapp",
     "ios": {
       "supportsTablet": true,
-      "package": "com.ziyouyuan.certamenapp"
+      "bundleIdentifier": "com.ziyouyuan.certamenapp",
+      "icon": "./assets/icon.png",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app does not use the camera.",
+        "NSMicrophoneUsageDescription": "This app does not use the microphone.",
+        "NSPhotoLibraryUsageDescription": "This app does not access your photo library."
+      }
     },
+    "primaryCategory": "EDUCATION",
     "plugins": [
       "expo-web-browser"
     ],
     "android": {
-      "package": "com.ziyou.certamenapp"
+      "package": "com.ziyou.certamenapp",
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#7a1f1f"
+      },
+      "versionCode": 1
     },
     "extra": {
       "eas": {
