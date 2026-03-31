@@ -97,7 +97,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
   const [shuffledOptions, setShuffledOptions] = useState<Array<{text: string; isCorrect: boolean}>>([]);
   const [statusText, setStatusText] = useState('Loading questions...');
   const [rank, setRank] = useState('Miles');
-  const [timeRemaining, setTimeRemaining] = useState(15);
+  const [timeRemaining, setTimeRemaining] = useState(5);
   const [showFeedbackIcon, setShowFeedbackIcon] = useState(false);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   const [isWrongQuestionsMode, setIsWrongQuestionsMode] = useState(false); // Track if using wrong questions mode
@@ -314,9 +314,9 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
 
     setIsBuzzed(true);
     setStatusText('Buzzed! Select your answer...');
-    setTimeRemaining(15);
+    setTimeRemaining(5);
 
-    // Start 15-second countdown timer
+    // Start 5-second countdown timer
     timerIntervalRef.current = setInterval(() => {
       setTimeRemaining((prevTime) => {
         if (prevTime <= 1) {
