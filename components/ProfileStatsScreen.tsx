@@ -280,19 +280,37 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
         </View>
       </View>
 
-      {/* Rank Progression Badges - Hanging Style */}
-      <View style={styles.rankBadgesRow}>
-        {RANKS.map((rank) => {
-          const isActive = userStats?.rank === rank.name;
-          return (
-            <RankBadge
-              key={rank.name}
-              rank={rank}
-              isActive={isActive}
-              currentScore={userStats?.score || 0}
-            />
-          );
-        })}
+      {/* Rank Progression Badges - 4 on top, 3 on bottom */}
+      <View style={styles.rankBadgesContainer}>
+        {/* Top row - First 4 ranks */}
+        <View style={styles.rankBadgesRow}>
+          {RANKS.slice(0, 4).map((rank) => {
+            const isActive = userStats?.rank === rank.name;
+            return (
+              <RankBadge
+                key={rank.name}
+                rank={rank}
+                isActive={isActive}
+                currentScore={userStats?.score || 0}
+              />
+            );
+          })}
+        </View>
+        
+        {/* Bottom row - Last 3 ranks */}
+        <View style={styles.rankBadgesRow}>
+          {RANKS.slice(4, 7).map((rank) => {
+            const isActive = userStats?.rank === rank.name;
+            return (
+              <RankBadge
+                key={rank.name}
+                rank={rank}
+                isActive={isActive}
+                currentScore={userStats?.score || 0}
+              />
+            );
+          })}
+        </View>
       </View>
 
       {/* Logout Button - At Bottom Center */}
@@ -389,10 +407,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: -1.5, height: 1.5 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.25,
+    elevation: 3,
   },
   statRow: {
     flexDirection: 'row',
@@ -427,25 +445,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 48,
     paddingVertical: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: -1.5, height: 1.5 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.25,
+    elevation: 3,
   },
   buttonText: {
     color: '#3a3a3a',
     fontSize: 16,
     letterSpacing: 0.5,
   },
-  rankBadgesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 12,
+  rankBadgesContainer: {
     marginTop: 32,
     marginBottom: 80,
-    paddingHorizontal: 8,
+    gap: 20,
+    alignItems: 'center',
+  },
+  rankBadgesRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
   },
   badgeWrapper: {
     alignItems: 'center',
@@ -460,7 +480,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     shadowColor: '#000',
     shadowOffset: { width: -2, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.19,
     shadowRadius: 3,
     elevation: 4,
   },
@@ -504,7 +524,7 @@ const styles = StyleSheet.create({
   },
   deleteIconButton: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 10,
     left: 24,
     width: 44,
     height: 44,
@@ -515,10 +535,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: -2, height: 2 },
+    shadowOpacity: 0.19,
+    shadowRadius: 3,
+    elevation: 4,
   },
   modalOverlay: {
     flex: 1,

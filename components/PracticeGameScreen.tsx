@@ -483,10 +483,13 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
 
   // Error state
   if (loadError) {
+    const isNoWrongQuestionsError = loadError.includes('no wrong questions');
+    const errorTitle = isNoWrongQuestionsError ? "You're too good!" : "Error";
+    
     return (
       <View style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Error</Text>
+          <Text style={styles.errorTitle}>{errorTitle}</Text>
           <Text style={styles.errorText}>{loadError}</Text>
           <TouchableOpacity 
             style={styles.restartButton}
