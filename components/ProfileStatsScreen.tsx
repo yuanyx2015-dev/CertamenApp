@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Modal, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser, signOut } from '../services/authService';
 import { getOrCreateUserStats, UserStats } from '../services/userStatsService';
 import { getProfileByEmail, Profile, deleteAccount } from '../services/profileService';
@@ -197,7 +198,16 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
       console.log('Deleting account for auth user:', user.id);
       console.log('Profile ID:', profile?.id);
 
-      // Call the Edge Function to delete account (handles both DB and Auth)
+      // Clear local user settings from AsyncStorage before deletion
+      try {
+        const settingsKey = `user_settings_${user.id}`;
+        await AsyncStorage.removeItem(settingsKey);
+        console.log('Cleared local user settings');
+      } catch (storageError) {
+        console.warn('Error clearing local settings:', storageError);
+      }
+
+      // Call the RPC Function to delete account (handles both DB and Auth)
       const { error: deleteError } = await deleteAccount();
       
       if (deleteError) {

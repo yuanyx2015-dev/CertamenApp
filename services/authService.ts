@@ -84,6 +84,9 @@ export const signInWithGoogle = async (): Promise<AuthResponse> => {
       options: {
         redirectTo: redirectUrl,
         skipBrowserRedirect: false,
+        queryParams: {
+          prompt: 'select_account',
+        },
       },
     });
 
@@ -165,6 +168,9 @@ export const signInWithApple = async (): Promise<AuthResponse> => {
       options: {
         redirectTo: redirectUrl,
         skipBrowserRedirect: false,
+        queryParams: {
+          prompt: 'login',
+        },
       },
     });
 
@@ -233,7 +239,7 @@ export const signInWithApple = async (): Promise<AuthResponse> => {
 // Sign out the current user
 export const signOut = async (): Promise<{ error?: AuthError }> => {
   try {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut({ scope: 'global' });
 
     if (error) {
       return { error: { message: error.message } };
