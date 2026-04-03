@@ -57,7 +57,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   );
 }
 
-export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (screen: string) => void; previousScreen?: string }) {
+export function SettingsScreen({ onNavigate, previousScreen, isGuestMode }: { onNavigate?: (screen: string) => void; previousScreen?: string; isGuestMode?: boolean }) {
   const [wrongQuestionsOnly, setWrongQuestionsOnly] = React.useState(false);
   const [numTossups, setNumTossups] = React.useState(20);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -67,23 +67,31 @@ export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (s
   // Extract loading logic into reusable function
   const loadSettingsData = React.useCallback(async () => {
     setIsLoading(true);
-    const user = await getCurrentUser();
-    if (user) {
-      setUserId(user.id);
-      const { data: settings, error } = await getOrCreateUserSettings(user.id);
+    
+    // Use special 'guest' ID for guest mode
+    const effectiveUserId = isGuestMode ? 'guest' : null;
+    
+    const user = isGuestMode ? null : await getCurrentUser();
+    const userIdToUse = user?.id || effectiveUserId;
+    
+    if (userIdToUse) {
+      setUserId(userIdToUse);
+      const { data: settings, error } = await getOrCreateUserSettings(userIdToUse);
       if (settings && !error) {
         setWrongQuestionsOnly(settings.wrong_questions_only);
         setNumTossups(settings.num_tossups);
       }
       
-      // Fetch wrong question count (always refresh)
-      const { data: wrongQuestions } = await getAllWrongQuestions(user.id, 1000);
-      if (wrongQuestions) {
-        setWrongQuestionCount(wrongQuestions.length);
+      // Fetch wrong question count (only for authenticated users)
+      if (!isGuestMode && user) {
+        const { data: wrongQuestions } = await getAllWrongQuestions(user.id, 1000);
+        if (wrongQuestions) {
+          setWrongQuestionCount(wrongQuestions.length);
+        }
       }
     }
     setIsLoading(false);
-  }, []);
+  }, [isGuestMode]);
 
   // Load settings on mount AND whenever component becomes visible
   useEffect(() => {
@@ -181,17 +189,23 @@ export function SettingsScreen({ onNavigate, previousScreen }: { onNavigate?: (s
             </Text>
           )}
 
-          {/* Wrong questions only with toggle */}
+          {/* Wrong questions only with toggle - disabled for guests */}
           <View style={styles.toggleRow}>
-            <Text style={styles.optionText}>Wrong questions only</Text>
+            <Text style={[styles.optionText, isGuestMode && styles.disabledText]}>Wrong questions only</Text>
             <Switch
               value={wrongQuestionsOnly}
               onValueChange={handleWrongQuestionsToggle}
               trackColor={{ false: '#d4d4d4', true: '#c9a961' }}
               thumbColor={wrongQuestionsOnly ? '#d4b76a' : '#f4f3f4'}
               ios_backgroundColor="#d4d4d4"
+              disabled={isGuestMode}
             />
           </View>
+          {isGuestMode && (
+            <Text style={styles.guestHelperText}>
+              Sign in to track wrong questions
+            </Text>
+          )}
         </View>
       </View>
 
@@ -311,5 +325,14 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     fontSize: 16,
     letterSpacing: 0.5,
+  },
+  disabledText: {
+    color: '#999',
+  },
+  guestHelperText: {
+    color: '#8b7355',
+    fontSize: 12,
+    marginTop: -16,
+    fontStyle: 'italic',
   },
 });

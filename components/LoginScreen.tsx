@@ -14,10 +14,11 @@ WebBrowser.maybeCompleteAuthSession();
 interface LoginScreenProps {
   navigation: any;
   onLoginSuccess: () => void;
+  onGuestMode?: () => void;
 }
 
 
-export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
+export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScreenProps) {
    const [isLoading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
@@ -95,6 +96,18 @@ export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
             onPress={handleGoogleLogin}
             disabled={isLoading}
           />
+          
+          {/* Guest Mode Button */}
+          {onGuestMode && (
+            <TouchableOpacity 
+              style={styles.guestButton}
+              onPress={onGuestMode}
+              disabled={isLoading}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.guestButtonText}>Continue as Guest</Text>
+            </TouchableOpacity>
+          )}
           {/* Temporarily removed Apple and Instagram login buttons */}
           {/* <LoginButton 
             icon={<Apple />} 
@@ -248,5 +261,17 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     letterSpacing: 1,
     fontSize: 16,
+  },
+  guestButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  guestButtonText: {
+    color: '#6a6a6a',
+    letterSpacing: 0.5,
+    fontSize: 14,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });

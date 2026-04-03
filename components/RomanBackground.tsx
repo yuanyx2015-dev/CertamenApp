@@ -25,6 +25,8 @@ export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [practiceGameKey, setPracticeGameKey] = useState(0);
   const previousScreen = useRef('login');
 
   // Check for existing session on mount and listen for auth state changes
@@ -62,6 +64,21 @@ export function RomanBackground() {
   };
 
   const handleNavigate = (screen: string, category?: string) => {
+    // Block profile and review screens for guests
+    if (isGuestMode && !isAuthenticated) {
+      if (screen === 'profile') {
+        return; // Will be handled by MainMenuScreen alert
+      }
+      if (screen === 'review') {
+        return; // Will be handled by MainMenuScreen alert
+      }
+    }
+    
+    // Force remount of PracticeGameScreen when navigating to it
+    if (screen === 'practice-game') {
+      setPracticeGameKey(prev => prev + 1);
+    }
+    
     // Only update previous screen if we're not already on settings
     if (currentScreen !== 'settings') {
       previousScreen.current = currentScreen;
@@ -70,6 +87,11 @@ export function RomanBackground() {
       setSelectedCategory(category);
     }
     setCurrentScreen(screen);
+  };
+
+  const handleGuestMode = () => {
+    setIsGuestMode(true);
+    setCurrentScreen('main');
   };
 
   const handleGoogleLogin = () => {
@@ -86,28 +108,36 @@ export function RomanBackground() {
   };
 
   const renderScreen = () => {
-    // If not authenticated, always show login screen
-    if (!isAuthenticated) {
-      return <LoginScreen navigation={null} onLoginSuccess={handleGoogleLogin} />;
+    // Show login screen if not authenticated and not in guest mode
+    if (!isAuthenticated && !isGuestMode) {
+      return <LoginScreen navigation={null} onLoginSuccess={handleGoogleLogin} onGuestMode={handleGuestMode} />;
     }
 
-    // If authenticated, show the requested screen
+    // Allow authenticated users or guests to access certain screens
     switch (currentScreen) {
       case 'practice':
-        return <PracticeModeScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+        return <PracticeModeScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} isGuestMode={isGuestMode} />;
       case 'practice-game':
-        return <PracticeGameScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+        return <PracticeGameScreen key={practiceGameKey} onNavigate={handleNavigate} previousScreen={previousScreen.current} isGuestMode={isGuestMode} />;
       case 'pvp':
         return <MatchSelectionScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'offline':
       case 'simulation':
         return <SimulationMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'profile':
-        return <ProfileStatsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} onLogout={handleLogout} />;
+        return isAuthenticated ? (
+          <ProfileStatsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} onLogout={handleLogout} />
+        ) : (
+          <MainMenuScreen onNavigate={handleNavigate} isGuestMode={isGuestMode} />
+        );
       case 'settings':
-        return <SettingsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+        return <SettingsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} isGuestMode={isGuestMode} />;
       case 'review':
-        return <ReviewCategoryScreen onNavigate={handleNavigate} />;
+        return isAuthenticated ? (
+          <ReviewCategoryScreen onNavigate={handleNavigate} />
+        ) : (
+          <MainMenuScreen onNavigate={handleNavigate} isGuestMode={isGuestMode} />
+        );
       case 'categoryQuestions':
         return <CategoryQuestionsScreen onNavigate={handleNavigate} category={selectedCategory} />;
       case 'random':
@@ -119,9 +149,10 @@ export function RomanBackground() {
       case 'home':
         return <HomeMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'login':
+        return <LoginScreen navigation={null} onLoginSuccess={handleGoogleLogin} onGuestMode={handleGuestMode} />;
       case 'main':
       default:
-        return <MainMenuScreen onNavigate={handleNavigate} />;
+        return <MainMenuScreen onNavigate={handleNavigate} isGuestMode={isGuestMode} />;
     }
   };
 
