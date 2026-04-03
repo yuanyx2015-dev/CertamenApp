@@ -69,19 +69,30 @@ export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScr
         ],
       });
 
+      console.log('Apple credential received:', {
+        user: credential.user,
+        hasIdentityToken: !!credential.identityToken,
+        hasAuthorizationCode: !!credential.authorizationCode,
+      });
+
       if (credential.identityToken) {
+        console.log('Attempting Supabase signInWithIdToken...');
         const { data, error } = await supabase.auth.signInWithIdToken({
           provider: 'apple',
           token: credential.identityToken,
         });
 
+        console.log('Supabase response:', { hasData: !!data, error: error?.message });
+
         if (error) {
           setLoading(false);
-          Alert.alert('Apple Login Failed', error.message);
+          console.error('Supabase Apple auth error:', error);
+          Alert.alert('Apple Login Failed', `Error: ${error.message}\n\nPlease try again or contact support.`);
           return;
         }
 
         if (data.user) {
+          console.log('User authenticated successfully:', data.user.id);
           // Create/update user profile in database
           await getOrCreateProfile(data.user);
           
@@ -102,6 +113,7 @@ export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScr
       }
     } catch (e: any) {
       setLoading(false);
+      console.error('Apple authentication exception:', e);
       if (e.code === 'ERR_REQUEST_CANCELED') {
         // User canceled the sign-in flow
         return;
