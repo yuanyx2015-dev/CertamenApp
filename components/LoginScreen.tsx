@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { makeRedirectUri } from 'expo-auth-session';
 import { Mail, Apple, Instagram } from './Icons';
 import { supabase } from '../lib/supabase';
@@ -20,6 +21,18 @@ interface LoginScreenProps {
 
 export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScreenProps) {
    const [isLoading, setLoading] = useState(false);
+   const [isAppleSignInAvailable, setIsAppleSignInAvailable] = useState(false);
+
+  useEffect(() => {
+    checkAppleSignInAvailability();
+  }, []);
+
+  const checkAppleSignInAvailability = async () => {
+    if (Platform.OS === 'ios') {
+      const isAvailable = await AppleAuthentication.isAvailableAsync();
+      setIsAppleSignInAvailable(isAvailable);
+    }
+  };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -48,24 +61,52 @@ export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScr
   const handleAppleLogin = async () => {
     setLoading(true);
 
-    const { user, error } = await signInWithApple();
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
 
-    setLoading(false);
+      if (credential.identityToken) {
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'apple',
+          token: credential.identityToken,
+        });
 
-    if (error) {
-      Alert.alert('Apple Login Failed', error.message);
-      return;
-    }
-    if (user) {
-      // Create/update user profile in database
-      await getOrCreateProfile(user);
-      
-      // Initialize user stats and settings
-      await getOrCreateUserStats(user.id);
-      await getOrCreateUserSettings(user.id);
-      
-      Alert.alert('Success!', 'Welcome to CertamenApp!');
-      onLoginSuccess();
+        if (error) {
+          setLoading(false);
+          Alert.alert('Apple Login Failed', error.message);
+          return;
+        }
+
+        if (data.user) {
+          // Create/update user profile in database
+          await getOrCreateProfile(data.user);
+          
+          // Initialize user stats and settings
+          await getOrCreateUserStats(data.user.id);
+          await getOrCreateUserSettings(data.user.id);
+          
+          setLoading(false);
+          Alert.alert('Success!', 'Welcome to CertamenApp!');
+          onLoginSuccess();
+        } else {
+          setLoading(false);
+          Alert.alert('Apple Login Failed', 'No user data received');
+        }
+      } else {
+        setLoading(false);
+        Alert.alert('Apple Login Failed', 'No identity token received');
+      }
+    } catch (e: any) {
+      setLoading(false);
+      if (e.code === 'ERR_REQUEST_CANCELED') {
+        // User canceled the sign-in flow
+        return;
+      }
+      Alert.alert('Apple Login Failed', e.message || 'An error occurred');
     }
   };
 
@@ -92,10 +133,20 @@ export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScr
         <View style={styles.buttonsContainer}>
           <LoginButton 
             icon={<Mail />} 
-            label={isLoading ? "Signing in..." : "Gmail"} 
+            label={isLoading ? "Signing in..." : "Sign in with Google"} 
             onPress={handleGoogleLogin}
             disabled={isLoading}
           />
+          
+          {/* Apple Sign In - Only on real iOS devices */}
+          {isAppleSignInAvailable && (
+            <LoginButton 
+              icon={<Apple />} 
+              label={isLoading ? "Signing in..." : "Sign in with Apple"} 
+              onPress={handleAppleLogin}
+              disabled={isLoading}
+            />
+          )}
           
           {/* Guest Mode Button */}
           {onGuestMode && (
@@ -108,14 +159,6 @@ export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScr
               <Text style={styles.guestButtonText}>Continue as Guest</Text>
             </TouchableOpacity>
           )}
-          {/* Temporarily removed Apple and Instagram login buttons */}
-          {/* <LoginButton 
-            icon={<Apple />} 
-            label={isLoading ? "Signing in..." : "Apple"} 
-            onPress={handleAppleLogin}
-            disabled={isLoading}
-          /> */}
-          {/* <LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} disabled={isLoading} /> */}
         </View>
       </View>
     </View>
