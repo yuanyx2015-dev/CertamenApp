@@ -17,6 +17,7 @@
       "bundleIdentifier": "com.ziyouyuan.certamenapp",
       "icon": "./assets/icon.png",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "entitlements": {
         "com.apple.developer.applesignin": [
           "Default"

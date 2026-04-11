@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Platform } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { makeRedirectUri } from 'expo-auth-session';
-import { Mail, Apple, Instagram } from './Icons';
+import * as Crypto from 'expo-crypto';
+import { Mail, Apple } from './Icons';
 import { supabase } from '../lib/supabase';
-import { signInWithGoogle, signInWithApple } from '../services/authService';
+import { signInWithGoogle } from '../services/authService';
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
 import { getOrCreateProfile } from '../services/profileService';
@@ -21,18 +22,6 @@ interface LoginScreenProps {
 
 export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScreenProps) {
    const [isLoading, setLoading] = useState(false);
-   const [isAppleSignInAvailable, setIsAppleSignInAvailable] = useState(false);
-
-  useEffect(() => {
-    checkAppleSignInAvailability();
-  }, []);
-
-  const checkAppleSignInAvailability = async () => {
-    if (Platform.OS === 'ios') {
-      const isAvailable = await AppleAuthentication.isAvailableAsync();
-      setIsAppleSignInAvailable(isAvailable);
-    }
-  };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -59,14 +48,31 @@ export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScr
   };
 
   const handleAppleLogin = async () => {
+    // Expo Go does not include the native Sign in with Apple module (see Expo docs).
+    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+      Alert.alert(
+        'Not available in Expo Go',
+        'Sign in with Apple requires native code. Use a development build (run npx expo run:ios on a device) or install your app from TestFlight / EAS — not the Expo Go app.'
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const rawBytes = await Crypto.getRandomBytesAsync(32);
+      const rawNonce = Array.from(rawBytes, (b) => b.toString(16).padStart(2, '0')).join('');
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce
+      );
+
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
 
       console.log('Apple credential received:', {
@@ -80,6 +86,7 @@ export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScr
         const { data, error } = await supabase.auth.signInWithIdToken({
           provider: 'apple',
           token: credential.identityToken,
+          nonce: rawNonce,
         });
 
         console.log('Supabase response:', { hasData: !!data, error: error?.message });
@@ -150,8 +157,8 @@ export function LoginScreen({navigation, onLoginSuccess, onGuestMode }: LoginScr
             disabled={isLoading}
           />
           
-          {/* Apple Sign In - Only on real iOS devices */}
-          {isAppleSignInAvailable && (
+          {/* Apple Sign In — shown on every iOS build; unsupported environments get errors from the handler */}
+          {Platform.OS === 'ios' && (
             <LoginButton 
               icon={<Apple />} 
               label={isLoading ? "Signing in..." : "Sign in with Apple"} 
