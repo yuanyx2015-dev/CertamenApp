@@ -22,9 +22,10 @@ export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [practiceGameKey, setPracticeGameKey] = useState(0);
   const previousScreen = useRef('login');
 
-  // Check for existing session on mount and listen for auth state changes
   useEffect(() => {
     checkSession();
 
@@ -35,7 +36,11 @@ export function RomanBackground() {
         setCurrentScreen((prev) => (prev === 'login' ? 'main' : prev));
       } else {
         setIsAuthenticated(false);
-        setCurrentScreen('login');
+        // Avoid sending guest users (no Supabase session) back to login on INITIAL_SESSION.
+        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+          setIsGuestMode(false);
+          setCurrentScreen('login');
+        }
       }
     });
 
@@ -47,7 +52,6 @@ export function RomanBackground() {
   const checkSession = async () => {
     const session = await getSession();
     if (session) {
-      // User is already logged in, go to main menu
       setIsAuthenticated(true);
       setCurrentScreen('main');
     } else {
@@ -57,7 +61,19 @@ export function RomanBackground() {
   };
 
   const handleNavigate = (screen: string, category?: string) => {
-    // Only update previous screen if we're not already on settings
+    if (isGuestMode && !isAuthenticated) {
+      if (screen === 'profile') {
+        return;
+      }
+      if (screen === 'review') {
+        return;
+      }
+    }
+
+    if (screen === 'practice-game') {
+      setPracticeGameKey((prev) => prev + 1);
+    }
+
     if (currentScreen !== 'settings') {
       previousScreen.current = currentScreen;
     }
@@ -67,10 +83,16 @@ export function RomanBackground() {
     setCurrentScreen(screen);
   };
 
-  /** Call after Google/Apple login succeeds so we leave the login branch (not only onAuthStateChange). */
+  /** After Google/Apple login succeeds so we leave the login branch (not only onAuthStateChange). */
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
+    setIsGuestMode(false);
     handleNavigate('main');
+  };
+
+  const handleGuestMode = () => {
+    setIsGuestMode(true);
+    setCurrentScreen('main');
   };
 
   const handleLogout = async () => {
@@ -78,34 +100,70 @@ export function RomanBackground() {
     if (error) {
       console.error('Logout error:', error.message);
     }
-    // Auth state listener will handle navigation to login screen
   };
 
   const renderScreen = () => {
-    // If not authenticated, always show login screen
-    if (!isAuthenticated) {
-      return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+    if (!isAuthenticated && !isGuestMode) {
+      return (
+        <LoginScreen onLoginSuccess={handleLoginSuccess} onGuestMode={handleGuestMode} />
+      );
     }
 
-    // If authenticated, show the requested screen
     switch (currentScreen) {
       case 'practice':
-        return <PracticeModeScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+        return (
+          <PracticeModeScreen
+            onNavigate={handleNavigate}
+            previousScreen={previousScreen.current}
+            isGuestMode={isGuestMode}
+          />
+        );
       case 'practice-game':
-        return <PracticeGameScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+        return (
+          <PracticeGameScreen
+            key={practiceGameKey}
+            onNavigate={handleNavigate}
+            previousScreen={previousScreen.current}
+            isGuestMode={isGuestMode}
+          />
+        );
       case 'pvp':
-        return <MatchSelectionScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+        return (
+          <MatchSelectionScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />
+        );
       case 'offline':
       case 'simulation':
-        return <SimulationMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+        return (
+          <SimulationMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />
+        );
       case 'profile':
-        return <ProfileStatsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} onLogout={handleLogout} />;
+        return isAuthenticated ? (
+          <ProfileStatsScreen
+            onNavigate={handleNavigate}
+            previousScreen={previousScreen.current}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <MainMenuScreen onNavigate={handleNavigate} isGuestMode={isGuestMode} />
+        );
       case 'settings':
-        return <SettingsScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
+        return (
+          <SettingsScreen
+            onNavigate={handleNavigate}
+            previousScreen={previousScreen.current}
+            isGuestMode={isGuestMode}
+          />
+        );
       case 'review':
-        return <ReviewCategoryScreen onNavigate={handleNavigate} />;
+        return isAuthenticated ? (
+          <ReviewCategoryScreen onNavigate={handleNavigate} />
+        ) : (
+          <MainMenuScreen onNavigate={handleNavigate} isGuestMode={isGuestMode} />
+        );
       case 'categoryQuestions':
-        return <CategoryQuestionsScreen onNavigate={handleNavigate} category={selectedCategory} />;
+        return (
+          <CategoryQuestionsScreen onNavigate={handleNavigate} category={selectedCategory} />
+        );
       case 'random':
         return <RandomMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'friendly':
@@ -115,39 +173,35 @@ export function RomanBackground() {
       case 'home':
         return <HomeMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'login':
+        return (
+          <LoginScreen onLoginSuccess={handleLoginSuccess} onGuestMode={handleGuestMode} />
+        );
       case 'main':
       default:
-        return <MainMenuScreen onNavigate={handleNavigate} />;
+        return <MainMenuScreen onNavigate={handleNavigate} isGuestMode={isGuestMode} />;
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Parchment background */}
       <View style={styles.parchment} />
-      
-      {/* App Title - Above laurel wreath, only show when not on login screen */}
+
       {currentScreen !== 'login' && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.titleContainer}
-          onPress={() => handleNavigate('main')} 
+          onPress={() => handleNavigate('main')}
           activeOpacity={0.6}
         >
           <Text style={styles.titleText}>CertamenApp</Text>
         </TouchableOpacity>
       )}
-      
-      {/* Top header with laurel branches */}
+
       <View style={styles.headerContainer}>
         <LaurelBranches />
       </View>
 
-      {/* Main content area */}
-      <View style={styles.contentContainer}>
-        {renderScreen()}
-      </View>
+      <View style={styles.contentContainer}>{renderScreen()}</View>
 
-      {/* Bottom footer with meander border */}
       <View style={styles.footerContainer}>
         <MeanderBorder />
       </View>

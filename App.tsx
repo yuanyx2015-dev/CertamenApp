@@ -1,10 +1,6 @@
 import React from 'react';
-import { Text, TouchableOpacity } from 'react-native';
-import { RomanBackground } from './components/RomanBackground'; 
-import { LoginScreen } from './components/LoginScreen';
+import { RomanBackground } from './components/RomanBackground';
 
 export default function App() {
-  return (
-    <RomanBackground />
-  );
+  return <RomanBackground />;
 }

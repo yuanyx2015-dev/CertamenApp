@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
 import Svg, { Path, Rect, Circle, G } from 'react-native-svg';
 
 // Single Sword Icon
@@ -288,8 +288,8 @@ function AnimatedModeButton({ icon, label, onPress }: { icon: React.ReactNode; l
   );
 }
 
-export function MainMenuScreen({ onNavigate }: { onNavigate?: (screen: string) => void }) {
-  // Profile button animation
+export function MainMenuScreen({ onNavigate, isGuestMode }: { onNavigate?: (screen: string) => void; isGuestMode?: boolean }) {
+  // Profile/Sign In button animation
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -326,20 +326,50 @@ export function MainMenuScreen({ onNavigate }: { onNavigate?: (screen: string) =
     outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
   });
 
+  const handleProfilePress = () => {
+    if (isGuestMode) {
+      Alert.alert(
+        'Sign In Required',
+        'Sign in to view your profile and track your progress',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign In', onPress: () => onNavigate?.('login') }
+        ]
+      );
+    } else {
+      onNavigate?.('profile');
+    }
+  };
+
+  const handleReviewPress = () => {
+    if (isGuestMode) {
+      Alert.alert(
+        'Sign In Required',
+        'Sign in to review your wrong answers and track your progress',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign In', onPress: () => onNavigate?.('login') }
+        ]
+      );
+    } else {
+      onNavigate?.('review');
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Profile Button */}
+      {/* Profile or Sign In Button */}
       <View style={styles.profileContainer}>
         <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
           <TouchableOpacity 
             onPressIn={handleProfilePressIn}
             onPressOut={handleProfilePressOut}
-            onPress={() => onNavigate?.('profile')}
+            onPress={handleProfilePress}
             activeOpacity={1}
           >
             <Animated.View style={[styles.profileButton, { backgroundColor: profileBackgroundColor }]}>
               <ProfileIcon />
-              <Text style={styles.profileText}>Profile</Text>
+              <Text style={styles.profileText}>{isGuestMode ? 'Sign In' : 'Profile'}</Text>
             </Animated.View>
           </TouchableOpacity>
         </Animated.View>
@@ -358,7 +388,7 @@ export function MainMenuScreen({ onNavigate }: { onNavigate?: (screen: string) =
         <AnimatedModeButton 
           icon={<ScrollIcon />} 
           label="Review Questions" 
-          onPress={() => onNavigate?.('review')} 
+          onPress={handleReviewPress} 
         />
       </View>
     </View>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Platform } from 'react-native';
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Mail, Apple } from './Icons';
 import { signInWithGoogle, signInWithApple } from '../services/authService';
 import { getOrCreateUserStats } from '../services/userStatsService';
@@ -9,11 +9,11 @@ import { getOrCreateProfile } from '../services/profileService';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
+  onGuestMode?: () => void;
 }
 
-
-export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
-   const [isLoading, setLoading] = useState(false);
+export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
+  const [isLoading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -27,23 +27,29 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       return;
     }
     if (user) {
-      // Create/update user profile in database
       await getOrCreateProfile(user);
-      
-      // Initialize user stats and settings
+
       await getOrCreateUserStats(user.id);
       await getOrCreateUserSettings(user.id);
-      
+
       Alert.alert('Success!', 'Welcome to CertamenApp!');
       onLoginSuccess();
     }
   };
 
   const handleAppleLogin = async () => {
+    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+      Alert.alert(
+        'Not available in Expo Go',
+        'Sign in with Apple requires native code. Use a development build (npx expo run:ios) or TestFlight / App Store — not the Expo Go app.',
+      );
+      return;
+    }
+
     if (Platform.OS === 'ios' && !Constants.isDevice) {
       Alert.alert(
         'Sign in with Apple',
-        'Apple Sign-In only runs on a real iPhone or iPad. In Simulator, use Gmail to test login, or install the build on a device to try Apple.',
+        'Apple Sign-In only runs on a real iPhone or iPad. In Simulator, use Google sign-in to test, or install the build on a device to try Apple.',
       );
       return;
     }
@@ -59,13 +65,11 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       return;
     }
     if (user) {
-      // Create/update user profile in database
       await getOrCreateProfile(user);
-      
-      // Initialize user stats and settings
+
       await getOrCreateUserStats(user.id);
       await getOrCreateUserSettings(user.id);
-      
+
       Alert.alert('Success!', 'Welcome to CertamenApp!');
       onLoginSuccess();
     }
@@ -73,36 +77,33 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 
   return (
     <View style={styles.container}>
-      {/* Welcome Section */}
       <View style={styles.welcomeSection}>
         <Text style={styles.welcomeText}>Welcome</Text>
-        
+
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
           <Text style={styles.toText}>to</Text>
           <View style={styles.dividerLine} />
         </View>
-        
+
         <Text style={styles.appName}>CertamenApp</Text>
       </View>
 
-      {/* Login Section */}
       <View style={styles.loginSection}>
         <Text style={styles.loginPrompt}>Log in / Sign up</Text>
 
-        {/* Login Buttons */}
         <View style={styles.buttonsContainer}>
-          <LoginButton 
-            icon={<Mail />} 
-            label={isLoading ? "Signing in..." : "Gmail"} 
+          <LoginButton
+            icon={<Mail />}
+            label={isLoading ? 'Signing in...' : 'Sign in with Google'}
             onPress={handleGoogleLogin}
             disabled={isLoading}
           />
           {Platform.OS === 'ios' && (
             <>
-              <LoginButton 
-                icon={<Apple />} 
-                label={isLoading ? "Signing in..." : "Apple"} 
+              <LoginButton
+                icon={<Apple />}
+                label={isLoading ? 'Signing in...' : 'Sign in with Apple'}
                 onPress={handleAppleLogin}
                 disabled={isLoading}
               />
@@ -113,14 +114,34 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               )}
             </>
           )}
-          {/* <LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} disabled={isLoading} /> */}
+
+          {onGuestMode && (
+            <TouchableOpacity
+              style={styles.guestButton}
+              onPress={onGuestMode}
+              disabled={isLoading}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.guestButtonText}>Continue as Guest</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
   );
 }
 
-function LoginButton({ icon, label, onPress, disabled }: { icon: React.ReactNode; label: string; onPress: () => void; disabled?: boolean }) {
+function LoginButton({
+  icon,
+  label,
+  onPress,
+  disabled,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -160,14 +181,16 @@ function LoginButton({ icon, label, onPress, disabled }: { icon: React.ReactNode
   });
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }], opacity: disabled ? 0.6 : 1 }}>
-     <TouchableOpacity 
-  onPressIn={handlePressIn}
-  onPressOut={handlePressOut}
-  onPress={onPress}
-  activeOpacity={1}
-  disabled={disabled}
->
+    <Animated.View
+      style={{ transform: [{ scale: scaleAnim }], opacity: disabled ? 0.6 : 1 }}
+    >
+      <TouchableOpacity
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        activeOpacity={1}
+        disabled={disabled}
+      >
         <Animated.View style={[styles.button, { backgroundColor }]}>
           <View style={styles.iconContainer}>{icon}</View>
           <Text style={styles.buttonText}>{label}</Text>
@@ -267,5 +290,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#7a6a5a',
     lineHeight: 16,
+  },
+  guestButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  guestButtonText: {
+    color: '#6a6a6a',
+    letterSpacing: 0.5,
+    fontSize: 14,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });

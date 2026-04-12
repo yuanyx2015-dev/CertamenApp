@@ -54,7 +54,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   );
 }
 
-export function PracticeModeScreen({ onNavigate, previousScreen }: { onNavigate?: (screen: string) => void; previousScreen?: string }) {
+export function PracticeModeScreen({ onNavigate, previousScreen, isGuestMode }: { onNavigate?: (screen: string) => void; previousScreen?: string; isGuestMode?: boolean }) {
   return (
     <View style={styles.container}>
       {/* Settings Button - Top Right */}

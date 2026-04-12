@@ -26,6 +26,9 @@ BEGIN
   -- Log the deletion attempt
   RAISE NOTICE 'Attempting to delete account for user: %', current_user_id;
   
+  -- Delete from ai_tutor_usage table (uses TEXT user_id)
+  DELETE FROM public.ai_tutor_usage WHERE user_id = current_user_id::text;
+  
   -- Delete from profiles table (this will CASCADE to user_stats and user_wrong_answers)
   DELETE FROM public.profiles WHERE id = current_user_id;
   

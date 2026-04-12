@@ -81,9 +81,10 @@ function RomanCross() {
 interface PracticeGameScreenProps {
   onNavigate?: (screen: string) => void;
   previousScreen?: string;
+  isGuestMode?: boolean;
 }
 
-export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameScreenProps) {
+export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: PracticeGameScreenProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -116,25 +117,35 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       setIsLoading(true);
       setLoadError(null);
       
-      // Load user stats and settings first
+      // Load user stats and settings first (skip for guest mode)
       let currentRank = 'Miles';
       let totalQuestions = 20; // Default
       let wrongQuestionsOnly = false;
-      const user = await getCurrentUser();
-      if (user) {
-        const { data: stats } = await getOrCreateUserStats(user.id);
-        if (stats) {
-          setCumulativeScore(stats.score); // Store cumulative score
-          setRank(stats.rank);
-          currentRank = stats.rank;
+      let user = null;
+      
+      if (!isGuestMode) {
+        user = await getCurrentUser();
+        if (user) {
+          const { data: stats } = await getOrCreateUserStats(user.id);
+          if (stats) {
+            setCumulativeScore(stats.score); // Store cumulative score
+            setRank(stats.rank);
+            currentRank = stats.rank;
+          }
+          
+          // Get user settings for number of tossups and wrong questions mode
+          const { data: settings } = await getOrCreateUserSettings(user.id);
+          if (settings) {
+            totalQuestions = settings.num_tossups;
+            wrongQuestionsOnly = settings.wrong_questions_only;
+            setIsWrongQuestionsMode(wrongQuestionsOnly);
+          }
         }
-        
-        // Get user settings for number of tossups and wrong questions mode
-        const { data: settings } = await getOrCreateUserSettings(user.id);
+      } else {
+        // For guest mode, load settings from local storage
+        const { data: settings } = await getOrCreateUserSettings('guest');
         if (settings) {
           totalQuestions = settings.num_tossups;
-          wrongQuestionsOnly = settings.wrong_questions_only;
-          setIsWrongQuestionsMode(wrongQuestionsOnly);
         }
       }
       
@@ -142,7 +153,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       const seenIds = new Set<string>(); // Extra safeguard to prevent duplicates
       
       try {
-        if (wrongQuestionsOnly && user) {
+        if (wrongQuestionsOnly && !isGuestMode && user) {
           // Fetch only wrong questions
           const { data: wrongQuestions, error: wrongError } = await getAllWrongQuestions(user.id, totalQuestions);
           if (wrongError) throw wrongError;
@@ -205,7 +216,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     };
     
     loadQuestionsAndStats();
-  }, []);
+  }, [isGuestMode]); // Reload when guest mode changes or component mounts
 
   // Shuffle function
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -270,7 +281,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     fullTextRef.current = currentQuestion.question_text;
 
     // Check if this question was previously answered wrong (only in normal mode)
-    if (!isWrongQuestionsMode) {
+    if (!isWrongQuestionsMode && !isGuestMode) {
       const user = await getCurrentUser();
       if (user) {
         const { data: wasWrong } = await isQuestionWrong(user.id, currentQuestion.id);
@@ -396,8 +407,8 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     triggerFeedbackAnimation(option.isCorrect);
 
     if (option.isCorrect) {
-      // In wrong questions practice mode, don't award points or update database
-      if (isWrongQuestionsMode) {
+      // In wrong questions practice mode or guest mode, don't award points or update database
+      if (isWrongQuestionsMode || isGuestMode) {
         setStatusText('Correct!');
       } else {
         // Normal mode: award points and update database
@@ -421,8 +432,8 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
     } else {
       setStatusText('Wrong! Better luck next time.');
       
-      // Only track wrong answers in normal mode (not in wrong questions practice mode)
-      if (!isWrongQuestionsMode) {
+      // Only track wrong answers in normal mode (not in wrong questions practice mode or guest mode)
+      if (!isWrongQuestionsMode && !isGuestMode) {
         const user = await getCurrentUser();
         if (user && questions[currentQuestionIndex]) {
           await markQuestionAsWrong(user.id, questions[currentQuestionIndex].id);
@@ -483,10 +494,13 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
 
   // Error state
   if (loadError) {
+    const isNoWrongQuestionsError = loadError.includes('no wrong questions');
+    const errorTitle = isNoWrongQuestionsError ? "You're too good!" : "Error";
+    
     return (
       <View style={styles.container}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Error</Text>
+          <Text style={styles.errorTitle}>{errorTitle}</Text>
           <Text style={styles.errorText}>{loadError}</Text>
           <TouchableOpacity 
             style={styles.restartButton}
@@ -505,12 +519,29 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
       <View style={styles.container}>
         <View style={styles.gameOverContainer}>
           <Text style={styles.gameOverTitle}>Practice Complete!</Text>
-          {!isWrongQuestionsMode && (
+          {!isWrongQuestionsMode && !isGuestMode && (
             <Text style={styles.gameOverScore}>
               Final Score: {sessionScore} / {questions.length * 10}
             </Text>
           )}
-          <Text style={styles.gameOverRank}>Rank: {rank}</Text>
+          {!isGuestMode && (
+            <Text style={styles.gameOverRank}>Rank: {rank}</Text>
+          )}
+          
+          {/* Guest Sign-In Prompt */}
+          {isGuestMode && (
+            <View style={styles.guestPromptContainer}>
+              <Text style={styles.guestPromptText}>
+                Sign in to save your score and track your rank!
+              </Text>
+              <TouchableOpacity 
+                style={styles.signInPromptButton}
+                onPress={() => onNavigate?.('login')}
+              >
+                <Text style={styles.signInPromptButtonText}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           
           <TouchableOpacity 
             style={styles.restartButton}
@@ -522,20 +553,28 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
               setIsLoading(true);
               
               // Reload questions and stats for a fresh game
-              const user = await getCurrentUser();
               let currentRank = 'Miles';
               let totalQuestions = 20; // Default
               
-              if (user) {
-                const { data: stats } = await getOrCreateUserStats(user.id);
-                if (stats) {
-                  setCumulativeScore(stats.score);
-                  setRank(stats.rank);
-                  currentRank = stats.rank;
+              if (!isGuestMode) {
+                const user = await getCurrentUser();
+                if (user) {
+                  const { data: stats } = await getOrCreateUserStats(user.id);
+                  if (stats) {
+                    setCumulativeScore(stats.score);
+                    setRank(stats.rank);
+                    currentRank = stats.rank;
+                  }
+                  
+                  // Get user settings for number of tossups
+                  const { data: settings } = await getOrCreateUserSettings(user.id);
+                  if (settings) {
+                    totalQuestions = settings.num_tossups;
+                  }
                 }
-                
-                // Get user settings for number of tossups
-                const { data: settings } = await getOrCreateUserSettings(user.id);
+              } else {
+                // For guest mode, get settings from local storage
+                const { data: settings } = await getOrCreateUserSettings('guest');
                 if (settings) {
                   totalQuestions = settings.num_tossups;
                 }
@@ -608,10 +647,24 @@ export function PracticeGameScreen({ onNavigate, previousScreen }: PracticeGameS
 
   return (
     <View style={styles.container}>
+      {/* Guest Mode Banner */}
+      {isGuestMode && (
+        <View style={styles.guestBanner}>
+          <Text style={styles.guestBannerText}>Playing as Guest - Sign in to save progress</Text>
+          <TouchableOpacity 
+            style={styles.guestSignInButton}
+            onPress={() => onNavigate?.('login')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.guestSignInButtonText}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      
       {/* Header */}
       <View style={[styles.header, isWrongQuestionsMode && styles.headerCentered]}>
         <Text style={styles.headerText}>Question {currentQuestionIndex + 1}/{questions.length}</Text>
-        {!isWrongQuestionsMode && (
+        {!isWrongQuestionsMode && !isGuestMode && (
           <Text style={styles.headerText}>Score: {sessionScore}</Text>
         )}
       </View>
@@ -1048,5 +1101,64 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
+  },
+  guestBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(201, 169, 97, 0.15)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(201, 169, 97, 0.3)',
+  },
+  guestBannerText: {
+    fontSize: 13,
+    color: '#3a3a3a',
+    flex: 1,
+  },
+  guestSignInButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(201, 169, 97, 0.3)',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.5)',
+  },
+  guestSignInButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3a3a3a',
+  },
+  guestPromptContainer: {
+    marginTop: 20,
+    marginBottom: 20,
+    alignItems: 'center',
+    gap: 12,
+  },
+  guestPromptText: {
+    fontSize: 16,
+    color: '#6a6a6a',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  signInPromptButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(201, 169, 97, 0.3)',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(201, 169, 97, 0.5)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  signInPromptButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3a3a3a',
+    letterSpacing: 0.5,
   },
 });
