@@ -1,23 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
-import { Mail, Apple, Instagram } from './Icons';
-import { supabase } from '../lib/supabase';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Platform } from 'react-native';
+import Constants from 'expo-constants';
+import { Mail, Apple } from './Icons';
 import { signInWithGoogle, signInWithApple } from '../services/authService';
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
 import { getOrCreateProfile } from '../services/profileService';
 
-// Required for Expo
-WebBrowser.maybeCompleteAuthSession();
 interface LoginScreenProps {
-  navigation: any;
   onLoginSuccess: () => void;
 }
 
 
-export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
+export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
    const [isLoading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
@@ -45,6 +40,14 @@ export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
   };
 
   const handleAppleLogin = async () => {
+    if (Platform.OS === 'ios' && !Constants.isDevice) {
+      Alert.alert(
+        'Sign in with Apple',
+        'Apple Sign-In only runs on a real iPhone or iPad. In Simulator, use Gmail to test login, or install the build on a device to try Apple.',
+      );
+      return;
+    }
+
     setLoading(true);
 
     const { user, error } = await signInWithApple();
@@ -95,13 +98,21 @@ export function LoginScreen({navigation, onLoginSuccess }: LoginScreenProps) {
             onPress={handleGoogleLogin}
             disabled={isLoading}
           />
-          {/* Temporarily removed Apple and Instagram login buttons */}
-          {/* <LoginButton 
-            icon={<Apple />} 
-            label={isLoading ? "Signing in..." : "Apple"} 
-            onPress={handleAppleLogin}
-            disabled={isLoading}
-          /> */}
+          {Platform.OS === 'ios' && (
+            <>
+              <LoginButton 
+                icon={<Apple />} 
+                label={isLoading ? "Signing in..." : "Apple"} 
+                onPress={handleAppleLogin}
+                disabled={isLoading}
+              />
+              {!Constants.isDevice && (
+                <Text style={styles.simulatorHint}>
+                  Apple login: use a physical device (Simulator cannot use Sign in with Apple).
+                </Text>
+              )}
+            </>
+          )}
           {/* <LoginButton icon={<Instagram />} label="Instagram" onPress={() => {}} disabled={isLoading} /> */}
         </View>
       </View>
@@ -248,5 +259,13 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     letterSpacing: 1,
     fontSize: 16,
+  },
+  simulatorHint: {
+    marginTop: 8,
+    paddingHorizontal: 16,
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#7a6a5a',
+    lineHeight: 16,
   },
 });

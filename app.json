@@ -15,8 +15,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ziyouyuan.certamenapp",
+      "usesAppleSignIn": true,
       "icon": "./assets/icon.png",
       "buildNumber": "1",
+      "entitlements": {
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
+      },
       "infoPlist": {
         "NSCameraUsageDescription": "This app does not use the camera.",
         "NSMicrophoneUsageDescription": "This app does not use the microphone.",
@@ -25,7 +31,8 @@
     },
     "primaryCategory": "EDUCATION",
     "plugins": [
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-apple-authentication"
     ],
     "android": {
       "package": "com.ziyou.certamenapp",

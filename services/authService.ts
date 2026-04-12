@@ -1,10 +1,34 @@
 import { supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { makeRedirectUri } from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
+
+const APPLE_SCOPES = [
+  AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+  AppleAuthentication.AppleAuthenticationScope.EMAIL,
+];
+
+const createNonce = () =>
+  `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+
+const hashNonce = async (value: string) =>
+  Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, value);
+
+const buildAppleDisplayName = (
+  fullName?: AppleAuthentication.AppleAuthenticationFullName | null
+) =>
+  [
+    fullName?.givenName,
+    fullName?.middleName,
+    fullName?.familyName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
 
 export interface AuthError {
   message: string;
@@ -152,77 +176,102 @@ export const signInWithGoogle = async (): Promise<AuthResponse> => {
   }
 };
 
-// Sign in with Apple OAuth
+// Sign in with Apple (native ASAuthorization + Supabase signInWithIdToken)
 export const signInWithApple = async (): Promise<AuthResponse> => {
   try {
-    const redirectUrl = makeRedirectUri({
-      scheme: 'certamenapp',
-      path: 'auth/callback',
+    const isAvailable = await AppleAuthentication.isAvailableAsync();
+    if (!isAvailable) {
+      return {
+        error: {
+          message:
+            'Apple Sign-In is not available here. It requires a physical iPhone or iPad (not the Simulator).',
+        },
+      };
+    }
+
+    const rawNonce = createNonce();
+    const hashedNonce = await hashNonce(rawNonce);
+
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: APPLE_SCOPES,
+      nonce: hashedNonce,
     });
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    if (!credential.identityToken) {
+      return {
+        error: {
+          message: 'Apple Sign-In did not return an identity token.',
+        },
+      };
+    }
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
       provider: 'apple',
-      options: {
-        redirectTo: redirectUrl,
-        skipBrowserRedirect: false,
-      },
+      token: credential.identityToken,
+      nonce: rawNonce,
     });
 
     if (error) {
       return { error: { message: error.message } };
     }
 
-    console.log('Apple OAuth data:', data);
+    const displayName = buildAppleDisplayName(credential.fullName);
+    if (displayName || credential.email) {
+      const metadataUpdates: Record<string, string> = {};
 
-    // Open the OAuth URL in browser
-    if (data?.url) {
-      const result = await WebBrowser.openAuthSessionAsync(
-        data.url,
-        redirectUrl
-      );
+      if (displayName) {
+        metadataUpdates.full_name = displayName;
+        metadataUpdates.name = displayName;
+      }
 
-      if (result.type === 'success') {
-        const url = result.url;
-                
-        // Supabase OAuth returns tokens in URL fragment (after #), not query params
-        let accessToken: string | null = null;
-        let refreshToken: string | null = null;
-        
-        // Extract fragment (everything after #)
-        if (url.includes('#')) {
-          const fragment = url.split('#')[1];
-          const params = new URLSearchParams(fragment);
-          accessToken = params.get('access_token');
-          refreshToken = params.get('refresh_token');
-        }
-        
-        if (accessToken && refreshToken) {
-          // Set the session using the tokens from OAuth callback
-          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
+      if (credential.fullName?.givenName) {
+        metadataUpdates.given_name = credential.fullName.givenName;
+      }
+
+      if (credential.fullName?.familyName) {
+        metadataUpdates.family_name = credential.fullName.familyName;
+      }
+
+      if (credential.email) {
+        metadataUpdates.email = credential.email;
+      }
+
+      if (Object.keys(metadataUpdates).length > 0) {
+        const { data: updatedUserData, error: updateError } =
+          await supabase.auth.updateUser({
+            data: metadataUpdates,
           });
-          
-          if (sessionError) {
-            console.error('Error setting session:', sessionError);
-            return { error: { message: sessionError.message } };
-          }
-          
-          console.log('Apple session set successfully:', !!sessionData.session);
+
+        if (updateError) {
+          console.warn('Unable to persist Apple user metadata:', updateError);
+        } else if (updatedUserData.user) {
           return {
-            user: sessionData.user || undefined,
-            session: sessionData.session || undefined,
+            user: updatedUserData.user,
+            session: data.session || undefined,
           };
         }
-        
-        return { error: { message: 'No tokens found in OAuth callback' } };
-      } else {
-        return { error: { message: 'Apple sign-in was cancelled' } };
       }
     }
 
-    return { error: { message: 'No OAuth URL returned' } };
-  } catch (error) {
+    return {
+      user: data.user || undefined,
+      session: data.session || undefined,
+    };
+  } catch (error: unknown) {
+    const code =
+      error && typeof error === 'object' && 'code' in error
+        ? String((error as { code: string }).code)
+        : '';
+    if (code === 'ERR_REQUEST_CANCELED') {
+      return { error: { message: 'Apple sign-in was cancelled.' } };
+    }
+    if (
+      error instanceof Error &&
+      error.message.toLowerCase().includes('canceled')
+    ) {
+      return { error: { message: 'Apple sign-in was cancelled.' } };
+    }
+
     console.error('Apple sign-in error:', error);
     return {
       error: { message: 'An unexpected error occurred during Apple sign in' },

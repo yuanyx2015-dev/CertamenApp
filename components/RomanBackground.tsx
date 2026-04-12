@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, Text, TouchableOpacity, Animated } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { View, StyleSheet, Text, TouchableOpacity, Animated } from 'react-native';
 import { MainMenuScreen } from './MainMenuScreen';
 import { LaurelBranches } from './LaurelBranches';
 import { MeanderBorder } from './MeanderBorder';
@@ -19,8 +18,6 @@ import { ReviewCategoryScreen } from './ReviewCategoryScreen';
 import { CategoryQuestionsScreen } from './CategoryQuestionsScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
 
-const { height } = Dimensions.get('window');
-
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -31,13 +28,11 @@ export function RomanBackground() {
   useEffect(() => {
     checkSession();
 
-    // Listen for auth state changes
     const { data: authListener } = onAuthStateChange((event, session) => {
+      console.log('[RomanBackground] onAuthStateChange:', event, 'session:', !!session);
       if (session) {
         setIsAuthenticated(true);
-        if (currentScreen === 'login') {
-          setCurrentScreen('main');
-        }
+        setCurrentScreen((prev) => (prev === 'login' ? 'main' : prev));
       } else {
         setIsAuthenticated(false);
         setCurrentScreen('login');
@@ -72,8 +67,9 @@ export function RomanBackground() {
     setCurrentScreen(screen);
   };
 
-  const handleGoogleLogin = () => {
-    // After successful Google login, navigate to main menu
+  /** Call after Google/Apple login succeeds so we leave the login branch (not only onAuthStateChange). */
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
     handleNavigate('main');
   };
 
@@ -88,7 +84,7 @@ export function RomanBackground() {
   const renderScreen = () => {
     // If not authenticated, always show login screen
     if (!isAuthenticated) {
-      return <LoginScreen navigation={null} onLoginSuccess={handleGoogleLogin} />;
+      return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
     }
 
     // If authenticated, show the requested screen
