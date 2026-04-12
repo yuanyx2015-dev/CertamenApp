@@ -11,10 +11,10 @@
 
 ## Section 1: Getting Started (0:20-0:45)
 
-**[VISUAL: Login screen showing Google, Apple, and Instagram buttons]**
+**[VISUAL: Login screen showing Google and guest options]**
 
 **NARRATOR:**
-"Getting started is simple. Sign in with your Google or Apple account—or soon, Instagram—and you're ready to compete. Your profile is created automatically, tracking your progress from the very first question."
+"Getting started is simple. Sign in with your Google account—or continue as a guest—and you're ready to compete. Your profile is created automatically when you sign in, tracking your progress from the very first question."
 
 **[VISUAL: Transition to profile screen showing username, rank badge, and stats]**
 

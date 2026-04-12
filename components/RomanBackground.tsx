@@ -83,7 +83,7 @@ export function RomanBackground() {
     setCurrentScreen(screen);
   };
 
-  /** After Google/Apple login succeeds so we leave the login branch (not only onAuthStateChange). */
+  /** After Google login succeeds so we leave the login branch (not only onAuthStateChange). */
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
     setIsGuestMode(false);

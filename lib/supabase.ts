@@ -1,8 +1,4 @@
-/**
- * Supabase Auth (Apple native): Dashboard → Authentication → Providers → Apple.
- * Client IDs must include your iOS bundle ID (e.g. com.ziyouyuan.certamenapp).
- * @see https://supabase.com/docs/guides/auth/social-login/auth-apple
- */
+/** Supabase client; Google OAuth is configured in the dashboard under Authentication → Providers. */
 import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, processLock } from '@supabase/supabase-js';

@@ -43,7 +43,7 @@ This guide explains how profiles and user stats are now linked and synchronized 
 ### Login Flow (Automatic):
 
 ```
-User logs in with Google/Apple
+User logs in with Google
            ↓
 1. Create/update PROFILE in profiles table
    - username

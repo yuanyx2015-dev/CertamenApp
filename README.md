@@ -301,7 +301,6 @@ CertamenApp/
 - [ ] Community question submissions
 
 ### Future Enhancements
-- [ ] Apple Sign-In integration
 - [ ] Offline mode with local caching
 - [ ] Study mode (untimed with explanations)
 - [ ] Export progress reports
@@ -313,7 +312,7 @@ CertamenApp/
 ## 🐛 Known Issues
 
 - Only "Mythology" category has questions; other categories show "Coming Soon"
-- Apple and Instagram login temporarily disabled (Google OAuth only)
+- Instagram login not implemented (Google OAuth + guest mode)
 - Settings screen refresh depends on navigation state (may require manual reload)
 
 ---

@@ -40,7 +40,7 @@ Never make the same mistake twice. Review questions organized by six categories:
 • Clean, Roman-themed interface with authentic design elements
 
 **SECURE & PRIVATE**
-Sign in quickly with Google or Apple, and your progress is automatically saved to the cloud. Complete control over your data with secure account management.
+Sign in quickly with Google, and your progress is automatically saved to the cloud. Complete control over your data with secure account management.
 
 Perfect for Latin students preparing for Certamen competitions, educators looking for practice tools, or anyone fascinated by ancient Roman culture and history.
 
@@ -99,7 +99,7 @@ https://github.com/yuanyx2015-dev/CertamenApp
 ## Privacy Policy Summary
 
 CertamenApp collects minimal user data:
-- Authentication via OAuth (Google/Apple)
+- Authentication via Google OAuth
 - Quiz performance and progress statistics
 - No data is sold to third parties
 - Users can delete their account and all data at any time

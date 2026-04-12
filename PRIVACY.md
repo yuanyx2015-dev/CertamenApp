@@ -5,7 +5,7 @@ Last updated: March 28, 2026
 ## Information We Collect
 
 CertamenApp collects the following information:
-- Email address and name (via Google or Apple Sign-In)
+- Email address and name (via Google Sign-In)
 - Quiz performance and progress statistics
 - Practice session history
 

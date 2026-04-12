@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Platform } from 'react-native';
-import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Mail, Apple } from './Icons';
-import { signInWithGoogle, signInWithApple } from '../services/authService';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
+import { Mail } from './Icons';
+import { signInWithGoogle } from '../services/authService';
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
 import { getOrCreateProfile } from '../services/profileService';
@@ -24,44 +23,6 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
 
     if (error) {
       Alert.alert('Google Login Failed', error.message);
-      return;
-    }
-    if (user) {
-      await getOrCreateProfile(user);
-
-      await getOrCreateUserStats(user.id);
-      await getOrCreateUserSettings(user.id);
-
-      Alert.alert('Success!', 'Welcome to CertamenApp!');
-      onLoginSuccess();
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
-      Alert.alert(
-        'Not available in Expo Go',
-        'Sign in with Apple requires native code. Use a development build (npx expo run:ios) or TestFlight / App Store — not the Expo Go app.',
-      );
-      return;
-    }
-
-    if (Platform.OS === 'ios' && !Constants.isDevice) {
-      Alert.alert(
-        'Sign in with Apple',
-        'Apple Sign-In only runs on a real iPhone or iPad. In Simulator, use Google sign-in to test, or install the build on a device to try Apple.',
-      );
-      return;
-    }
-
-    setLoading(true);
-
-    const { user, error } = await signInWithApple();
-
-    setLoading(false);
-
-    if (error) {
-      Alert.alert('Apple Login Failed', error.message);
       return;
     }
     if (user) {
@@ -99,21 +60,6 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
             onPress={handleGoogleLogin}
             disabled={isLoading}
           />
-          {Platform.OS === 'ios' && (
-            <>
-              <LoginButton
-                icon={<Apple />}
-                label={isLoading ? 'Signing in...' : 'Sign in with Apple'}
-                onPress={handleAppleLogin}
-                disabled={isLoading}
-              />
-              {!Constants.isDevice && (
-                <Text style={styles.simulatorHint}>
-                  Apple login: use a physical device (Simulator cannot use Sign in with Apple).
-                </Text>
-              )}
-            </>
-          )}
 
           {onGuestMode && (
             <TouchableOpacity
@@ -282,14 +228,6 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     letterSpacing: 1,
     fontSize: 16,
-  },
-  simulatorHint: {
-    marginTop: 8,
-    paddingHorizontal: 16,
-    textAlign: 'center',
-    fontSize: 12,
-    color: '#7a6a5a',
-    lineHeight: 16,
   },
   guestButton: {
     paddingHorizontal: 24,
