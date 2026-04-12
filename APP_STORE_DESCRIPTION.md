@@ -1,4 +1,4 @@
-# CertamenApp - Apple App Store Promotional Text
+# CertamenApp — App Store promotional text (iOS)
 
 ## Promotional Text (170 characters max - appears at top)
 

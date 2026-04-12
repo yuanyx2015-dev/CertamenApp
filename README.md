@@ -110,19 +110,20 @@ See the [Supabase Setup Guide](guides/SUPABASE_SETUP.md) for detailed instructio
    - Add your OAuth credentials
    - Add redirect URLs for your Expo app
 
-2. Update `app.json` with your bundle identifiers:
+2. Bundle identifiers in this repo (keep **iOS** aligned with your App ID in Apple Developer):
 ```json
 {
   "expo": {
     "ios": {
-      "bundleIdentifier": "com.yourname.certamenapp"
+      "bundleIdentifier": "com.ziyouyuan.certamenapp"
     },
     "android": {
-      "package": "com.yourname.certamenapp"
+      "package": "com.ziyou.certamenapp"
     }
   }
 }
 ```
+   The iOS value is the **only** bundle ID used for Sign in with Apple / App Store; Android uses its own `applicationId` above.
 
 ### Step 5: Run the App
 

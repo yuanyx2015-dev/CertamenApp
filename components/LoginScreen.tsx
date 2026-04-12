@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
-import { Mail } from './Icons';
-import { signInWithGoogle } from '../services/authService';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  Alert,
+} from 'react-native';
+import { Mail, Apple } from './Icons';
+import { signInWithGoogle, signInWithApple } from '../services/authService';
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
 import { getOrCreateProfile } from '../services/profileService';
@@ -23,6 +30,28 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
 
     if (error) {
       Alert.alert('Google Login Failed', error.message);
+      return;
+    }
+    if (user) {
+      await getOrCreateProfile(user);
+
+      await getOrCreateUserStats(user.id);
+      await getOrCreateUserSettings(user.id);
+
+      Alert.alert('Success!', 'Welcome to CertamenApp!');
+      onLoginSuccess();
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setLoading(true);
+
+    const { user, error } = await signInWithApple();
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Apple Login Failed', error.message);
       return;
     }
     if (user) {
@@ -58,6 +87,13 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
             icon={<Mail />}
             label={isLoading ? 'Signing in...' : 'Sign in with Google'}
             onPress={handleGoogleLogin}
+            disabled={isLoading}
+          />
+
+          <LoginButton
+            icon={<Apple />}
+            label={isLoading ? 'Signing in...' : 'Sign in with Apple'}
+            onPress={handleAppleLogin}
             disabled={isLoading}
           />
 
@@ -128,7 +164,10 @@ function LoginButton({
 
   return (
     <Animated.View
-      style={{ transform: [{ scale: scaleAnim }], opacity: disabled ? 0.6 : 1 }}
+      style={[
+        styles.buttonOuter,
+        { transform: [{ scale: scaleAnim }], opacity: disabled ? 0.6 : 1 },
+      ]}
     >
       <TouchableOpacity
         onPressIn={handlePressIn}
@@ -201,7 +240,11 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     gap: 12,
-    alignItems: 'center',
+    width: '100%',
+    alignItems: 'stretch',
+  },
+  buttonOuter: {
+    width: '100%',
   },
   button: {
     flexDirection: 'row',
@@ -218,7 +261,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
-    minWidth: 200,
+    minHeight: 48,
+    width: '100%',
   },
   iconContainer: {
     width: 20,

@@ -1,4 +1,7 @@
-/** Supabase client; Google OAuth is configured in the dashboard under Authentication → Providers. */
+/**
+ * Supabase client. Configure Google + Apple under Authentication → Providers.
+ * Native Apple: bundle ID must match Apple Developer App ID; Services ID / JWT secret for server-side Apple config.
+ */
 import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, processLock } from '@supabase/supabase-js';
