@@ -288,7 +288,17 @@ function AnimatedModeButton({ icon, label, onPress }: { icon: React.ReactNode; l
   );
 }
 
-export function MainMenuScreen({ onNavigate, isGuestMode }: { onNavigate?: (screen: string) => void; isGuestMode?: boolean }) {
+export function MainMenuScreen({
+  onNavigate,
+  isGuestMode,
+  isAuthenticated,
+  onLeaveGuestMode,
+}: {
+  onNavigate?: (screen: string) => void;
+  isGuestMode?: boolean;
+  isAuthenticated?: boolean;
+  onLeaveGuestMode?: () => void;
+}) {
   // Profile/Sign In button animation
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
@@ -327,13 +337,17 @@ export function MainMenuScreen({ onNavigate, isGuestMode }: { onNavigate?: (scre
   });
 
   const handleProfilePress = () => {
+    if (isAuthenticated) {
+      onNavigate?.('profile');
+      return;
+    }
     if (isGuestMode) {
       Alert.alert(
-        'Sign In Required',
-        'Sign in to view your profile and track your progress',
+        'Leave guest mode?',
+        'You will return to the sign-in screen. You can log in or choose guest again.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign In', onPress: () => onNavigate?.('login') }
+          { text: 'Continue', onPress: () => onLeaveGuestMode?.() },
         ]
       );
     } else {
@@ -369,7 +383,9 @@ export function MainMenuScreen({ onNavigate, isGuestMode }: { onNavigate?: (scre
           >
             <Animated.View style={[styles.profileButton, { backgroundColor: profileBackgroundColor }]}>
               <ProfileIcon />
-              <Text style={styles.profileText}>{isGuestMode ? 'Sign In' : 'Profile'}</Text>
+              <Text style={styles.profileText}>
+                {isAuthenticated ? 'Profile' : isGuestMode ? 'Leave Guest Mode' : 'Profile'}
+              </Text>
             </Animated.View>
           </TouchableOpacity>
         </Animated.View>

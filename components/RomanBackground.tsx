@@ -33,6 +33,7 @@ export function RomanBackground() {
       console.log('[RomanBackground] onAuthStateChange:', event, 'session:', !!session);
       if (session) {
         setIsAuthenticated(true);
+        setIsGuestMode(false);
         setCurrentScreen((prev) => (prev === 'login' ? 'main' : prev));
       } else {
         setIsAuthenticated(false);
@@ -95,6 +96,11 @@ export function RomanBackground() {
     setCurrentScreen('main');
   };
 
+  const handleLeaveGuestMode = () => {
+    setIsGuestMode(false);
+    setCurrentScreen('login');
+  };
+
   const handleLogout = async () => {
     const { error } = await signOut();
     if (error) {
@@ -144,7 +150,12 @@ export function RomanBackground() {
             onLogout={handleLogout}
           />
         ) : (
-          <MainMenuScreen onNavigate={handleNavigate} isGuestMode={isGuestMode} />
+          <MainMenuScreen
+            onNavigate={handleNavigate}
+            isGuestMode={isGuestMode}
+            isAuthenticated={isAuthenticated}
+            onLeaveGuestMode={handleLeaveGuestMode}
+          />
         );
       case 'settings':
         return (
@@ -158,7 +169,12 @@ export function RomanBackground() {
         return isAuthenticated ? (
           <ReviewCategoryScreen onNavigate={handleNavigate} />
         ) : (
-          <MainMenuScreen onNavigate={handleNavigate} isGuestMode={isGuestMode} />
+          <MainMenuScreen
+            onNavigate={handleNavigate}
+            isGuestMode={isGuestMode}
+            isAuthenticated={isAuthenticated}
+            onLeaveGuestMode={handleLeaveGuestMode}
+          />
         );
       case 'categoryQuestions':
         return (
@@ -178,7 +194,14 @@ export function RomanBackground() {
         );
       case 'main':
       default:
-        return <MainMenuScreen onNavigate={handleNavigate} isGuestMode={isGuestMode} />;
+        return (
+          <MainMenuScreen
+            onNavigate={handleNavigate}
+            isGuestMode={isGuestMode}
+            isAuthenticated={isAuthenticated}
+            onLeaveGuestMode={handleLeaveGuestMode}
+          />
+        );
     }
   };
 
