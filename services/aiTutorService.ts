@@ -1,5 +1,18 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 
+function parseErrorPayload(raw: string, status: number): string {
+  if (!raw?.trim()) {
+    return `Request failed (HTTP ${status})`;
+  }
+  try {
+    const j = JSON.parse(raw) as { error?: string };
+    if (typeof j?.error === 'string') return j.error;
+  } catch {
+    /* ignore */
+  }
+  return raw.length > 280 ? `${raw.slice(0, 280)}…` : raw;
+}
+
 export interface AITutorResponse {
   answer: string;
   remainingQuestions: number;
@@ -65,11 +78,27 @@ export const askAITutor = async (
       }
     );
 
-    const data = await response.json();
+    const raw = await response.text();
+    let data: AITutorResponse | null = null;
+    try {
+      data = raw ? (JSON.parse(raw) as AITutorResponse) : null;
+    } catch {
+      console.error('ai-tutor non-JSON body:', raw);
+      return {
+        data: null,
+        error: parseErrorPayload(raw, response.status),
+      };
+    }
     console.log(data);
 
     if (!response.ok) {
-      const err = data.error ?? 'Request failed';
+      const parsedErr =
+        data && typeof data === 'object' && data !== null && 'error' in data
+          ? (data as { error?: unknown }).error
+          : undefined;
+      const err =
+        (typeof parsedErr === 'string' ? parsedErr : null) ??
+        parseErrorPayload(raw, response.status);
       console.error('Error calling ai-tutor function:', err);
       return { data: null, error: err };
     }

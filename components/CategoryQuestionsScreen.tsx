@@ -15,6 +15,12 @@ import {
   markQuestionAsCorrect,
   QuestionWithStats 
 } from '../services/questionReviewService';
+import {
+  AI_TUTOR_DAILY_LIMIT,
+  AI_TUTOR_MAX_QUESTION_CHARS,
+  buildContextualTutorPrompt,
+  maxFollowUpCharsForContext,
+} from '../constants/aiTutor';
 import { getQuestionExplanation } from '../services/aiExplanationService';
 import { askAITutor, getAITutorUsage } from '../services/aiTutorService';
 
@@ -35,7 +41,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
   const [customQuestion, setCustomQuestion] = useState('');
   const [customAnswer, setCustomAnswer] = useState<string | null>(null);
   const [isLoadingCustom, setIsLoadingCustom] = useState(false);
-  const [remainingQuestions, setRemainingQuestions] = useState(2);
+  const [remainingQuestions, setRemainingQuestions] = useState(AI_TUTOR_DAILY_LIMIT);
 
   useEffect(() => {
     loadQuestions();
@@ -134,26 +140,45 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       return;
     }
 
-    if (customQuestion.length > 200) {
-      Alert.alert('Question Too Long', 'Please keep your question under 200 characters.');
+    const maxFollow = maxFollowUpCharsForContext(questionText, correctAnswer);
+    const trimmed = customQuestion.trim();
+    if (trimmed.length > maxFollow) {
+      Alert.alert(
+        'Follow-up too long',
+        maxFollow === 0
+          ? 'This review item is too long to add an AI follow-up (500 character server limit).'
+          : `Shorten your note to ${maxFollow} characters for this question.`
+      );
       return;
     }
 
     setIsLoadingCustom(true);
 
-    // Create context-aware question for AI
-    const contextualQuestion = `Regarding this Certamen question: "${questionText}" (Answer: "${correctAnswer}")
+    const contextualQuestion = buildContextualTutorPrompt(
+      questionText,
+      correctAnswer,
+      trimmed
+    );
 
-User asks: ${customQuestion}
-
-Please answer the user's question specifically about this question.`;
+    if (contextualQuestion.length > AI_TUTOR_MAX_QUESTION_CHARS) {
+      Alert.alert(
+        'Follow-up too long',
+        `The combined text must stay under ${AI_TUTOR_MAX_QUESTION_CHARS} characters.`
+      );
+      setIsLoadingCustom(false);
+      return;
+    }
 
     const { data, error } = await askAITutor(userId, contextualQuestion);
 
     setIsLoadingCustom(false);
 
     if (error || !data) {
-      Alert.alert('Error', 'Failed to get answer from AI. Please try again.');
+      const msg =
+        typeof error === 'string'
+          ? error
+          : 'Failed to get answer from AI. Please try again.';
+      Alert.alert('Error', msg);
       return;
     }
 
@@ -222,7 +247,12 @@ Please answer the user's question specifically about this question.`;
             </Text>
           </View>
         ) : (
-          displayedQuestions.map((question) => (
+          displayedQuestions.map((question) => {
+            const followUpMax = maxFollowUpCharsForContext(
+              question.question_text,
+              question.correct_answer
+            );
+            return (
             <View key={question.id} style={styles.questionCard}>
               <View style={styles.questionHeader}>
                 <Text style={styles.difficultyBadge}>
@@ -259,7 +289,11 @@ Please answer the user's question specifically about this question.`;
                       {/* Custom Question Input */}
                       <View style={styles.customQuestionContainer}>
                         <Text style={styles.customQuestionLabel}>
-                          Have a follow-up question? ({remainingQuestions}/2 remaining today)
+                          Have a follow-up question? ({remainingQuestions}/
+                          {AI_TUTOR_DAILY_LIMIT} remaining today)
+                          {followUpMax > 0
+                            ? ` · up to ${followUpMax} chars`
+                            : ' · follow-up unavailable (question too long)'}
                         </Text>
                         <View style={styles.customQuestionRow}>
                           <TextInput
@@ -268,16 +302,29 @@ Please answer the user's question specifically about this question.`;
                             placeholderTextColor="#999"
                             value={customQuestion}
                             onChangeText={setCustomQuestion}
-                            maxLength={200}
-                            editable={!isLoadingCustom && remainingQuestions > 0}
+                            maxLength={followUpMax > 0 ? followUpMax : 1}
+                            editable={
+                              !isLoadingCustom &&
+                              remainingQuestions > 0 &&
+                              followUpMax > 0
+                            }
                           />
                           <TouchableOpacity
                             style={[
                               styles.askButton,
-                              (!customQuestion.trim() || isLoadingCustom || remainingQuestions <= 0) && styles.askButtonDisabled
+                              (!customQuestion.trim() ||
+                                isLoadingCustom ||
+                                remainingQuestions <= 0 ||
+                                followUpMax <= 0) &&
+                                styles.askButtonDisabled,
                             ]}
                             onPress={() => handleAskCustomQuestion(question.question_text, question.correct_answer)}
-                            disabled={!customQuestion.trim() || isLoadingCustom || remainingQuestions <= 0}
+                            disabled={
+                              !customQuestion.trim() ||
+                              isLoadingCustom ||
+                              remainingQuestions <= 0 ||
+                              followUpMax <= 0
+                            }
                           >
                             <Text style={styles.askButtonText}>Ask</Text>
                           </TouchableOpacity>
@@ -322,7 +369,8 @@ Please answer the user's question specifically about this question.`;
                 </TouchableOpacity>
               </View>
             </View>
-          ))
+            );
+          })
         )}
       </ScrollView>
     </View>

@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { AI_TUTOR_DAILY_LIMIT } from '../constants/aiTutor';
 import { getCurrentUser } from '../services/authService';
 import { askAITutor, getAITutorUsage } from '../services/aiTutorService';
 
@@ -29,7 +30,7 @@ export function AITutorScreen({ onNavigate }: AITutorScreenProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [remainingQuestions, setRemainingQuestions] = useState(10);
+  const [remainingQuestions, setRemainingQuestions] = useState(AI_TUTOR_DAILY_LIMIT);
   const [userId, setUserId] = useState<string>('');
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -55,7 +56,7 @@ export function AITutorScreen({ onNavigate }: AITutorScreenProps) {
     if (remainingQuestions <= 0) {
       Alert.alert(
         'Daily Limit Reached',
-        'You have used all 10 questions for today. Come back tomorrow for more!'
+        `You have used all ${AI_TUTOR_DAILY_LIMIT} custom questions for today. Come back tomorrow for more!`
       );
       return;
     }
@@ -85,7 +86,11 @@ export function AITutorScreen({ onNavigate }: AITutorScreenProps) {
     setIsLoading(false);
 
     if (error || !data) {
-      Alert.alert('Error', 'Failed to get answer from AI tutor. Please try again.');
+      const msg =
+        typeof error === 'string'
+          ? error
+          : 'Failed to get answer from AI tutor. Please try again.';
+      Alert.alert('Error', msg);
       return;
     }
 

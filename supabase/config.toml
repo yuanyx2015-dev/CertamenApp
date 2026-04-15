@@ -1,4 +1,9 @@
 
+[functions.ai-tutor]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/ai-tutor/index.ts"
+
 [functions.explain-question]
 enabled = true
 verify_jwt = true
