@@ -344,7 +344,7 @@ export function MainMenuScreen({
     if (isGuestMode) {
       Alert.alert(
         'Leave guest mode?',
-        'You will return to the sign-in screen. You can log in or choose guest again.',
+        'You will return to the login screen now.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Continue', onPress: () => onLeaveGuestMode?.() },
