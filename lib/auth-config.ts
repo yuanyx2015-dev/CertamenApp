@@ -5,6 +5,7 @@ export const getRedirectUrl = () => {
   return makeRedirectUri({
     scheme: 'certamenapp',
     path: 'auth/callback',
+    native: 'certamenapp://auth/callback',
   });
 };
 

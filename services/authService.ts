@@ -12,6 +12,8 @@ const OAUTH_REDIRECT = () =>
   makeRedirectUri({
     scheme: 'certamenapp',
     path: 'auth/callback',
+    // Bare / dev-client: skip Linking.createURL when expo-constants manifest is empty in JS.
+    native: 'certamenapp://auth/callback',
   });
 
 /** Shared browser OAuth flow for Google / Apple when native Apple is unavailable. */

@@ -1,34 +1,40 @@
 /**
- * Applies patches/expo-constants+18.0.13.patch to the nested expo-constants
- * package (expo/node_modules/expo-constants). patch-package does not apply
- * there by default because the package is not hoisted to node_modules root.
+ * Applies patches/expo-constants+18.0.13.patch to expo-constants wherever npm
+ * placed it (hoisted root or under expo/), so pod install always sees a patched podspec.
  */
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 
 const root = path.join(__dirname, "..");
-const pkg = path.join(root, "node_modules", "expo", "node_modules", "expo-constants");
-const podspec = path.join(pkg, "ios", "EXConstants.podspec");
 const patchFile = path.join(root, "patches", "expo-constants+18.0.13.patch");
 
-if (!fs.existsSync(podspec) || !fs.existsSync(patchFile)) {
+const candidates = [
+  path.join(root, "node_modules", "expo-constants"),
+  path.join(root, "node_modules", "expo", "node_modules", "expo-constants"),
+].filter((p) => fs.existsSync(path.join(p, "ios", "EXConstants.podspec")));
+
+if (!candidates.length || !fs.existsSync(patchFile)) {
   process.exit(0);
 }
 
-const src = fs.readFileSync(podspec, "utf8");
-if (src.includes("Quote PROJECT_ROOT")) {
-  process.exit(0);
-}
+for (const pkg of candidates) {
+  const podspec = path.join(pkg, "ios", "EXConstants.podspec");
+  if (!fs.existsSync(podspec)) continue;
 
-try {
-  execFileSync("patch", ["-p1", "-i", patchFile], {
-    cwd: pkg,
-    stdio: "inherit",
-  });
-} catch (e) {
-  console.warn(
-    "[apply-expo-constants-podspec-patch] patch failed — iOS builds may fail if the project path contains spaces.",
-  );
-  process.exit(0);
+  const src = fs.readFileSync(podspec, "utf8");
+  if (src.includes("Quote PROJECT_ROOT")) {
+    continue;
+  }
+
+  try {
+    execFileSync("patch", ["-p1", "-i", patchFile], {
+      cwd: pkg,
+      stdio: "inherit",
+    });
+  } catch (e) {
+    console.warn(
+      `[apply-expo-constants-podspec-patch] patch failed for ${pkg} — iOS builds may fail if the project path contains spaces.`,
+    );
+  }
 }
