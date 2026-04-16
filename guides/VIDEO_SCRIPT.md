@@ -20,12 +20,12 @@
 
 ---
 
-## Section 2: Practice Mode - The Core Experience (0:45-1:30)
+## Section 2: Rank-up Mode - The Core Experience (0:45-1:30)
 
-**[VISUAL: Main menu with sword icon highlighted, then practice game screen]**
+**[VISUAL: Main menu with Rank-up Mode (sword) highlighted, then practice game screen]**
 
 **NARRATOR:**
-"Practice Mode is where legends are made. Watch as questions stream in character-by-character, just like real Certamen. Hit the buzz button when you're ready—but you've only got 15 seconds!"
+"Rank-up Mode is where legends are made. Watch as questions stream in character-by-character, just like real Certamen. Hit the buzz button when you're ready—but you've only got 15 seconds!"
 
 **[VISUAL: Demonstration of buzz-in, timer counting down, multiple choice answers appearing]**
 

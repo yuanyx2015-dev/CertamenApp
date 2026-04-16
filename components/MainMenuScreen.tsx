@@ -252,8 +252,9 @@ function AnimatedModeButton({ icon, label, onPress }: { icon: React.ReactNode; l
   });
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <TouchableOpacity 
+    <Animated.View style={[styles.modeButtonOuter, { transform: [{ scale: scaleAnim }] }]}>
+      <TouchableOpacity
+        style={styles.modeButtonTouchable}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
@@ -261,7 +262,9 @@ function AnimatedModeButton({ icon, label, onPress }: { icon: React.ReactNode; l
       >
         <Animated.View style={[styles.modeButton, { backgroundColor }]}>
           {icon}
-          <Text style={styles.modeButtonText}>{label}</Text>
+          <Text style={styles.modeButtonText} numberOfLines={2}>
+            {label}
+          </Text>
         </Animated.View>
       </TouchableOpacity>
     </Animated.View>
@@ -371,18 +374,18 @@ export function MainMenuScreen({
         </Animated.View>
       </View>
 
-      {/* Center: Story Mode, Practice Mode, Review (top → bottom) */}
+      {/* Rank-up Mode = timed Certamen (practice route); Practice Mode = narrative (story route); Review */}
       <View style={styles.centerContainer}>
         <AnimatedModeButton
           icon={<SingleSwordIcon />}
-          label="Story Mode"
-          onPress={() => onNavigate?.('story')}
+          label="Rank-up Mode"
+          onPress={() => onNavigate?.('practice')}
         />
 
         <AnimatedModeButton
           icon={<RomanRectangularShieldIcon />}
           label="Practice Mode"
-          onPress={() => onNavigate?.('practice')}
+          onPress={() => onNavigate?.('story')}
         />
 
         <AnimatedModeButton
@@ -413,7 +416,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     gap: 14,
-    marginTop: -48,
+    // Shift the button cluster downward (was marginTop: -48 pulling it up toward the title)
+    paddingTop: 56,
+    paddingBottom: 12,
   },
   profileContainer: {
     alignItems: 'flex-end',
@@ -439,11 +444,16 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     letterSpacing: 0.5,
   },
+  modeButtonOuter: {
+    alignSelf: 'stretch',
+    width: '100%',
+  },
+  modeButtonTouchable: {
+    width: '100%',
+  },
   modeButton: {
     width: '100%',
-    maxWidth: '100%',
-    alignSelf: 'center',
-    minHeight: 128,
+    height: 148,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
@@ -464,5 +474,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#3a3a3a',
     letterSpacing: 1,
+    textAlign: 'center',
   },
 });

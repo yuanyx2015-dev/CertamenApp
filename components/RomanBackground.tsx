@@ -25,6 +25,12 @@ export function RomanBackground() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [practiceGameKey, setPracticeGameKey] = useState(0);
+  /** When set, practice-game loads only this difficulty; cleared when leaving that flow. */
+  const [practiceGameDifficultyLock, setPracticeGameDifficultyLock] = useState<
+    'easy' | 'medium' | 'hard' | null
+  >(null);
+  /** True when practice-game was opened from Practice Mode (story); no profile score or rank change. */
+  const [practiceGameNoRankScore, setPracticeGameNoRankScore] = useState(false);
   const previousScreen = useRef('login');
 
   useEffect(() => {
@@ -62,7 +68,11 @@ export function RomanBackground() {
     }
   };
 
-  const handleNavigate = (screen: string, category?: string) => {
+  const handleNavigate = (
+    screen: string,
+    category?: string,
+    practiceDifficulty?: 'easy' | 'medium' | 'hard'
+  ) => {
     if (isGuestMode && !isAuthenticated) {
       if (screen === 'profile') {
         return;
@@ -72,11 +82,20 @@ export function RomanBackground() {
       }
     }
 
-    if (screen === 'practice-game') {
-      setPracticeGameKey((prev) => prev + 1);
+    if (practiceDifficulty !== undefined) {
+      setPracticeGameDifficultyLock(practiceDifficulty);
+    } else {
+      setPracticeGameDifficultyLock(null);
     }
 
-    if (currentScreen !== 'settings') {
+    if (screen === 'practice-game') {
+      setPracticeGameNoRankScore(currentScreen === 'story');
+      setPracticeGameKey((prev) => prev + 1);
+    } else {
+      setPracticeGameNoRankScore(false);
+    }
+
+    if (currentScreen !== 'settings' && currentScreen !== 'settings-practice') {
       previousScreen.current = currentScreen;
     }
     if (category) {
@@ -134,6 +153,8 @@ export function RomanBackground() {
             onNavigate={handleNavigate}
             previousScreen={previousScreen.current}
             isGuestMode={isGuestMode}
+            fixedDifficulty={practiceGameDifficultyLock}
+            suppressRankProgress={practiceGameNoRankScore}
           />
         );
       case 'pvp':
@@ -163,6 +184,16 @@ export function RomanBackground() {
       case 'settings':
         return (
           <SettingsScreen
+            variant="rank-up"
+            onNavigate={handleNavigate}
+            previousScreen={previousScreen.current}
+            isGuestMode={isGuestMode}
+          />
+        );
+      case 'settings-practice':
+        return (
+          <SettingsScreen
+            variant="practice"
             onNavigate={handleNavigate}
             previousScreen={previousScreen.current}
             isGuestMode={isGuestMode}

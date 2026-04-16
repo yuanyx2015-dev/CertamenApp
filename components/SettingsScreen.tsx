@@ -57,7 +57,20 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   );
 }
 
-export function SettingsScreen({ onNavigate, previousScreen, isGuestMode }: { onNavigate?: (screen: string) => void; previousScreen?: string; isGuestMode?: boolean }) {
+type SettingsVariant = 'rank-up' | 'practice';
+
+export function SettingsScreen({
+  variant = 'rank-up',
+  onNavigate,
+  previousScreen,
+  isGuestMode,
+}: {
+  variant?: SettingsVariant;
+  onNavigate?: (screen: string) => void;
+  previousScreen?: string;
+  isGuestMode?: boolean;
+}) {
+  const isPracticeSettings = variant === 'practice';
   const [wrongQuestionsOnly, setWrongQuestionsOnly] = React.useState(false);
   const [numTossups, setNumTossups] = React.useState(20);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -133,9 +146,10 @@ export function SettingsScreen({ onNavigate, previousScreen, isGuestMode }: { on
 
   // Handle number of tossups change
   const handleNumTossupsChange = async (newValue: number) => {
-    // Calculate min and max based on wrong questions toggle
-    const minQuestions = wrongQuestionsOnly ? Math.min(5, wrongQuestionCount) : 5;
-    const maxQuestions = wrongQuestionsOnly ? Math.min(wrongQuestionCount, 50) : 50;
+    const minQuestions =
+      !isPracticeSettings && wrongQuestionsOnly ? Math.min(5, wrongQuestionCount) : 5;
+    const maxQuestions =
+      !isPracticeSettings && wrongQuestionsOnly ? Math.min(wrongQuestionCount, 50) : 50;
     // Clamp between minQuestions and maxQuestions
     const clampedValue = Math.max(minQuestions, Math.min(maxQuestions, newValue));
     setNumTossups(clampedValue);
@@ -157,7 +171,6 @@ export function SettingsScreen({ onNavigate, previousScreen, isGuestMode }: { on
     <View style={styles.container}>
       {/* Centered Content */}
       <View style={styles.contentContainer}>
-        {/* Settings Title */}
         <Text style={styles.titleText}>Settings</Text>
 
         {/* Settings Options */}
@@ -183,28 +196,31 @@ export function SettingsScreen({ onNavigate, previousScreen, isGuestMode }: { on
               </TouchableOpacity>
             </View>
           </View>
-          {wrongQuestionsOnly && (
+          {!isPracticeSettings && wrongQuestionsOnly && (
             <Text style={styles.helperText}>
               Max: {Math.min(wrongQuestionCount, 50)} (based on your wrong questions)
             </Text>
           )}
 
-          {/* Wrong questions only with toggle - disabled for guests */}
-          <View style={styles.toggleRow}>
-            <Text style={[styles.optionText, isGuestMode && styles.disabledText]}>Wrong questions only</Text>
-            <Switch
-              value={wrongQuestionsOnly}
-              onValueChange={handleWrongQuestionsToggle}
-              trackColor={{ false: '#d4d4d4', true: '#c9a961' }}
-              thumbColor={wrongQuestionsOnly ? '#d4b76a' : '#f4f3f4'}
-              ios_backgroundColor="#d4d4d4"
-              disabled={isGuestMode}
-            />
-          </View>
-          {isGuestMode && (
-            <Text style={styles.guestHelperText}>
-              Sign in to track wrong questions
-            </Text>
+          {!isPracticeSettings && (
+            <>
+              <View style={styles.toggleRow}>
+                <Text style={[styles.optionText, isGuestMode && styles.disabledText]}>
+                  Wrong questions only
+                </Text>
+                <Switch
+                  value={wrongQuestionsOnly}
+                  onValueChange={handleWrongQuestionsToggle}
+                  trackColor={{ false: '#d4d4d4', true: '#c9a961' }}
+                  thumbColor={wrongQuestionsOnly ? '#d4b76a' : '#f4f3f4'}
+                  ios_backgroundColor="#d4d4d4"
+                  disabled={isGuestMode}
+                />
+              </View>
+              {isGuestMode && (
+                <Text style={styles.guestHelperText}>Sign in to track wrong questions</Text>
+              )}
+            </>
           )}
         </View>
       </View>

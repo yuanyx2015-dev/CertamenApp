@@ -82,9 +82,19 @@ interface PracticeGameScreenProps {
   onNavigate?: (screen: string) => void;
   previousScreen?: string;
   isGuestMode?: boolean;
+  /** When set, all tossups use this difficulty only (Rank-up / Practice Mode pickers). Rank-based mix when null. */
+  fixedDifficulty?: 'easy' | 'medium' | 'hard' | null;
+  /** Practice Mode (story route): no profile score, rank, or wrong-answer tracking. */
+  suppressRankProgress?: boolean;
 }
 
-export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: PracticeGameScreenProps) {
+export function PracticeGameScreen({
+  onNavigate,
+  previousScreen,
+  isGuestMode,
+  fixedDifficulty = null,
+  suppressRankProgress = false,
+}: PracticeGameScreenProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -110,6 +120,8 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
   const fullTextRef = useRef('');
   const feedbackScaleAnim = useRef(new Animated.Value(0)).current;
   const feedbackOpacityAnim = useRef(new Animated.Value(0)).current;
+
+  const skipProfileScoring = isGuestMode || suppressRankProgress;
 
   // Load questions from database
   useEffect(() => {
@@ -153,7 +165,13 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
       const seenIds = new Set<string>(); // Extra safeguard to prevent duplicates
       
       try {
-        if (wrongQuestionsOnly && !isGuestMode && user) {
+        if (
+          wrongQuestionsOnly &&
+          !isGuestMode &&
+          user &&
+          !fixedDifficulty &&
+          !suppressRankProgress
+        ) {
           // Fetch only wrong questions
           const { data: wrongQuestions, error: wrongError } = await getAllWrongQuestions(user.id, totalQuestions);
           if (wrongError) throw wrongError;
@@ -169,12 +187,26 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
             setIsLoading(false);
             return;
           }
+        } else if (fixedDifficulty) {
+          const { data: fixedQuestions, error } = await getRandomQuestions(
+            undefined,
+            fixedDifficulty,
+            totalQuestions
+          );
+          if (error) throw error;
+          if (fixedQuestions) {
+            fixedQuestions.forEach((q) => {
+              if (!seenIds.has(q.id)) {
+                allQuestions.push(q);
+                seenIds.add(q.id);
+              }
+            });
+          }
         } else {
-          // Original logic: Get question distribution based on rank
+          // Rank-based mix across difficulties
           const distribution = getQuestionDistribution(currentRank, totalQuestions);
-          
-          // Fetch questions for each difficulty level
-          const difficulties: Array<{ level: 'easy' | 'medium' | 'hard', count: number }> = [
+
+          const difficulties: Array<{ level: 'easy' | 'medium' | 'hard'; count: number }> = [
             { level: 'easy', count: distribution.easy },
             { level: 'medium', count: distribution.medium },
             { level: 'hard', count: distribution.hard },
@@ -185,7 +217,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
               const { data: questions, error } = await getRandomQuestions(undefined, level, count);
               if (error) throw error;
               if (questions) {
-                questions.forEach(q => {
+                questions.forEach((q) => {
                   if (!seenIds.has(q.id)) {
                     allQuestions.push(q);
                     seenIds.add(q.id);
@@ -216,7 +248,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
     };
     
     loadQuestionsAndStats();
-  }, [isGuestMode]); // Reload when guest mode changes or component mounts
+  }, [isGuestMode, fixedDifficulty, suppressRankProgress]); // Reload when guest mode, difficulty lock, or Practice vs Rank-up changes
 
   // Shuffle function
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -280,7 +312,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
     const currentQuestion = questions[currentQuestionIndex];
     fullTextRef.current = currentQuestion.question_text;
 
-    // Check if this question was previously answered wrong (only in normal mode)
+    // Check if this question was previously answered wrong (only when profile scoring applies)
     if (!isWrongQuestionsMode && !isGuestMode) {
       const user = await getCurrentUser();
       if (user) {
@@ -407,17 +439,20 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
     triggerFeedbackAnimation(option.isCorrect);
 
     if (option.isCorrect) {
-      // In wrong questions practice mode or guest mode, don't award points or update database
-      if (isWrongQuestionsMode || isGuestMode) {
+      if (isWrongQuestionsMode) {
+        setStatusText('Correct!');
+      } else if (suppressRankProgress && !isGuestMode) {
+        // Practice Mode (story): local count only, no profile or DB
+        setSessionScore((s) => s + 1);
+        setStatusText('Correct!');
+      } else if (isGuestMode) {
         setStatusText('Correct!');
       } else {
-        // Normal mode: award points and update database
         const pointsAwarded = 10;
         const newSessionScore = sessionScore + pointsAwarded;
         setSessionScore(newSessionScore);
         setStatusText(`Correct! +${pointsAwarded} points`);
-        
-        // Update cumulative score in database
+
         const user = await getCurrentUser();
         if (user) {
           const newCumulativeScore = cumulativeScore + pointsAwarded;
@@ -432,7 +467,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
     } else {
       setStatusText('Wrong! Better luck next time.');
       
-      // Only track wrong answers in normal mode (not in wrong questions practice mode or guest mode)
+      // Track wrong answers for Review whenever signed in (including Practice Mode; not in wrong-review-only sessions)
       if (!isWrongQuestionsMode && !isGuestMode) {
         const user = await getCurrentUser();
         if (user && questions[currentQuestionIndex]) {
@@ -519,12 +554,17 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
       <View style={styles.container}>
         <View style={styles.gameOverContainer}>
           <Text style={styles.gameOverTitle}>Practice Complete!</Text>
-          {!isWrongQuestionsMode && !isGuestMode && (
+          {!isWrongQuestionsMode && !skipProfileScoring && (
             <Text style={styles.gameOverScore}>
               Final Score: {sessionScore} / {questions.length * 10}
             </Text>
           )}
-          {!isGuestMode && (
+          {!isWrongQuestionsMode && suppressRankProgress && !isGuestMode && (
+            <Text style={styles.gameOverScore}>
+              {sessionScore} correct this session (not saved to your profile)
+            </Text>
+          )}
+          {!isGuestMode && !suppressRankProgress && (
             <Text style={styles.gameOverRank}>Rank: {rank}</Text>
           )}
           
@@ -664,7 +704,10 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
       {/* Header */}
       <View style={[styles.header, isWrongQuestionsMode && styles.headerCentered]}>
         <Text style={styles.headerText}>Question {currentQuestionIndex + 1}/{questions.length}</Text>
-        {!isWrongQuestionsMode && !isGuestMode && (
+        {!isWrongQuestionsMode && !isGuestMode && suppressRankProgress && (
+          <Text style={styles.headerText}>Session: {sessionScore} correct (not saved)</Text>
+        )}
+        {!isWrongQuestionsMode && !isGuestMode && !suppressRankProgress && (
           <Text style={styles.headerText}>Score: {sessionScore}</Text>
         )}
       </View>
@@ -690,7 +733,7 @@ export function PracticeGameScreen({ onNavigate, previousScreen, isGuestMode }: 
 
         {/* Question Box */}
         <View style={styles.questionBox}>
-          {isPreviouslyWrong && !isWrongQuestionsMode && (
+          {isPreviouslyWrong && !isWrongQuestionsMode && !isGuestMode && (
             <View style={styles.previouslyWrongIndicator}>
               <Text style={styles.previouslyWrongText}>Previously Incorrect</Text>
             </View>

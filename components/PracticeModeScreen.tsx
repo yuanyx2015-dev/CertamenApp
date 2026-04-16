@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 
 function AnimatedButton({ label, onPress }: { label: string; onPress: () => void }) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
@@ -7,29 +7,15 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
 
   const handlePressIn = () => {
     Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 0.95,
-        useNativeDriver: true,
-      }),
-      Animated.timing(bgColorAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: false,
-      }),
+      Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: true }),
+      Animated.timing(bgColorAnim, { toValue: 1, duration: 150, useNativeDriver: false }),
     ]).start();
   };
 
   const handlePressOut = () => {
     Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-      }),
-      Animated.timing(bgColorAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }),
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }),
+      Animated.timing(bgColorAnim, { toValue: 0, duration: 200, useNativeDriver: false }),
     ]).start();
   };
 
@@ -40,43 +26,115 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
 
   return (
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, { width: '100%' }]}>
-      <TouchableOpacity 
+      <TouchableOpacity
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
         activeOpacity={1}
       >
-        <Animated.View style={[styles.button, { backgroundColor }]}>
-          <Text style={styles.buttonText}>{label}</Text>
+        <Animated.View style={[styles.startButton, { backgroundColor }]}>
+          <Text style={styles.startButtonText}>{label}</Text>
         </Animated.View>
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
-export function PracticeModeScreen({ onNavigate, previousScreen, isGuestMode }: { onNavigate?: (screen: string) => void; previousScreen?: string; isGuestMode?: boolean }) {
+type PracticeModeScreenProps = {
+  onNavigate?: (
+    screen: string,
+    category?: string,
+    practiceDifficulty?: 'easy' | 'medium' | 'hard'
+  ) => void;
+  previousScreen?: string;
+  isGuestMode?: boolean;
+};
+
+/**
+ * Rank-up Mode: classic timed Certamen — rank-based difficulty mix, scoring, Settings (# of tossups, wrong-only).
+ * Opens practice-game with no fixed difficulty (same as pre–difficulty-picker behavior).
+ */
+const STACK_GAP = 14;
+/** Additional upward offset for the "Rank-up Mode" heading (relative to the Start Game anchor). */
+const TITLE_NUDGE_UP = 13;
+/** Shifts Start Game + Back down together (layout anchor stays window-centered for clamp math). */
+const BUTTON_NUDGE_DOWN = 20;
+
+export function PracticeModeScreen({ onNavigate }: PracticeModeScreenProps) {
+  const { height: windowHeight } = useWindowDimensions();
+  const mainColumnRef = React.useRef<View>(null);
+  const [mainColumnY, setMainColumnY] = React.useState<number | null>(null);
+  const [mainColumnH, setMainColumnH] = React.useState(0);
+  const [rowH, setRowH] = React.useState(52);
+  const [titleH, setTitleH] = React.useState(36);
+  const [backH, setBackH] = React.useState(48);
+
+  const measureMainColumn = React.useCallback(() => {
+    requestAnimationFrame(() => {
+      mainColumnRef.current?.measureInWindow((_x, y, _w, h) => {
+        setMainColumnY(y);
+        setMainColumnH(h);
+      });
+    });
+  }, []);
+
+  React.useEffect(() => {
+    measureMainColumn();
+  }, [measureMainColumn, windowHeight]);
+
+  const startGameTop = React.useMemo(() => {
+    if (mainColumnY == null) return null;
+    const windowCenterY = windowHeight / 2;
+    let top = Math.round(windowCenterY - rowH / 2 - mainColumnY);
+    const titleRoom = titleH + STACK_GAP + TITLE_NUDGE_UP;
+    const bottomRoom = BUTTON_NUDGE_DOWN + rowH + STACK_GAP + backH;
+    if (mainColumnH > 0) {
+      top = Math.max(titleRoom, Math.min(top, mainColumnH - bottomRoom));
+    }
+    return top;
+  }, [mainColumnY, mainColumnH, windowHeight, rowH, titleH, backH]);
+
   return (
     <View style={styles.container}>
-      {/* Settings Button - Top Right */}
       <View style={styles.settingsContainer}>
         <TouchableOpacity style={styles.settingsButton} onPress={() => onNavigate?.('settings')}>
           <Text style={styles.settingsButtonText}>Settings</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Centered Content */}
-      <View style={styles.contentContainer}>
-        {/* Title Text */}
-        <Text style={styles.titleText}>Practice Mode</Text>
+      <View ref={mainColumnRef} style={styles.mainColumn} onLayout={measureMainColumn}>
+        {startGameTop != null && (
+          <>
+            <View
+              style={[styles.titleAnchor, { top: startGameTop - titleH - STACK_GAP - TITLE_NUDGE_UP }]}
+              onLayout={(e) => setTitleH(e.nativeEvent.layout.height)}
+            >
+              <Text style={styles.titleText}>Rank-up Mode</Text>
+            </View>
 
-        {/* Start Game Button */}
-        <AnimatedButton label="Start Practice Game" onPress={() => onNavigate?.('practice-game')} />
+            <View
+              style={[styles.startGameRow, { top: startGameTop + BUTTON_NUDGE_DOWN }]}
+              onLayout={(e) => setRowH(e.nativeEvent.layout.height)}
+            >
+              <AnimatedButton label="Start Game" onPress={() => onNavigate?.('practice-game')} />
+            </View>
+
+            <View
+              style={[styles.backAnchor, { top: startGameTop + rowH + STACK_GAP + BUTTON_NUDGE_DOWN }]}
+              onLayout={(e) => setBackH(e.nativeEvent.layout.height)}
+            >
+              <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
+                <Text style={styles.backButtonText}>Back to menu</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </View>
 
-      {/* Tip Text - At Bottom */}
-      <View style={styles.bottomContainer}>
-        <Text style={styles.tipText}>
-          Further adjustments can be made through the Settings button in the top right!
+      <View style={styles.footerTextWrap}>
+        <Text style={styles.bodyText}>
+          Advance with answering questions correctly to rise the ranks! Check your progress through the Profiles
+          screen, accessed through the main menu.
         </Text>
       </View>
     </View>
@@ -92,9 +150,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     position: 'relative',
   },
+  mainColumn: {
+    flex: 1,
+    width: '100%',
+    position: 'relative',
+  },
+  titleAnchor: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  startGameRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    width: '100%',
+    alignItems: 'stretch',
+  },
+  backAnchor: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  footerTextWrap: {
+    paddingHorizontal: 8,
+    paddingBottom: 28,
+    paddingTop: 8,
+  },
   settingsContainer: {
     position: 'absolute',
-    top: 80,
+    top: 123,
     right: 18,
     zIndex: 100,
   },
@@ -116,38 +203,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 0.5,
   },
-  contentContainer: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 24,
-  },
   titleText: {
     color: '#3a3a3a',
     fontSize: 26,
     letterSpacing: 0.5,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 8,
   },
-  bottomContainer: {
-    position: 'absolute',
-    bottom: 80,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-  },
-  tipText: {
-    color: '#7a7a7a',
-    fontSize: 14,
-    letterSpacing: 0.3,
+  bodyText: {
+    color: '#6a6a6a',
+    fontSize: 15,
+    lineHeight: 22,
     textAlign: 'center',
-    lineHeight: 20,
-    opacity: 0.8,
+    letterSpacing: 0.3,
   },
-  button: {
+  startButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
@@ -163,7 +233,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
   },
-  buttonText: {
+  startButtonText: {
+    color: '#3a3a3a',
+    fontSize: 16,
+    letterSpacing: 0.5,
+    fontWeight: '600',
+  },
+  backButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.3)',
+    borderRadius: 12,
+  },
+  backButtonText: {
     color: '#3a3a3a',
     fontSize: 16,
     letterSpacing: 0.5,

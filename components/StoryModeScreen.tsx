@@ -1,32 +1,86 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  LayoutChangeEvent,
+  useWindowDimensions,
+} from 'react-native';
+import { DifficultySessionPicker } from './DifficultySessionPicker';
+
+/** Distance from top of Easy row to vertical center of Medium (Easy + gap + half Medium), ~px. */
+const PX_EASY_TOP_TO_MEDIUM_CENTER = 96;
+
+/** Push title + difficulty block slightly lower (px added to computed picker margin). */
+const CONTENT_NUDGE_DOWN = 28;
 
 /**
- * Story-driven play (distinct from timed Practice Mode on the main menu).
- * Wire navigation / gameplay when the story flow is ready.
+ * Practice Mode (story route): timed sessions that do not change profile score or rank.
  */
 export function StoryModeScreen({
   onNavigate,
 }: {
-  onNavigate?: (screen: string) => void;
+  onNavigate?: (
+    screen: string,
+    category?: string,
+    practiceDifficulty?: 'easy' | 'medium' | 'hard'
+  ) => void;
 }) {
+  const { height: winH } = useWindowDimensions();
+  const titleRef = React.useRef<View>(null);
+  const [pickerMarginTop, setPickerMarginTop] = React.useState(24);
+
+  const alignMediumToScreenCenter = React.useCallback(() => {
+    const gapBelowTitle = 14;
+    titleRef.current?.measureInWindow((_x, y, _w, h) => {
+      const titleBottom = y + h;
+      const targetTopEasy = winH / 2 - PX_EASY_TOP_TO_MEDIUM_CENTER;
+      setPickerMarginTop(
+        Math.max(8, targetTopEasy - titleBottom - gapBelowTitle) + CONTENT_NUDGE_DOWN
+      );
+    });
+  }, [winH]);
+
+  const onTitleLayout = React.useCallback(
+    (_e: LayoutChangeEvent) => {
+      alignMediumToScreenCenter();
+    },
+    [alignMediumToScreenCenter]
+  );
+
+  React.useLayoutEffect(() => {
+    alignMediumToScreenCenter();
+  }, [alignMediumToScreenCenter]);
+
   return (
     <View style={styles.container}>
-      <View style={styles.settingsContainer}>
-        <TouchableOpacity style={styles.settingsButton} onPress={() => onNavigate?.('settings')}>
-          <Text style={styles.settingsButtonText}>Settings</Text>
-        </TouchableOpacity>
-      </View>
+      <View style={styles.inner}>
+        <View style={styles.headerArea}>
+          <View style={styles.settingsRow}>
+            <TouchableOpacity style={styles.settingsButton} onPress={() => onNavigate?.('settings-practice')}>
+              <Text style={styles.settingsButtonText}>Settings</Text>
+            </TouchableOpacity>
+          </View>
+          <View ref={titleRef} onLayout={onTitleLayout} style={styles.titleWrap}>
+            <Text style={styles.titleText}>Practice Mode</Text>
+          </View>
+        </View>
 
-      <View style={styles.contentContainer}>
-        <Text style={styles.titleText}>Story Mode</Text>
-        <Text style={styles.bodyText}>
-          Narrative Certamen content will live here. Use Practice Mode from the main menu for timed
-          practice games.
-        </Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
-          <Text style={styles.backButtonText}>Back to menu</Text>
-        </TouchableOpacity>
+        <View style={[styles.buttonBlock, { marginTop: pickerMarginTop }]}>
+          <DifficultySessionPicker onNavigate={onNavigate} showHints={false} />
+          <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
+            <Text style={styles.backButtonText}>Back to menu</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footerSpacer} />
+
+        <View style={styles.footerNote}>
+          <Text style={styles.footerText}>
+            Change your difficulty to suit your needs. Progress does not count in Practice Mode.
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -41,11 +95,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     position: 'relative',
   },
-  settingsContainer: {
-    position: 'absolute',
-    top: 80,
-    right: 18,
-    zIndex: 100,
+  inner: {
+    flex: 1,
+    width: '100%',
+  },
+  headerArea: {
+    width: '100%',
+    paddingTop: 88,
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  titleWrap: {
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  buttonBlock: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 14,
+  },
+  footerSpacer: {
+    flex: 1,
+    minHeight: 12,
   },
   settingsButton: {
     paddingHorizontal: 16,
@@ -65,14 +138,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 0.5,
   },
-  contentContainer: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 20,
-    paddingHorizontal: 8,
-  },
   titleText: {
     color: '#3a3a3a',
     fontSize: 26,
@@ -80,7 +145,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  bodyText: {
+  footerNote: {
+    width: '100%',
+    paddingHorizontal: 8,
+    paddingBottom: 16,
+    alignItems: 'center',
+  },
+  footerText: {
     color: '#6a6a6a',
     fontSize: 15,
     lineHeight: 22,
@@ -88,7 +159,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   backButton: {
-    marginTop: 8,
     paddingHorizontal: 24,
     paddingVertical: 14,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',

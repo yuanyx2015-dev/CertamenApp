@@ -14,14 +14,14 @@ CertamenApp is a comprehensive practice tool designed for students preparing for
 
 ## ✨ Key Features
 
-### 🎯 Practice Mode
+### 🎯 Rank-up Mode
 - **Adaptive Difficulty**: Questions adjust based on your rank (Miles → Legatus Legionis)
 - **Timed Questions**: 15-second countdown with buzzer mechanics
 - **Real-time Scoring**: Earn points and climb the Roman military ranks
 - **Customizable Sessions**: Set question count (10-50 questions)
 - **Multiple Choice**: 4 options per question with instant feedback
 
-![Practice Mode](assets/screenshots/practice-game.png)
+![Rank-up Mode](assets/screenshots/practice-game.png)
 
 ### 📚 Question Review System
 - **Category-Based Organization**: Six categories (Mythology, History, Language, Literature, Life, General)
@@ -29,7 +29,7 @@ CertamenApp is a comprehensive practice tool designed for students preparing for
 - **Category Statistics**: See wrong question counts per category
 - **Search & Filter**: Find specific questions quickly
 - **Mark as Mastered**: Remove questions from review list once learned
-- **Practice Mode**: Review wrong questions without affecting your score
+- **Score-free review**: Practice wrong questions without affecting your score
 
 ![Review Categories](assets/screenshots/review-categories.png)
 ![Wrong Questions List](assets/screenshots/wrong-questions.png)
@@ -145,11 +145,11 @@ npm run android
 ### Getting Started
 
 1. **Sign In**: Use Google OAuth to create your account
-2. **Practice**: Click "Practice" to start answering questions
+2. **Rank-up Mode**: Tap "Rank-up Mode" on the main menu to start answering questions
 3. **Review**: Click "Review Questions" to practice questions you've gotten wrong
 4. **Track Progress**: View your profile to see rank, score, and statistics
 
-### Practice Mode
+### Rank-up Mode (timed Certamen)
 
 - **Normal Practice**: 
   - Answer random questions based on your rank
@@ -176,7 +176,7 @@ npm run android
 - **# of questions**: Set how many questions per practice session
   - Normal mode: 10-50 questions
   - Wrong questions mode: 1 to your wrong question count (max 50)
-- **Wrong questions only**: Toggle practice mode on/off
+- **Wrong questions only**: Toggle wrong-answer-only practice on/off
 
 ---
 
