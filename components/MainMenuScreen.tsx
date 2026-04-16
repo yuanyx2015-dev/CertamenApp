@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
-import Svg, { Path, Rect, Circle, G } from 'react-native-svg';
+import Svg, { Path, Rect, Circle } from 'react-native-svg';
 
 // Single Sword Icon
 function SingleSwordIcon() {
@@ -46,48 +46,28 @@ function SingleSwordIcon() {
   );
 }
 
-// Crossed Swords Icon
-function CrossedSpearsIcon() {
-  // Define single spear perfectly centered at x=30 (viewBox center)
-  // All coordinates calculated for absolute bilateral symmetry
-  const Spear = ({ rotation }: { rotation: number }) => (
-    <G transform={`rotate(${rotation} 30 30)`}>
-      {/* Spear tip - perfectly symmetrical triangle centered at x=30 */}
-      <Path 
-        d="M 30 10 L 32 20 L 28 20 Z" 
-        fill="#c9a961" 
-        stroke="#9d856b" 
-        strokeWidth="0.5"
-      />
-      {/* Shaft - perfectly centered rectangle: x=29 to x=31 (center at 30) */}
-      <Rect 
-        x="29" 
-        y="20" 
-        width="2" 
-        height="30" 
-        fill="#8b7355" 
-        stroke="#6a5a4a" 
-        strokeWidth="0.5"
-      />
-      {/* Bottom cap - perfectly centered: x=28 to x=32 (center at 30) */}
-      <Rect 
-        x="28" 
-        y="50" 
-        width="4" 
-        height="2" 
-        fill="#9d856b" 
-        stroke="#6a5a4a" 
-        strokeWidth="0.5"
-      />
-    </G>
-  );
-
+/** Tall Roman scutum-style shield: rectangular with convex sides, frame, central boss + dot. */
+function RomanRectangularShieldIcon() {
   return (
     <Svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-      {/* Left spear rotated -45° around center point (30, 30) */}
-      <Spear rotation={-45} />
-      {/* Right spear rotated +45° around center point (30, 30) - perfect mirror */}
-      <Spear rotation={45} />
+      {/* Main body — slight outward bow on left/right (control points at mid height) */}
+      <Path
+        d="M 22 7 L 38 7 Q 41.5 30 38 53 L 22 53 Q 18.5 30 22 7 Z"
+        fill="#f4e8d0"
+        stroke="#9d856b"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      {/* Inner thin frame */}
+      <Path
+        d="M 23.5 9.5 L 36.5 9.5 Q 39.2 30 36.5 51.5 L 23.5 51.5 Q 20.8 30 23.5 9.5 Z"
+        fill="none"
+        stroke="#c9a961"
+        strokeWidth="0.75"
+      />
+      {/* Boss ring + center dot */}
+      <Circle cx="30" cy="30" r="6" fill="#c9a961" stroke="#9d856b" strokeWidth="0.9" />
+      <Circle cx="30" cy="30" r="2" fill="#6a5a4a" />
     </Svg>
   );
 }
@@ -391,20 +371,24 @@ export function MainMenuScreen({
         </Animated.View>
       </View>
 
-      {/* Center Game Mode Buttons */}
+      {/* Center: Story Mode, Practice Mode, Review (top → bottom) */}
       <View style={styles.centerContainer}>
-        {/* Practice Button */}
-        <AnimatedModeButton 
-          icon={<SingleSwordIcon />} 
-          label="Practice" 
-          onPress={() => onNavigate?.('practice')} 
+        <AnimatedModeButton
+          icon={<SingleSwordIcon />}
+          label="Story Mode"
+          onPress={() => onNavigate?.('story')}
         />
 
-        {/* Review Button */}
-        <AnimatedModeButton 
-          icon={<ScrollIcon />} 
-          label="Review Questions" 
-          onPress={handleReviewPress} 
+        <AnimatedModeButton
+          icon={<RomanRectangularShieldIcon />}
+          label="Practice Mode"
+          onPress={() => onNavigate?.('practice')}
+        />
+
+        <AnimatedModeButton
+          icon={<ScrollIcon />}
+          label="Review Questions"
+          onPress={handleReviewPress}
         />
       </View>
     </View>
@@ -425,8 +409,11 @@ const styles = StyleSheet.create({
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
-    gap: 24,
-    marginTop: -60,
+    alignItems: 'center',
+    alignSelf: 'center',
+    width: '100%',
+    gap: 14,
+    marginTop: -48,
   },
   profileContainer: {
     alignItems: 'flex-end',
@@ -454,12 +441,15 @@ const styles = StyleSheet.create({
   },
   modeButton: {
     width: '100%',
+    maxWidth: '100%',
+    alignSelf: 'center',
+    minHeight: 128,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
-    paddingHorizontal: 32,
-    paddingVertical: 32,
+    gap: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 22,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',

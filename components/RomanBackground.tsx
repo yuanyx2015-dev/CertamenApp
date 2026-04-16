@@ -12,6 +12,7 @@ import { VisitorMatchScreen } from './VisitorMatchScreen';
 import { HomeMatchScreen } from './HomeMatchScreen';
 import { SimulationMatchScreen } from './SimulationMatchScreen';
 import { PracticeModeScreen } from './PracticeModeScreen';
+import { StoryModeScreen } from './StoryModeScreen';
 import { PracticeGameScreen } from './PracticeGameScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { ReviewCategoryScreen } from './ReviewCategoryScreen';
@@ -116,6 +117,8 @@ export function RomanBackground() {
     }
 
     switch (currentScreen) {
+      case 'story':
+        return <StoryModeScreen onNavigate={handleNavigate} />;
       case 'practice':
         return (
           <PracticeModeScreen
