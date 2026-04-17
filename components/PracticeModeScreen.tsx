@@ -59,6 +59,8 @@ const STACK_GAP = 14;
 const TITLE_NUDGE_UP = 13;
 /** Shifts Start Game + Back down together (layout anchor stays window-centered for clamp math). */
 const BUTTON_NUDGE_DOWN = 20;
+/** Extra vertical space between Start Game and Back to menu (beyond STACK_GAP). */
+const BACK_BUTTON_EXTRA_GAP = 7;
 
 export function PracticeModeScreen({ onNavigate }: PracticeModeScreenProps) {
   const { height: windowHeight } = useWindowDimensions();
@@ -87,7 +89,7 @@ export function PracticeModeScreen({ onNavigate }: PracticeModeScreenProps) {
     const windowCenterY = windowHeight / 2;
     let top = Math.round(windowCenterY - rowH / 2 - mainColumnY);
     const titleRoom = titleH + STACK_GAP + TITLE_NUDGE_UP;
-    const bottomRoom = BUTTON_NUDGE_DOWN + rowH + STACK_GAP + backH;
+    const bottomRoom = BUTTON_NUDGE_DOWN + rowH + STACK_GAP + BACK_BUTTON_EXTRA_GAP + backH;
     if (mainColumnH > 0) {
       top = Math.max(titleRoom, Math.min(top, mainColumnH - bottomRoom));
     }
@@ -120,7 +122,10 @@ export function PracticeModeScreen({ onNavigate }: PracticeModeScreenProps) {
             </View>
 
             <View
-              style={[styles.backAnchor, { top: startGameTop + rowH + STACK_GAP + BUTTON_NUDGE_DOWN }]}
+              style={[
+                styles.backAnchor,
+                { top: startGameTop + rowH + STACK_GAP + BACK_BUTTON_EXTRA_GAP + BUTTON_NUDGE_DOWN },
+              ]}
               onLayout={(e) => setBackH(e.nativeEvent.layout.height)}
             >
               <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>

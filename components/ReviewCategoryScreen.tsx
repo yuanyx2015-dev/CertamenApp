@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { getCurrentUser } from '../services/authService';
-import { getCategoryStats, CategoryStats } from '../services/questionReviewService';
+import { getCategoryStats } from '../services/questionReviewService';
 
 // Simple reusable animated button component
 function AnimatedCategoryButton({ 
@@ -81,8 +81,20 @@ function AnimatedCategoryButton({
   );
 }
 
+const REVIEW_CATEGORIES: { key: string; label: string }[] = [
+  { key: 'mythology', label: 'Mythology' },
+  { key: 'history', label: 'History' },
+  { key: 'language', label: 'Language' },
+  { key: 'literature', label: 'Literature' },
+  { key: 'life', label: 'Daily Life' },
+  { key: 'general', label: 'General' },
+];
+
+/** Only these categories open the review list; others stay “Coming soon”. */
+const UNLOCKED_REVIEW_CATEGORIES = new Set(['mythology', 'history']);
+
 export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: string, category?: string) => void }) {
-  const [mythologyWrongCount, setMythologyWrongCount] = useState(0);
+  const [wrongByCategory, setWrongByCategory] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -91,36 +103,36 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
 
   const loadCategoryStats = async () => {
     setIsLoading(true);
-    
+
     const user = await getCurrentUser();
     if (user) {
       const { data: stats } = await getCategoryStats(user.id);
       if (stats) {
-        const mythologyStats = stats.find(s => s.category === 'mythology');
-        setMythologyWrongCount(mythologyStats?.wrong_questions || 0);
+        const next: Record<string, number> = {};
+        for (const row of stats) {
+          next[row.category] = row.wrong_questions ?? 0;
+        }
+        setWrongByCategory(next);
       }
     }
-    
+
     setIsLoading(false);
   };
 
-  const handleCategoryPress = (category: string, isEnabled: boolean) => {
+  const handleCategoryPress = (categoryKey: string, isEnabled: boolean) => {
     if (!isEnabled) {
       Alert.alert('Coming Soon!', 'Developers are still working on this category. Stay tuned!');
       return;
     }
-    onNavigate?.('categoryQuestions', category);
+    onNavigate?.('categoryQuestions', categoryKey);
   };
 
-  // All categories with their enabled status
-  const categories = [
-    { key: 'mythology', label: 'Mythology', enabled: true, wrongCount: mythologyWrongCount },
-    { key: 'history', label: 'History', enabled: false, wrongCount: 0 },
-    { key: 'language', label: 'Language', enabled: false, wrongCount: 0 },
-    { key: 'literature', label: 'Literature', enabled: false, wrongCount: 0 },
-    { key: 'life', label: 'Daily Life', enabled: false, wrongCount: 0 },
-    { key: 'general', label: 'General', enabled: false, wrongCount: 0 },
-  ];
+  const categories = REVIEW_CATEGORIES.map((c) => ({
+    key: c.key,
+    label: c.label,
+    enabled: UNLOCKED_REVIEW_CATEGORIES.has(c.key),
+    wrongCount: wrongByCategory[c.key] ?? 0,
+  }));
 
   if (isLoading) {
     return (

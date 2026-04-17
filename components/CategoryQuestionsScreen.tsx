@@ -216,7 +216,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
   return (
     <View style={styles.container}>
       {/* Header */}
-      <Text style={styles.title}>{categoryNames[category]} Review</Text>
+      <Text style={styles.title}>{categoryNames[category] ?? category} Review</Text>
       <Text style={styles.subtitle}>{wrongQuestions.length} question{wrongQuestions.length !== 1 ? 's' : ''} to review</Text>
 
       {/* Search Bar */}

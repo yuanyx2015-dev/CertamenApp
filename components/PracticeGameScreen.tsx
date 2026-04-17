@@ -704,10 +704,7 @@ export function PracticeGameScreen({
       {/* Header */}
       <View style={[styles.header, isWrongQuestionsMode && styles.headerCentered]}>
         <Text style={styles.headerText}>Question {currentQuestionIndex + 1}/{questions.length}</Text>
-        {!isWrongQuestionsMode && !isGuestMode && suppressRankProgress && (
-          <Text style={styles.headerText}>Session: {sessionScore} correct (not saved)</Text>
-        )}
-        {!isWrongQuestionsMode && !isGuestMode && !suppressRankProgress && (
+        {!isWrongQuestionsMode && !isGuestMode && (
           <Text style={styles.headerText}>Score: {sessionScore}</Text>
         )}
       </View>
