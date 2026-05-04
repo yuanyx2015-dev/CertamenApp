@@ -33,6 +33,8 @@ export function RomanBackground() {
   /** Which local settings bucket practice-game reads (story = practice; rank-up route = rank-up). */
   const [practiceGameSettingsScope, setPracticeGameSettingsScope] =
     useState<UserSettingsScope>('rank-up');
+  /** Story Practice Mode: question category slug for the current session. */
+  const [practiceGameStoryCategory, setPracticeGameStoryCategory] = useState<string | null>(null);
   const previousScreen = useRef('login');
 
   useEffect(() => {
@@ -92,13 +94,14 @@ export function RomanBackground() {
 
     if (screen === 'practice-game') {
       setPracticeGameSettingsScope(currentScreen === 'story' ? 'practice' : 'rank-up');
+      setPracticeGameStoryCategory(currentScreen === 'story' ? (category ?? null) : null);
       setPracticeGameKey((prev) => prev + 1);
     }
 
     if (currentScreen !== 'settings' && currentScreen !== 'settings-practice') {
       previousScreen.current = currentScreen;
     }
-    if (category) {
+    if (category && screen !== 'practice-game') {
       setSelectedCategory(category);
     }
     setCurrentScreen(screen);
@@ -155,6 +158,7 @@ export function RomanBackground() {
             isGuestMode={isGuestMode}
             fixedDifficulty={practiceGameDifficultyLock}
             settingsScope={practiceGameSettingsScope}
+            storyPracticeCategory={practiceGameStoryCategory}
           />
         );
       case 'pvp':

@@ -1,10 +1,20 @@
 import React, { useEffect } from 'react';
-import { View, Text, Switch, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  Switch,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  ActivityIndicator,
+  ScrollView,
+} from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import {
   getOrCreateUserSettings,
   updateSetting,
   type UserSettingsScope,
+  type PracticeSessionDifficulty,
 } from '../services/userSettingsService';
 import { getAllWrongQuestions } from '../services/questionReviewService';
 
@@ -78,6 +88,8 @@ export function SettingsScreen({
   const [isLoading, setIsLoading] = React.useState(true);
   const [userId, setUserId] = React.useState<string | null>(null);
   const [wrongQuestionCount, setWrongQuestionCount] = React.useState(0);
+  const [practiceSessionDifficulty, setPracticeSessionDifficulty] =
+    React.useState<PracticeSessionDifficulty>('easy');
 
   // Extract loading logic into reusable function
   const loadSettingsData = React.useCallback(async () => {
@@ -95,6 +107,9 @@ export function SettingsScreen({
       if (settings && !error) {
         setWrongQuestionsOnly(settings.wrong_questions_only);
         setNumTossups(settings.num_tossups);
+        if (settingsScope === 'practice') {
+          setPracticeSessionDifficulty(settings.practice_session_difficulty ?? 'easy');
+        }
       }
       
       // Fetch wrong question count (only for authenticated users)
@@ -147,6 +162,13 @@ export function SettingsScreen({
   };
 
   // Handle number of tossups change
+  const handlePracticeDifficultySelect = async (next: PracticeSessionDifficulty) => {
+    if (settingsScope !== 'practice' || !userId) return;
+    if (practiceSessionDifficulty === next) return;
+    setPracticeSessionDifficulty(next);
+    await updateSetting(userId, 'practice_session_difficulty', next, 'practice');
+  };
+
   const handleNumTossupsChange = async (newValue: number) => {
     const minQuestions =
       wrongQuestionsOnly ? Math.min(5, wrongQuestionCount || 1) : 5;
@@ -169,68 +191,113 @@ export function SettingsScreen({
     );
   }
 
-  return (
-    <View style={styles.container}>
-      {/* Centered Content */}
-      <View style={styles.contentContainer}>
-        <Text style={styles.titleText}>Settings</Text>
+  const settingsBody = (
+    <>
+      <Text style={styles.titleText}>Settings</Text>
 
-        {/* Settings Options */}
-        <View style={styles.settingsContainer}>
-          {/* # of questions with counter */}
-          <View style={styles.counterRow}>
-            <Text style={styles.optionText}># of questions</Text>
-            <View style={styles.counterControls}>
-              <TouchableOpacity 
-                style={styles.counterButton}
-                onPress={() => handleNumTossupsChange(numTossups - 5)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.counterButtonText}>−</Text>
-              </TouchableOpacity>
-              <Text style={styles.counterValue}>{numTossups}</Text>
-              <TouchableOpacity 
-                style={styles.counterButton}
-                onPress={() => handleNumTossupsChange(numTossups + 5)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.counterButtonText}>+</Text>
-              </TouchableOpacity>
+      <View style={styles.settingsContainer}>
+        <View style={styles.counterRow}>
+          <Text style={styles.optionText}># of questions</Text>
+          <View style={styles.counterControls}>
+            <TouchableOpacity
+              style={styles.counterButton}
+              onPress={() => handleNumTossupsChange(numTossups - 5)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.counterButtonText}>−</Text>
+            </TouchableOpacity>
+            <Text style={styles.counterValue}>{numTossups}</Text>
+            <TouchableOpacity
+              style={styles.counterButton}
+              onPress={() => handleNumTossupsChange(numTossups + 5)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.counterButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        {wrongQuestionsOnly && (
+          <Text style={styles.helperText}>
+            Max: {Math.min(wrongQuestionCount, 50)} (based on your wrong questions)
+          </Text>
+        )}
+
+        <>
+          <View style={styles.toggleRow}>
+            <Text style={[styles.optionText, isGuestMode && styles.disabledText]}>
+              Wrong questions only
+            </Text>
+            <Switch
+              value={wrongQuestionsOnly}
+              onValueChange={handleWrongQuestionsToggle}
+              trackColor={{ false: '#d4d4d4', true: '#c9a961' }}
+              thumbColor={wrongQuestionsOnly ? '#d4b76a' : '#f4f3f4'}
+              ios_backgroundColor="#d4d4d4"
+              disabled={isGuestMode}
+            />
+          </View>
+          {isGuestMode && (
+            <Text style={styles.guestHelperText}>Sign in to track wrong questions</Text>
+          )}
+        </>
+
+        {settingsScope === 'practice' && (
+          <View style={styles.difficultySection}>
+            <Text style={styles.sectionTitle}>Difficulty</Text>
+            <View style={styles.difficultyRow}>
+              {(
+                [
+                  { id: 'easy' as const, label: 'Easy' },
+                  { id: 'medium' as const, label: 'Medium' },
+                  { id: 'hard' as const, label: 'Hard' },
+                ] as const
+              ).map(({ id, label }) => (
+                <TouchableOpacity
+                  key={id}
+                  style={styles.difficultyTap}
+                  onPress={() => handlePracticeDifficultySelect(id)}
+                  activeOpacity={0.75}
+                >
+                  <View
+                    style={[
+                      styles.difficultyCircle,
+                      practiceSessionDifficulty === id && styles.difficultyCircleSelected,
+                    ]}
+                  />
+                  <Text style={styles.difficultyLabel}>{label}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
-          {wrongQuestionsOnly && (
-            <Text style={styles.helperText}>
-              Max: {Math.min(wrongQuestionCount, 50)} (based on your wrong questions)
-            </Text>
-          )}
-
-          <>
-            <View style={styles.toggleRow}>
-              <Text style={[styles.optionText, isGuestMode && styles.disabledText]}>
-                Wrong questions only
-              </Text>
-              <Switch
-                value={wrongQuestionsOnly}
-                onValueChange={handleWrongQuestionsToggle}
-                trackColor={{ false: '#d4d4d4', true: '#c9a961' }}
-                thumbColor={wrongQuestionsOnly ? '#d4b76a' : '#f4f3f4'}
-                ios_backgroundColor="#d4d4d4"
-                disabled={isGuestMode}
-              />
-            </View>
-            {isGuestMode && (
-              <Text style={styles.guestHelperText}>Sign in to track wrong questions</Text>
-            )}
-          </>
-        </View>
+        )}
       </View>
+    </>
+  );
 
-      {/* Back Button - At Bottom */}
+  if (settingsScope === 'practice') {
+    return (
+      <View style={styles.containerPractice}>
+        <ScrollView
+          style={styles.scrollPractice}
+          contentContainerStyle={styles.scrollPracticeContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.contentContainer}>{settingsBody}</View>
+          <View style={styles.backInScroll}>
+            <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.contentContainer}>{settingsBody}</View>
+
       <View style={styles.bottomContainer}>
-        <AnimatedButton 
-          label="Back" 
-          onPress={() => onNavigate?.(previousScreen || 'main')} 
-        />
+        <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
       </View>
     </View>
   );
@@ -350,5 +417,63 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -16,
     fontStyle: 'italic',
+  },
+  containerPractice: {
+    flex: 1,
+    maxWidth: 400,
+    alignSelf: 'center',
+    width: '100%',
+    paddingHorizontal: 24,
+  },
+  scrollPractice: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollPracticeContent: {
+    paddingTop: 24,
+    paddingBottom: 32,
+  },
+  backInScroll: {
+    marginTop: 28,
+    alignItems: 'center',
+    paddingBottom: 24,
+  },
+  difficultySection: {
+    gap: 8,
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#3a3a3a',
+    letterSpacing: 0.3,
+  },
+  difficultyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+  },
+  difficultyTap: {
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 76,
+  },
+  difficultyCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(120, 120, 120, 0.45)',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  difficultyCircleSelected: {
+    borderColor: '#b8954a',
+    backgroundColor: 'rgba(201, 169, 97, 0.35)',
+  },
+  difficultyLabel: {
+    fontSize: 14,
+    color: '#3a3a3a',
+    letterSpacing: 0.3,
   },
 });

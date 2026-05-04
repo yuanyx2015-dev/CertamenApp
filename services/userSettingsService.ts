@@ -1,9 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export type PracticeSessionDifficulty = 'easy' | 'medium' | 'hard';
+
 export interface UserSettings {
   user_id: string;
   num_tossups: number;
   wrong_questions_only: boolean;
+  /** Practice Mode (story): single difficulty for category sessions. Rank-up storage may omit. */
+  practice_session_difficulty?: PracticeSessionDifficulty;
   sound_enabled: boolean;
   notifications_enabled: boolean;
   theme: 'light' | 'dark' | 'auto';
@@ -32,10 +36,11 @@ export async function clearAllLocalUserSettings(userId: string): Promise<void> {
   ]);
 }
 
-const getDefaultSettings = (userId: string): UserSettings => ({
+const getDefaultSettings = (userId: string, scope: UserSettingsScope): UserSettings => ({
   user_id: userId,
   num_tossups: 20,
   wrong_questions_only: false,
+  ...(scope === 'practice' ? { practice_session_difficulty: 'easy' as const } : {}),
   sound_enabled: true,
   notifications_enabled: true,
   theme: 'light',
@@ -43,6 +48,13 @@ const getDefaultSettings = (userId: string): UserSettings => ({
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 });
+
+function normalizeParsedSettings(data: UserSettings, scope: UserSettingsScope): UserSettings {
+  if (scope !== 'practice') return data;
+  const d = data.practice_session_difficulty;
+  const ok = d === 'easy' || d === 'medium' || d === 'hard';
+  return { ...data, practice_session_difficulty: ok ? d : 'easy' };
+}
 
 export const getOrCreateUserSettings = async (
   userId: string,
@@ -53,10 +65,14 @@ export const getOrCreateUserSettings = async (
     const settingsJson = await AsyncStorage.getItem(storageKey);
 
     if (settingsJson) {
-      const data = JSON.parse(settingsJson) as UserSettings;
+      const parsed = JSON.parse(settingsJson) as UserSettings;
+      const data = normalizeParsedSettings(parsed, scope);
+      if (scope === 'practice' && JSON.stringify(parsed) !== JSON.stringify(data)) {
+        await AsyncStorage.setItem(storageKey, JSON.stringify(data));
+      }
       return { data, error: null };
     } else {
-      const newSettings = getDefaultSettings(userId);
+      const newSettings = getDefaultSettings(userId, scope);
       await AsyncStorage.setItem(storageKey, JSON.stringify(newSettings));
       return { data: newSettings, error: null };
     }
@@ -110,6 +126,7 @@ export const resetUserSettings = async (userId: string, scope: UserSettingsScope
     {
       num_tossups: 20,
       wrong_questions_only: false,
+      ...(scope === 'practice' ? { practice_session_difficulty: 'easy' as const } : {}),
       sound_enabled: true,
       notifications_enabled: true,
       theme: 'light',

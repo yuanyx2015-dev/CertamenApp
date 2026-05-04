@@ -1,22 +1,9 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  LayoutChangeEvent,
-  useWindowDimensions,
-} from 'react-native';
-import { DifficultySessionPicker } from './DifficultySessionPicker';
-
-/** Distance from top of Easy row to vertical center of Medium (Easy + gap + half Medium), ~px. */
-const PX_EASY_TOP_TO_MEDIUM_CENTER = 96;
-
-/** Push title + difficulty block slightly lower (px added to computed picker margin). */
-const CONTENT_NUDGE_DOWN = 28;
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { PracticeCategorySessionPicker } from './PracticeCategorySessionPicker';
 
 /**
- * Practice Mode (story route): timed sessions that do not change profile score or rank.
+ * Practice Mode (story route): pick a category, then timed session using difficulty from Practice settings.
  */
 export function StoryModeScreen({
   onNavigate,
@@ -27,61 +14,38 @@ export function StoryModeScreen({
     practiceDifficulty?: 'easy' | 'medium' | 'hard'
   ) => void;
 }) {
-  const { height: winH } = useWindowDimensions();
-  const titleRef = React.useRef<View>(null);
-  const [pickerMarginTop, setPickerMarginTop] = React.useState(24);
-
-  const alignMediumToScreenCenter = React.useCallback(() => {
-    const gapBelowTitle = 14;
-    titleRef.current?.measureInWindow((_x, y, _w, h) => {
-      const titleBottom = y + h;
-      const targetTopEasy = winH / 2 - PX_EASY_TOP_TO_MEDIUM_CENTER;
-      setPickerMarginTop(
-        Math.max(8, targetTopEasy - titleBottom - gapBelowTitle) + CONTENT_NUDGE_DOWN
-      );
-    });
-  }, [winH]);
-
-  const onTitleLayout = React.useCallback(
-    (_e: LayoutChangeEvent) => {
-      alignMediumToScreenCenter();
-    },
-    [alignMediumToScreenCenter]
-  );
-
-  React.useLayoutEffect(() => {
-    alignMediumToScreenCenter();
-  }, [alignMediumToScreenCenter]);
-
   return (
     <View style={styles.container}>
-      <View style={styles.inner}>
-        <View style={styles.headerArea}>
-          <View style={styles.settingsRow}>
-            <TouchableOpacity style={styles.settingsButton} onPress={() => onNavigate?.('settings-practice')}>
-              <Text style={styles.settingsButtonText}>Settings</Text>
-            </TouchableOpacity>
-          </View>
-          <View ref={titleRef} onLayout={onTitleLayout} style={styles.titleWrap}>
-            <Text style={styles.titleText}>Practice Mode</Text>
-          </View>
-        </View>
-
-        <View style={[styles.buttonBlock, { marginTop: pickerMarginTop }]}>
-          <DifficultySessionPicker onNavigate={onNavigate} showHints={false} />
-          <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
-            <Text style={styles.backButtonText}>Back to menu</Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.settingsRow}>
+          <TouchableOpacity style={styles.settingsButton} onPress={() => onNavigate?.('settings-practice')}>
+            <Text style={styles.settingsButtonText}>Settings</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.footerSpacer} />
+        <Text style={styles.titleText}>Practice Mode</Text>
+        <Text style={styles.subtitle}>Choose a category to start</Text>
+
+        <View style={styles.pickerWrap}>
+          <PracticeCategorySessionPicker onNavigate={onNavigate} />
+        </View>
+
+        <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
+          <Text style={styles.backButtonText}>Back to menu</Text>
+        </TouchableOpacity>
 
         <View style={styles.footerNote}>
           <Text style={styles.footerText}>
-            Change your difficulty to suit your needs. Progress does not count in Practice Mode.
+            Further adjustments (difficulty level, number of questions, etc...) are in the Settings. Progress here
+            affects your score and rank as usual.
           </Text>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -93,32 +57,19 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     paddingHorizontal: 24,
-    position: 'relative',
   },
-  inner: {
+  scroll: {
     flex: 1,
     width: '100%',
   },
-  headerArea: {
-    width: '100%',
+  scrollContent: {
     paddingTop: 88,
+    paddingBottom: 32,
+    gap: 16,
   },
   settingsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-  },
-  titleWrap: {
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  buttonBlock: {
-    width: '100%',
-    alignItems: 'center',
-    gap: 14,
-  },
-  footerSpacer: {
-    flex: 1,
-    minHeight: 12,
   },
   settingsButton: {
     paddingHorizontal: 16,
@@ -144,21 +95,34 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontWeight: '600',
     textAlign: 'center',
+    marginTop: 8,
+  },
+  subtitle: {
+    color: '#6a6a6a',
+    fontSize: 15,
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    marginBottom: 8,
+  },
+  pickerWrap: {
+    width: '100%',
+    marginTop: 8,
   },
   footerNote: {
     width: '100%',
-    paddingHorizontal: 8,
-    paddingBottom: 16,
-    alignItems: 'center',
+    paddingHorizontal: 4,
+    marginTop: 8,
   },
   footerText: {
     color: '#6a6a6a',
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
     textAlign: 'center',
     letterSpacing: 0.3,
   },
   backButton: {
+    alignSelf: 'center',
+    marginTop: 8,
     paddingHorizontal: 24,
     paddingVertical: 14,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',

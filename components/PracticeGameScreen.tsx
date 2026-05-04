@@ -4,7 +4,11 @@ import Svg, { Path, Line, Circle } from 'react-native-svg';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
-import { getOrCreateUserSettings, type UserSettingsScope } from '../services/userSettingsService';
+import {
+  getOrCreateUserSettings,
+  type UserSettingsScope,
+  type UserSettings,
+} from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
 
 const { width, height } = Dimensions.get('window');
@@ -86,6 +90,8 @@ interface PracticeGameScreenProps {
   fixedDifficulty?: 'easy' | 'medium' | 'hard' | null;
   /** Local tossup settings: rank-up vs practice (Story) buckets. */
   settingsScope?: UserSettingsScope;
+  /** Story Practice: category slug from the six-tile picker. */
+  storyPracticeCategory?: string | null;
 }
 
 export function PracticeGameScreen({
@@ -94,6 +100,7 @@ export function PracticeGameScreen({
   isGuestMode,
   fixedDifficulty = null,
   settingsScope = 'rank-up',
+  storyPracticeCategory = null,
 }: PracticeGameScreenProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -134,7 +141,8 @@ export function PracticeGameScreen({
       let totalQuestions = 20; // Default
       let wrongQuestionsOnly = false;
       let user = null;
-      
+      let settingsForScope: UserSettings | null = null;
+
       if (!isGuestMode) {
         user = await getCurrentUser();
         if (user) {
@@ -144,9 +152,9 @@ export function PracticeGameScreen({
             setRank(stats.rank);
             currentRank = stats.rank;
           }
-          
-          // Get user settings for number of tossups and wrong questions mode
+
           const { data: settings } = await getOrCreateUserSettings(user.id, settingsScope);
+          settingsForScope = settings ?? null;
           if (settings) {
             totalQuestions = settings.num_tossups;
             wrongQuestionsOnly = settings.wrong_questions_only;
@@ -154,16 +162,26 @@ export function PracticeGameScreen({
           }
         }
       } else {
-        // For guest mode, load settings from local storage
         const { data: settings } = await getOrCreateUserSettings('guest', settingsScope);
+        settingsForScope = settings ?? null;
         if (settings) {
           totalQuestions = settings.num_tossups;
         }
       }
-      
+
+      const practiceSessionDifficulty =
+        settingsScope === 'practice'
+          ? settingsForScope?.practice_session_difficulty ?? 'easy'
+          : null;
+
       const allQuestions: Question[] = [];
       const seenIds = new Set<string>(); // Extra safeguard to prevent duplicates
-      
+
+      const difficultyForFilters =
+        settingsScope === 'practice' && storyPracticeCategory
+          ? practiceSessionDifficulty
+          : fixedDifficulty;
+
       try {
         if (wrongQuestionsOnly && !isGuestMode && user) {
           const fetchCap = Math.max(totalQuestions * 4, 120);
@@ -173,8 +191,11 @@ export function PracticeGameScreen({
           );
           if (wrongError) throw wrongError;
           let pool = wrongQuestions ?? [];
-          if (fixedDifficulty) {
-            pool = pool.filter((q) => q.difficulty === fixedDifficulty);
+          if (storyPracticeCategory) {
+            pool = pool.filter((q) => q.category === storyPracticeCategory);
+          }
+          if (difficultyForFilters) {
+            pool = pool.filter((q) => q.difficulty === difficultyForFilters);
           }
           const picked = shuffleArray(pool).slice(0, totalQuestions);
           if (picked.length > 0) {
@@ -184,9 +205,9 @@ export function PracticeGameScreen({
                 seenIds.add(q.id);
               }
             });
-          } else if (wrongQuestions && wrongQuestions.length > 0 && fixedDifficulty) {
+          } else if (wrongQuestions && wrongQuestions.length > 0 && difficultyForFilters) {
             setLoadError(
-              `No wrong questions at ${fixedDifficulty} difficulty. Turn off Wrong questions only, pick another difficulty, or miss some ${fixedDifficulty} questions first.`
+              'It seems as if there are no wrong questions for this category in your selected difficulty. Change settings or practice more in this category!'
             );
             setIsLoading(false);
             return;
@@ -194,6 +215,25 @@ export function PracticeGameScreen({
             setLoadError('You have no wrong questions to review! Try practicing normally first.');
             setIsLoading(false);
             return;
+          }
+        } else if (
+          settingsScope === 'practice' &&
+          storyPracticeCategory &&
+          practiceSessionDifficulty
+        ) {
+          const { data: catQuestions, error } = await getRandomQuestions(
+            storyPracticeCategory,
+            practiceSessionDifficulty,
+            totalQuestions
+          );
+          if (error) throw error;
+          if (catQuestions) {
+            catQuestions.forEach((q) => {
+              if (!seenIds.has(q.id)) {
+                allQuestions.push(q);
+                seenIds.add(q.id);
+              }
+            });
           }
         } else if (fixedDifficulty) {
           const { data: fixedQuestions, error } = await getRandomQuestions(
@@ -256,7 +296,7 @@ export function PracticeGameScreen({
     };
     
     loadQuestionsAndStats();
-  }, [isGuestMode, fixedDifficulty, settingsScope]);
+  }, [isGuestMode, fixedDifficulty, settingsScope, storyPracticeCategory]);
 
   // Shuffle function
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -544,8 +584,11 @@ export function PracticeGameScreen({
 
   // Error state
   if (loadError) {
-    const isNoWrongQuestionsError = loadError.includes('no wrong questions');
-    const errorTitle = isNoWrongQuestionsError ? "You're too good!" : "Error";
+    const errorTitle = loadError.includes('It seems as if there are no wrong questions')
+      ? 'Uh oh!'
+      : loadError.includes('Try practicing normally first')
+        ? "You're too good!"
+        : 'Error';
     
     return (
       <View style={styles.container}>
