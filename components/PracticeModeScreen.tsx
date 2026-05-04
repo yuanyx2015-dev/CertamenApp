@@ -138,8 +138,8 @@ export function PracticeModeScreen({ onNavigate }: PracticeModeScreenProps) {
 
       <View style={styles.footerTextWrap}>
         <Text style={styles.bodyText}>
-          Advance with answering questions correctly to rise the ranks! Check your progress through the Profiles
-          screen, accessed through the main menu.
+          Advance by answering questions correctly to rise the ranks! Check your progress through your Profiles page,
+          accessed through the main menu.
         </Text>
       </View>
     </View>
