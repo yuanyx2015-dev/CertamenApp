@@ -29,7 +29,7 @@
 
 **[VISUAL: Demonstration of buzz-in, timer counting down, multiple choice answers appearing]**
 
-"Each question tests your knowledge across six categories: Mythology, History, Language, Literature, Daily Life, and General knowledge. As you improve, the difficulty adapts to your rank—keeping you challenged every step of the way."
+"Each question tests your knowledge across six categories: Mythology, History, Language, Literature, Culture & Life, and Living Latin. As you improve, the difficulty adapts to your rank—keeping you challenged every step of the way."
 
 **[VISUAL: Score increasing after correct answer with checkmark animation]**
 

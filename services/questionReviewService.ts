@@ -19,7 +19,7 @@ export interface CategoryStats {
  * Get all available question categories
  */
 export const getCategories = (): string[] => {
-  return ['mythology', 'history', 'language', 'literature', 'life', 'general'];
+  return ['mythology', 'history', 'language', 'literature', 'culture-life', 'living-latin'];
 };
 
 /**

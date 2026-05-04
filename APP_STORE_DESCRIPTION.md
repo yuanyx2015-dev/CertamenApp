@@ -8,7 +8,7 @@ Master Latin and Roman knowledge with adaptive quizzes. Track your progress thro
 
 ### Main Description
 
-**CertamenApp** brings the excitement of Latin Certamen competition right to your fingertips. Whether you're preparing for your next tournament or simply passionate about ancient Rome, our comprehensive quiz platform helps you master mythology, history, language, literature, and daily life.
+**CertamenApp** brings the excitement of Latin Certamen competition right to your fingertips. Whether you're preparing for your next tournament or simply passionate about ancient Rome, our comprehensive quiz platform helps you master mythology, history, language, literature, culture and life, and living Latin.
 
 **RANK-UP MODE**
 Test your knowledge with adaptive difficulty that grows with your skill. Questions stream character-by-character just like real Certamen. Buzz in within 15 seconds and choose from multiple-choice answers. Earn points based on difficulty: 10 for easy, 15 for medium, 25 for hard challenges.
@@ -24,7 +24,7 @@ Rise through seven prestigious Roman military ranks:
 • Legatus Legionis (Legion Commander) - 10,000+ points
 
 **REVIEW MODE**
-Never make the same mistake twice. Review questions organized by six categories: Mythology, History, Language, Literature, Daily Life, and General Knowledge. Focus on questions you've answered incorrectly to strengthen your weak spots.
+Never make the same mistake twice. Review questions organized by six categories: Mythology, History, Language, Literature, Culture & Life, and Living Latin. Focus on questions you've answered incorrectly to strengthen your weak spots.
 
 **TRACK YOUR PROGRESS**
 • Comprehensive statistics tracking

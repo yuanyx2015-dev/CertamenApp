@@ -86,12 +86,12 @@ const REVIEW_CATEGORIES: { key: string; label: string }[] = [
   { key: 'history', label: 'History' },
   { key: 'language', label: 'Language' },
   { key: 'literature', label: 'Literature' },
-  { key: 'life', label: 'Daily Life' },
-  { key: 'general', label: 'General' },
+  { key: 'culture-life', label: 'Culture & Life' },
+  { key: 'living-latin', label: 'Living Latin' },
 ];
 
-/** Only these categories open the review list; others stay “Coming soon”. */
-const UNLOCKED_REVIEW_CATEGORIES = new Set(['mythology', 'history']);
+/** All categories listed above open the review list. */
+const UNLOCKED_REVIEW_CATEGORIES = new Set(REVIEW_CATEGORIES.map((c) => c.key));
 
 export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: string, category?: string) => void }) {
   const [wrongByCategory, setWrongByCategory] = useState<Record<string, number>>({});

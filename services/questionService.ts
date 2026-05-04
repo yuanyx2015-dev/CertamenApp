@@ -1,16 +1,30 @@
 import { supabase } from '../lib/supabase';
+import type { Database } from '../types/supabase';
+
+export type QuestionCategory =
+  | 'mythology'
+  | 'history'
+  | 'language'
+  | 'literature'
+  | 'culture-life'
+  | 'living-latin';
 
 export interface Question {
   id: string;
   question_text: string;
   correct_answer: string;
-  wrong_answers: string[];
-  category: 'mythology' | 'history' | 'language' | 'literature' | 'life' | 'general';
+  /** Exactly three distractors (schema v2). */
+  wrong_answers: [string, string, string];
+  category: QuestionCategory;
   difficulty: 'easy' | 'medium' | 'hard';
-  times_asked: number;
-  times_correct: number;
-  created_at: string;
-  updated_at: string;
+  block_label?: string | null;
+  confidence?: 'high' | 'web-verified' | 'medium-spot-check' | null;
+  yale_attestation?: string | null;
+  batch_id?: string | null;
+  times_asked?: number;
+  times_correct?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Get random questions by category and difficulty
@@ -22,7 +36,7 @@ export const getRandomQuestions = async (
   const { data, error } = await supabase.rpc('get_random_questions', {
     p_category: category || null,
     p_difficulty: difficulty || null,
-    p_limit: limit  // Matches the actual SQL function parameter name
+    p_limit: limit, // Matches the actual SQL function parameter name
   });
 
   if (error) {

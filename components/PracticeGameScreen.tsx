@@ -4,7 +4,7 @@ import Svg, { Path, Line, Circle } from 'react-native-svg';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
-import { getOrCreateUserSettings } from '../services/userSettingsService';
+import { getOrCreateUserSettings, type UserSettingsScope } from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
 
 const { width, height } = Dimensions.get('window');
@@ -82,10 +82,10 @@ interface PracticeGameScreenProps {
   onNavigate?: (screen: string) => void;
   previousScreen?: string;
   isGuestMode?: boolean;
-  /** When set, all tossups use this difficulty only (Rank-up / Practice Mode pickers). Rank-based mix when null. */
+  /** When set, all tossups use this difficulty only (Rank-up / story Practice pickers). Rank-based mix when null. */
   fixedDifficulty?: 'easy' | 'medium' | 'hard' | null;
-  /** Practice Mode (story route): no profile score, rank, or wrong-answer tracking. */
-  suppressRankProgress?: boolean;
+  /** Local tossup settings: rank-up vs practice (Story) buckets. */
+  settingsScope?: UserSettingsScope;
 }
 
 export function PracticeGameScreen({
@@ -93,7 +93,7 @@ export function PracticeGameScreen({
   previousScreen,
   isGuestMode,
   fixedDifficulty = null,
-  suppressRankProgress = false,
+  settingsScope = 'rank-up',
 }: PracticeGameScreenProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -121,7 +121,7 @@ export function PracticeGameScreen({
   const feedbackScaleAnim = useRef(new Animated.Value(0)).current;
   const feedbackOpacityAnim = useRef(new Animated.Value(0)).current;
 
-  const skipProfileScoring = isGuestMode || suppressRankProgress;
+  const skipProfileScoring = isGuestMode;
 
   // Load questions from database
   useEffect(() => {
@@ -146,7 +146,7 @@ export function PracticeGameScreen({
           }
           
           // Get user settings for number of tossups and wrong questions mode
-          const { data: settings } = await getOrCreateUserSettings(user.id);
+          const { data: settings } = await getOrCreateUserSettings(user.id, settingsScope);
           if (settings) {
             totalQuestions = settings.num_tossups;
             wrongQuestionsOnly = settings.wrong_questions_only;
@@ -155,7 +155,7 @@ export function PracticeGameScreen({
         }
       } else {
         // For guest mode, load settings from local storage
-        const { data: settings } = await getOrCreateUserSettings('guest');
+        const { data: settings } = await getOrCreateUserSettings('guest', settingsScope);
         if (settings) {
           totalQuestions = settings.num_tossups;
         }
@@ -165,23 +165,31 @@ export function PracticeGameScreen({
       const seenIds = new Set<string>(); // Extra safeguard to prevent duplicates
       
       try {
-        if (
-          wrongQuestionsOnly &&
-          !isGuestMode &&
-          user &&
-          !fixedDifficulty &&
-          !suppressRankProgress
-        ) {
-          // Fetch only wrong questions
-          const { data: wrongQuestions, error: wrongError } = await getAllWrongQuestions(user.id, totalQuestions);
+        if (wrongQuestionsOnly && !isGuestMode && user) {
+          const fetchCap = Math.max(totalQuestions * 4, 120);
+          const { data: wrongQuestions, error: wrongError } = await getAllWrongQuestions(
+            user.id,
+            fetchCap
+          );
           if (wrongError) throw wrongError;
-          if (wrongQuestions && wrongQuestions.length > 0) {
-            wrongQuestions.forEach(q => {
+          let pool = wrongQuestions ?? [];
+          if (fixedDifficulty) {
+            pool = pool.filter((q) => q.difficulty === fixedDifficulty);
+          }
+          const picked = shuffleArray(pool).slice(0, totalQuestions);
+          if (picked.length > 0) {
+            picked.forEach((q) => {
               if (!seenIds.has(q.id)) {
                 allQuestions.push(q);
                 seenIds.add(q.id);
               }
             });
+          } else if (wrongQuestions && wrongQuestions.length > 0 && fixedDifficulty) {
+            setLoadError(
+              `No wrong questions at ${fixedDifficulty} difficulty. Turn off Wrong questions only, pick another difficulty, or miss some ${fixedDifficulty} questions first.`
+            );
+            setIsLoading(false);
+            return;
           } else {
             setLoadError('You have no wrong questions to review! Try practicing normally first.');
             setIsLoading(false);
@@ -248,7 +256,7 @@ export function PracticeGameScreen({
     };
     
     loadQuestionsAndStats();
-  }, [isGuestMode, fixedDifficulty, suppressRankProgress]); // Reload when guest mode, difficulty lock, or Practice vs Rank-up changes
+  }, [isGuestMode, fixedDifficulty, settingsScope]);
 
   // Shuffle function
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -259,6 +267,15 @@ export function PracticeGameScreen({
     }
     return newArray;
   };
+
+  const pointsForQuestionDifficulty = (d: Question['difficulty'] | undefined): number => {
+    if (d === 'medium') return 15;
+    if (d === 'hard') return 25;
+    return 10;
+  };
+
+  const maxPointsForQuestions = (qs: Question[]): number =>
+    qs.reduce((sum, q) => sum + pointsForQuestionDifficulty(q.difficulty), 0);
 
   // Calculate rank based on cumulative score
   const calculateRank = (totalScore: number): string => {
@@ -441,14 +458,12 @@ export function PracticeGameScreen({
     if (option.isCorrect) {
       if (isWrongQuestionsMode) {
         setStatusText('Correct!');
-      } else if (suppressRankProgress && !isGuestMode) {
-        // Practice Mode (story): local count only, no profile or DB
-        setSessionScore((s) => s + 1);
-        setStatusText('Correct!');
       } else if (isGuestMode) {
         setStatusText('Correct!');
       } else {
-        const pointsAwarded = 10;
+        const pointsAwarded = pointsForQuestionDifficulty(
+          questions[currentQuestionIndex]?.difficulty
+        );
         const newSessionScore = sessionScore + pointsAwarded;
         setSessionScore(newSessionScore);
         setStatusText(`Correct! +${pointsAwarded} points`);
@@ -556,17 +571,10 @@ export function PracticeGameScreen({
           <Text style={styles.gameOverTitle}>Practice Complete!</Text>
           {!isWrongQuestionsMode && !skipProfileScoring && (
             <Text style={styles.gameOverScore}>
-              Final Score: {sessionScore} / {questions.length * 10}
+              Final Score: {sessionScore} / {maxPointsForQuestions(questions)}
             </Text>
           )}
-          {!isWrongQuestionsMode && suppressRankProgress && !isGuestMode && (
-            <Text style={styles.gameOverScore}>
-              {sessionScore} correct this session (not saved to your profile)
-            </Text>
-          )}
-          {!isGuestMode && !suppressRankProgress && (
-            <Text style={styles.gameOverRank}>Rank: {rank}</Text>
-          )}
+          {!isGuestMode && <Text style={styles.gameOverRank}>Rank: {rank}</Text>}
           
           {/* Guest Sign-In Prompt */}
           {isGuestMode && (
@@ -607,14 +615,13 @@ export function PracticeGameScreen({
                   }
                   
                   // Get user settings for number of tossups
-                  const { data: settings } = await getOrCreateUserSettings(user.id);
+                  const { data: settings } = await getOrCreateUserSettings(user.id, settingsScope);
                   if (settings) {
                     totalQuestions = settings.num_tossups;
                   }
                 }
               } else {
-                // For guest mode, get settings from local storage
-                const { data: settings } = await getOrCreateUserSettings('guest');
+                const { data: settings } = await getOrCreateUserSettings('guest', settingsScope);
                 if (settings) {
                   totalQuestions = settings.num_tossups;
                 }

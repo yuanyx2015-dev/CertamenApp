@@ -24,7 +24,7 @@ CertamenApp is a comprehensive practice tool designed for students preparing for
 ![Rank-up Mode](assets/screenshots/practice-game.png)
 
 ### 📚 Question Review System
-- **Category-Based Organization**: Six categories (Mythology, History, Language, Literature, Life, General)
+- **Category-Based Organization**: Six categories (Mythology, History, Language, Literature, Culture & Life, Living Latin)
 - **Wrong Answer Tracking**: Automatically saves questions you miss
 - **Category Statistics**: See wrong question counts per category
 - **Search & Filter**: Find specific questions quickly
@@ -293,7 +293,7 @@ CertamenApp/
 ## 🗺️ Roadmap
 
 ### Planned Features
-- [ ] Additional question categories (History, Language, Literature, Life, General)
+- [ ] Additional question categories (History, Language, Literature, Culture & Life, Living Latin)
 - [ ] PvP Mode (real-time competitive play)
 - [ ] Simulation Mode enhancements
 - [ ] Leaderboard system

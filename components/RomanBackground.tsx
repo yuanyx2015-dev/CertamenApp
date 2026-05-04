@@ -18,6 +18,7 @@ import { SettingsScreen } from './SettingsScreen';
 import { ReviewCategoryScreen } from './ReviewCategoryScreen';
 import { CategoryQuestionsScreen } from './CategoryQuestionsScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
+import type { UserSettingsScope } from '../services/userSettingsService';
 
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
@@ -29,8 +30,9 @@ export function RomanBackground() {
   const [practiceGameDifficultyLock, setPracticeGameDifficultyLock] = useState<
     'easy' | 'medium' | 'hard' | null
   >(null);
-  /** True when practice-game was opened from Practice Mode (story); no profile score or rank change. */
-  const [practiceGameNoRankScore, setPracticeGameNoRankScore] = useState(false);
+  /** Which local settings bucket practice-game reads (story = practice; rank-up route = rank-up). */
+  const [practiceGameSettingsScope, setPracticeGameSettingsScope] =
+    useState<UserSettingsScope>('rank-up');
   const previousScreen = useRef('login');
 
   useEffect(() => {
@@ -89,10 +91,8 @@ export function RomanBackground() {
     }
 
     if (screen === 'practice-game') {
-      setPracticeGameNoRankScore(currentScreen === 'story');
+      setPracticeGameSettingsScope(currentScreen === 'story' ? 'practice' : 'rank-up');
       setPracticeGameKey((prev) => prev + 1);
-    } else {
-      setPracticeGameNoRankScore(false);
     }
 
     if (currentScreen !== 'settings' && currentScreen !== 'settings-practice') {
@@ -154,7 +154,7 @@ export function RomanBackground() {
             previousScreen={previousScreen.current}
             isGuestMode={isGuestMode}
             fixedDifficulty={practiceGameDifficultyLock}
-            suppressRankProgress={practiceGameNoRankScore}
+            settingsScope={practiceGameSettingsScope}
           />
         );
       case 'pvp':
@@ -184,7 +184,7 @@ export function RomanBackground() {
       case 'settings':
         return (
           <SettingsScreen
-            variant="rank-up"
+            settingsScope="rank-up"
             onNavigate={handleNavigate}
             previousScreen={previousScreen.current}
             isGuestMode={isGuestMode}
@@ -193,7 +193,7 @@ export function RomanBackground() {
       case 'settings-practice':
         return (
           <SettingsScreen
-            variant="practice"
+            settingsScope="practice"
             onNavigate={handleNavigate}
             previousScreen={previousScreen.current}
             isGuestMode={isGuestMode}

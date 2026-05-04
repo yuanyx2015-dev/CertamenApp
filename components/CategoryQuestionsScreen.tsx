@@ -198,8 +198,8 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
     history: 'History',
     language: 'Language',
     literature: 'Literature',
-    life: 'Daily Life',
-    general: 'General'
+    'culture-life': 'Culture & Life',
+    'living-latin': 'Living Latin',
   };
 
   if (isLoading) {

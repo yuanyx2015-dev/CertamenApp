@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Modal, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser, signOut } from '../services/authService';
+import { clearAllLocalUserSettings } from '../services/userSettingsService';
 import { getOrCreateUserStats, UserStats } from '../services/userStatsService';
 import { getProfileByEmail, Profile, deleteAccount } from '../services/profileService';
 import Svg, { Path } from 'react-native-svg';
@@ -198,11 +198,9 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
       console.log('Deleting account for auth user:', user.id);
       console.log('Profile ID:', profile?.id);
 
-      // Clear local user settings from AsyncStorage before deletion
       try {
-        const settingsKey = `user_settings_${user.id}`;
-        await AsyncStorage.removeItem(settingsKey);
-        console.log('Cleared local user settings');
+        await clearAllLocalUserSettings(user.id);
+        console.log('Cleared local user settings (rank-up and practice)');
       } catch (storageError) {
         console.warn('Error clearing local settings:', storageError);
       }

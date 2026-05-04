@@ -12,12 +12,26 @@ export interface UserSettings {
   updated_at?: string;
 }
 
+/** Rank-up uses legacy `user_settings_<id>`; practice uses `user_settings_practice_<id>`. */
+export type UserSettingsScope = 'rank-up' | 'practice';
+
 const STORAGE_KEY = 'user_settings';
 
-// Helper function to get storage key for a user
-const getUserStorageKey = (userId: string) => `${STORAGE_KEY}_${userId}`;
+function getUserStorageKey(userId: string, scope: UserSettingsScope): string {
+  if (scope === 'practice') {
+    return `${STORAGE_KEY}_practice_${userId}`;
+  }
+  return `${STORAGE_KEY}_${userId}`;
+}
 
-// Default settings
+/** Remove both rank-up and practice settings blobs for this user (e.g. account deletion). */
+export async function clearAllLocalUserSettings(userId: string): Promise<void> {
+  await AsyncStorage.multiRemove([
+    getUserStorageKey(userId, 'rank-up'),
+    getUserStorageKey(userId, 'practice'),
+  ]);
+}
+
 const getDefaultSettings = (userId: string): UserSettings => ({
   user_id: userId,
   num_tossups: 20,
@@ -30,18 +44,18 @@ const getDefaultSettings = (userId: string): UserSettings => ({
   updated_at: new Date().toISOString(),
 });
 
-// Get user settings from localStorage (or create default if doesn't exist)
-export const getOrCreateUserSettings = async (userId: string) => {
+export const getOrCreateUserSettings = async (
+  userId: string,
+  scope: UserSettingsScope = 'rank-up'
+) => {
   try {
-    const storageKey = getUserStorageKey(userId);
+    const storageKey = getUserStorageKey(userId, scope);
     const settingsJson = await AsyncStorage.getItem(storageKey);
 
     if (settingsJson) {
-      // Parse and return existing settings
       const data = JSON.parse(settingsJson) as UserSettings;
       return { data, error: null };
     } else {
-      // Create default settings
       const newSettings = getDefaultSettings(userId);
       await AsyncStorage.setItem(storageKey, JSON.stringify(newSettings));
       return { data: newSettings, error: null };
@@ -52,29 +66,26 @@ export const getOrCreateUserSettings = async (userId: string) => {
   }
 };
 
-// Update user settings
 export const updateUserSettings = async (
   userId: string,
-  settings: Partial<Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>>
+  settings: Partial<Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>>,
+  scope: UserSettingsScope = 'rank-up'
 ) => {
   try {
-    const storageKey = getUserStorageKey(userId);
-    
-    // Get existing settings
-    const { data: existingSettings, error: getError } = await getOrCreateUserSettings(userId);
-    
+    const storageKey = getUserStorageKey(userId, scope);
+
+    const { data: existingSettings, error: getError } = await getOrCreateUserSettings(userId, scope);
+
     if (getError || !existingSettings) {
       return { data: null, error: getError || new Error('Failed to get existing settings') };
     }
 
-    // Merge with new settings
     const updatedSettings: UserSettings = {
       ...existingSettings,
       ...settings,
       updated_at: new Date().toISOString(),
     };
 
-    // Save to localStorage
     await AsyncStorage.setItem(storageKey, JSON.stringify(updatedSettings));
 
     return { data: updatedSettings, error: null };
@@ -84,23 +95,26 @@ export const updateUserSettings = async (
   }
 };
 
-// Update specific setting
 export const updateSetting = async (
   userId: string,
   settingName: keyof Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>,
-  value: any
+  value: any,
+  scope: UserSettingsScope = 'rank-up'
 ) => {
-  return updateUserSettings(userId, { [settingName]: value });
+  return updateUserSettings(userId, { [settingName]: value }, scope);
 };
 
-// Reset settings to defaults
-export const resetUserSettings = async (userId: string) => {
-  return updateUserSettings(userId, {
-    num_tossups: 20,
-    wrong_questions_only: false,
-    sound_enabled: true,
-    notifications_enabled: true,
-    theme: 'light',
-    language: 'en',
-  });
+export const resetUserSettings = async (userId: string, scope: UserSettingsScope = 'rank-up') => {
+  return updateUserSettings(
+    userId,
+    {
+      num_tossups: 20,
+      wrong_questions_only: false,
+      sound_enabled: true,
+      notifications_enabled: true,
+      theme: 'light',
+      language: 'en',
+    },
+    scope
+  );
 };

@@ -1,7 +1,11 @@
 import React, { useEffect } from 'react';
 import { View, Text, Switch, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 import { getCurrentUser } from '../services/authService';
-import { getOrCreateUserSettings, updateSetting } from '../services/userSettingsService';
+import {
+  getOrCreateUserSettings,
+  updateSetting,
+  type UserSettingsScope,
+} from '../services/userSettingsService';
 import { getAllWrongQuestions } from '../services/questionReviewService';
 
 function AnimatedButton({ label, onPress }: { label: string; onPress: () => void }) {
@@ -57,20 +61,18 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
   );
 }
 
-type SettingsVariant = 'rank-up' | 'practice';
-
 export function SettingsScreen({
-  variant = 'rank-up',
+  settingsScope,
   onNavigate,
   previousScreen,
   isGuestMode,
 }: {
-  variant?: SettingsVariant;
+  /** Rank-up and practice use separate persisted settings. */
+  settingsScope: UserSettingsScope;
   onNavigate?: (screen: string) => void;
   previousScreen?: string;
   isGuestMode?: boolean;
 }) {
-  const isPracticeSettings = variant === 'practice';
   const [wrongQuestionsOnly, setWrongQuestionsOnly] = React.useState(false);
   const [numTossups, setNumTossups] = React.useState(20);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -89,7 +91,7 @@ export function SettingsScreen({
     
     if (userIdToUse) {
       setUserId(userIdToUse);
-      const { data: settings, error } = await getOrCreateUserSettings(userIdToUse);
+      const { data: settings, error } = await getOrCreateUserSettings(userIdToUse, settingsScope);
       if (settings && !error) {
         setWrongQuestionsOnly(settings.wrong_questions_only);
         setNumTossups(settings.num_tossups);
@@ -104,7 +106,7 @@ export function SettingsScreen({
       }
     }
     setIsLoading(false);
-  }, [isGuestMode]);
+  }, [isGuestMode, settingsScope]);
 
   // Load settings on mount AND whenever component becomes visible
   useEffect(() => {
@@ -124,22 +126,22 @@ export function SettingsScreen({
     setWrongQuestionsOnly(value);
     
     if (userId) {
-      await updateSetting(userId, 'wrong_questions_only', value);
+      await updateSetting(userId, 'wrong_questions_only', value, settingsScope);
     }
-    
+
     // Auto-adjust number of questions when toggling
     if (value && wrongQuestionCount > 0) {
       // When toggling ON: set to wrong question count (capped at 50)
       const newNumQuestions = Math.min(wrongQuestionCount, 50);
       setNumTossups(newNumQuestions);
       if (userId) {
-        await updateSetting(userId, 'num_tossups', newNumQuestions);
+        await updateSetting(userId, 'num_tossups', newNumQuestions, settingsScope);
       }
     } else if (!value && numTossups < 5) {
       // When toggling OFF: ensure minimum is 5
       setNumTossups(5);
       if (userId) {
-        await updateSetting(userId, 'num_tossups', 5);
+        await updateSetting(userId, 'num_tossups', 5, settingsScope);
       }
     }
   };
@@ -147,15 +149,15 @@ export function SettingsScreen({
   // Handle number of tossups change
   const handleNumTossupsChange = async (newValue: number) => {
     const minQuestions =
-      !isPracticeSettings && wrongQuestionsOnly ? Math.min(5, wrongQuestionCount) : 5;
+      wrongQuestionsOnly ? Math.min(5, wrongQuestionCount || 1) : 5;
     const maxQuestions =
-      !isPracticeSettings && wrongQuestionsOnly ? Math.min(wrongQuestionCount, 50) : 50;
+      wrongQuestionsOnly ? Math.min(wrongQuestionCount, 50) : 50;
     // Clamp between minQuestions and maxQuestions
     const clampedValue = Math.max(minQuestions, Math.min(maxQuestions, newValue));
     setNumTossups(clampedValue);
     
     if (userId) {
-      await updateSetting(userId, 'num_tossups', clampedValue);
+      await updateSetting(userId, 'num_tossups', clampedValue, settingsScope);
     }
   };
 
@@ -196,32 +198,30 @@ export function SettingsScreen({
               </TouchableOpacity>
             </View>
           </View>
-          {!isPracticeSettings && wrongQuestionsOnly && (
+          {wrongQuestionsOnly && (
             <Text style={styles.helperText}>
               Max: {Math.min(wrongQuestionCount, 50)} (based on your wrong questions)
             </Text>
           )}
 
-          {!isPracticeSettings && (
-            <>
-              <View style={styles.toggleRow}>
-                <Text style={[styles.optionText, isGuestMode && styles.disabledText]}>
-                  Wrong questions only
-                </Text>
-                <Switch
-                  value={wrongQuestionsOnly}
-                  onValueChange={handleWrongQuestionsToggle}
-                  trackColor={{ false: '#d4d4d4', true: '#c9a961' }}
-                  thumbColor={wrongQuestionsOnly ? '#d4b76a' : '#f4f3f4'}
-                  ios_backgroundColor="#d4d4d4"
-                  disabled={isGuestMode}
-                />
-              </View>
-              {isGuestMode && (
-                <Text style={styles.guestHelperText}>Sign in to track wrong questions</Text>
-              )}
-            </>
-          )}
+          <>
+            <View style={styles.toggleRow}>
+              <Text style={[styles.optionText, isGuestMode && styles.disabledText]}>
+                Wrong questions only
+              </Text>
+              <Switch
+                value={wrongQuestionsOnly}
+                onValueChange={handleWrongQuestionsToggle}
+                trackColor={{ false: '#d4d4d4', true: '#c9a961' }}
+                thumbColor={wrongQuestionsOnly ? '#d4b76a' : '#f4f3f4'}
+                ios_backgroundColor="#d4d4d4"
+                disabled={isGuestMode}
+              />
+            </View>
+            {isGuestMode && (
+              <Text style={styles.guestHelperText}>Sign in to track wrong questions</Text>
+            )}
+          </>
         </View>
       </View>
 
