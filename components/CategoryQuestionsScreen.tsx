@@ -116,7 +116,11 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
     setCustomQuestion('');
     setCustomAnswer(null);
 
-    const { data, error } = await getQuestionExplanation(questionText, correctAnswer)
+    const { data, error } = await getQuestionExplanation(
+      questionText,
+      correctAnswer,
+      questionId
+    );
 
     setIsLoadingExplanation(false);
 
@@ -289,8 +293,11 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
                       {/* Custom Question Input */}
                       <View style={styles.customQuestionContainer}>
                         <Text style={styles.customQuestionLabel}>
-                          Have a follow-up question? ({remainingQuestions}/
-                          {AI_TUTOR_DAILY_LIMIT} remaining today)
+                          {remainingQuestions > 0
+                            ? `Have a follow-up question? You have ${remainingQuestions} remaining question${
+                                remainingQuestions !== 1 ? 's' : ''
+                              } today`
+                            : 'No remaining questions for today, try again in a day!'}
                           {followUpMax > 0
                             ? ` · up to ${followUpMax} chars`
                             : ' · follow-up unavailable (question too long)'}

@@ -3,26 +3,44 @@ import { supabase } from '../lib/supabase';
 export interface AIExplanationResponse {
   explanation: string;
   clueCount: number;
+  /** True when returned from DB cache (no Gemini call). */
+  cached?: boolean;
+  /** Which Gemini model produced this text (see Edge Function model chain). */
+  geminiModelUsed?: string | null;
+  /** Row was rewritten using the preferred (best) model. */
+  upgraded?: boolean;
+  upgradeAttempted?: boolean;
+  upgradeFailed?: boolean;
+  upgradeSkipped?: boolean;
+  /** Present when saving the new explanation to DB failed (check deploy / FK). */
+  persistError?: string | null;
   error?: string;
 }
 
 /**
- * Get an AI-generated explanation for a quiz question
- * @param questionText The full question text (with clues separated by commas)
- * @param correctAnswer The correct answer to the question
- * @returns AI-generated explanation breaking down each clue
+ * Get an AI-generated explanation for a quiz question.
+ * The edge function caches by `questionId` so repeat requests skip Gemini.
  */
 export const getQuestionExplanation = async (
   questionText: string,
-  correctAnswer: string
+  correctAnswer: string,
+  questionId: string
 ): Promise<{ data: AIExplanationResponse | null; error: any }> => {
   try {
     const { data, error } = await supabase.functions.invoke('explain-question', {
       body: {
         questionText,
         correctAnswer,
+        questionId,
       },
     });
+
+    if (data && typeof data === 'object' && 'persistError' in data && (data as AIExplanationResponse).persistError) {
+      console.warn(
+        '[AI explanation] Not saved to question_ai_explanations:',
+        (data as AIExplanationResponse).persistError
+      );
+    }
 
     if (error) {
       console.error('Error calling explain-question function:', error);

@@ -130,7 +130,11 @@ export function AITutorScreen({ onNavigate }: AITutorScreenProps) {
         </Text>
         <View style={styles.limitBadge}>
           <Text style={styles.limitText}>
-            {remainingQuestions} question{remainingQuestions !== 1 ? 's' : ''} remaining today
+            {remainingQuestions > 0
+              ? `You have ${remainingQuestions} remaining question${
+                  remainingQuestions !== 1 ? 's' : ''
+                } today`
+              : 'No remaining questions for today, try again in a day!'}
           </Text>
         </View>
       </View>

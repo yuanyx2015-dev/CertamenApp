@@ -7,6 +7,87 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function getGeminiModelChain(): string[] {
+  const chainEnv = Deno.env.get('GEMINI_MODEL_CHAIN')?.trim()
+  if (chainEnv) {
+    return [...new Set(chainEnv.split(',').map((s) => s.trim()).filter(Boolean))]
+  }
+  const primary = Deno.env.get('GEMINI_MODEL')?.trim()
+  const defaults = [
+    'gemini-3-flash-preview',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+  ]
+  if (primary) {
+    return [...new Set([primary, ...defaults.filter((m) => m !== primary)])]
+  }
+  return defaults
+}
+
+async function geminiGenerateContentWithFallback(
+  geminiKey: string,
+  body: Record<string, unknown>
+): Promise<
+  | { ok: true; json: Record<string, unknown>; modelUsed: string }
+  | { ok: false; status: number; errorText: string; modelsTried: string[] }
+> {
+  const models = getGeminiModelChain()
+  const modelsTried: string[] = []
+  let lastStatus = 500
+  let lastText = ''
+
+  for (const model of models) {
+    modelsTried.push(model)
+    const url =
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    if (response.ok) {
+      const json = (await response.json()) as Record<string, unknown>
+      if (modelsTried.length > 1) {
+        console.warn(`ai-tutor: fallback succeeded with ${model}`)
+      }
+      return { ok: true, json, modelUsed: model }
+    }
+
+    lastText = await response.text()
+    lastStatus = response.status
+    console.warn(
+      `ai-tutor: model ${model} -> HTTP ${response.status}`,
+      lastText.slice(0, 400)
+    )
+
+    if (response.status === 429 || response.status === 503 || response.status === 404) {
+      continue
+    }
+
+    return { ok: false, status: response.status, errorText: lastText, modelsTried }
+  }
+
+  return { ok: false, status: lastStatus, errorText: lastText, modelsTried }
+}
+
+function extractGeminiAnswerText(aiResponse: Record<string, unknown>): string {
+  const parts =
+    (aiResponse.candidates as Array<{ content?: { parts?: Array<{ text?: string }> } }> | undefined)?.[0]
+      ?.content?.parts ?? []
+  const chunks = parts
+    .map((p) => (typeof p.text === 'string' ? p.text : ''))
+    .filter((t) => t.length > 0)
+  const joined = chunks.join('').trim()
+  if (joined.length > 0) return joined
+  const fb = parts[0]?.text
+  return typeof fb === 'string' && fb.trim().length > 0
+    ? fb.trim()
+    : 'Sorry, I could not generate an answer.'
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -99,42 +180,40 @@ Keep your answers clear, concise (2-4 sentences), and educational. If a question
 
     const fullPrompt = `${systemPrompt}\n\nStudent question: ${question}\n\nYour answer:`
 
-    // Call Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: fullPrompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 300,
-          }
-        }),
-      }
-    )
+    const geminiBody = {
+      contents: [{ parts: [{ text: fullPrompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 300,
+      },
+    }
 
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('Gemini API error:', error)
+    const geminiResult = await geminiGenerateContentWithFallback(geminiKey, geminiBody)
+
+    if (!geminiResult.ok) {
+      let geminiDetail = geminiResult.errorText.slice(0, 1500)
+      try {
+        const parsed = JSON.parse(geminiResult.errorText) as Record<string, unknown>
+        geminiDetail = JSON.stringify(parsed.error ?? parsed, null, 2).slice(0, 1500)
+      } catch {
+        /* raw */
+      }
       return new Response(
-        JSON.stringify({ error: 'Failed to get answer from AI' }),
-        { 
+        JSON.stringify({
+          error: 'Failed to get answer from AI',
+          geminiHttpStatus: geminiResult.status,
+          modelsTried: geminiResult.modelsTried,
+          geminiDetail,
+        }),
+        {
           status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
     }
 
-    const aiResponse = await response.json()
-    const answer = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate an answer.'
+    const aiResponse = geminiResult.json
+    const answer = extractGeminiAnswerText(aiResponse)
 
     // Increment usage count
     const { error: incrementError } = await supabase.rpc('increment_ai_tutor_usage', {
