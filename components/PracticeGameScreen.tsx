@@ -751,13 +751,39 @@ export function PracticeGameScreen({
         </View>
       )}
       
-      {/* Header */}
-      <View style={[styles.header, isWrongQuestionsMode && styles.headerCentered]}>
-        <Text style={styles.headerText}>Question {currentQuestionIndex + 1}/{questions.length}</Text>
-        {!isWrongQuestionsMode && !isGuestMode && (
-          <Text style={styles.headerText}>Score: {sessionScore}</Text>
-        )}
-      </View>
+      {/* Header (timer stays visible while scrolling — not inside ScrollView) */}
+      {isWrongQuestionsMode && !(isBuzzed && !isAnswered) ? (
+        <View style={[styles.header, styles.headerCentered]}>
+          <Text style={styles.headerText}>
+            Question {currentQuestionIndex + 1}/{questions.length}
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.header}>
+          <View style={styles.headerColLeft}>
+            <Text style={styles.headerText}>
+              Question {currentQuestionIndex + 1}/{questions.length}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.headerColCenter,
+              isBuzzed && !isAnswered
+                ? styles.headerColCenterActive
+                : styles.headerColCenterHidden,
+            ]}
+          >
+            {isBuzzed && !isAnswered && (
+              <Text style={styles.headerTimerText}>Time: {timeRemaining}s</Text>
+            )}
+          </View>
+          <View style={styles.headerColRight}>
+            {!isWrongQuestionsMode && !isGuestMode && (
+              <Text style={styles.headerText}>Score: {sessionScore}</Text>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* Game Area */}
       <ScrollView 
@@ -773,9 +799,6 @@ export function PracticeGameScreen({
           ]}>
             {statusText}
           </Text>
-          {isBuzzed && !isAnswered && (
-            <Text style={styles.timerText}>Time: {timeRemaining}s</Text>
-          )}
         </View>
 
         {/* Question Box */}
@@ -922,10 +945,9 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-around', // Changed from 'space-between' for more spacing
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 2,
     borderBottomColor: '#c9a961',
@@ -934,10 +956,41 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    gap: 30, // Add explicit gap between items
   },
   headerCentered: {
-    justifyContent: 'center', // Center when only one item (wrong questions mode)
+    justifyContent: 'center',
+  },
+  headerColLeft: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  headerColCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerColCenterHidden: {
+    width: 0,
+    minWidth: 0,
+    paddingHorizontal: 0,
+    overflow: 'hidden',
+  },
+  headerColCenterActive: {
+    flexShrink: 0,
+    minWidth: 88,
+    paddingHorizontal: 6,
+  },
+  headerColRight: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  headerTimerText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#c9a961',
   },
   headerText: {
     fontSize: 18,
@@ -966,12 +1019,6 @@ const styles = StyleSheet.create({
   statusTextBuzzed: {
     color: '#c9a961',
     fontWeight: '600',
-  },
-  timerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#c9a961',
-    marginTop: 5,
   },
   questionBox: {
     width: '100%',
