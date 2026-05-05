@@ -13,6 +13,9 @@ import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../s
 
 const { width, height } = Dimensions.get('window');
 
+/** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
+const PRE_BUZZ_SECONDS = 10;
+
 // Ornate Roman-style Checkmark
 function RomanCheckmark() {
   return (
@@ -116,6 +119,8 @@ export function PracticeGameScreen({
   const [statusText, setStatusText] = useState('Loading questions...');
   const [rank, setRank] = useState('Miles');
   const [timeRemaining, setTimeRemaining] = useState(5);
+  /** Countdown after the full question is shown; null = not running (still streaming or already buzzed/resolved). */
+  const [preBuzzSecondsRemaining, setPreBuzzSecondsRemaining] = useState<number | null>(null);
   const [showFeedbackIcon, setShowFeedbackIcon] = useState(false);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   const [isWrongQuestionsMode, setIsWrongQuestionsMode] = useState(false); // Track if using wrong questions mode
@@ -124,11 +129,29 @@ export function PracticeGameScreen({
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const preBuzzIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fullTextRef = useRef('');
   const feedbackScaleAnim = useRef(new Animated.Value(0)).current;
   const feedbackOpacityAnim = useRef(new Animated.Value(0)).current;
+  const isBuzzedRef = useRef(false);
+  const isAnsweredRef = useRef(false);
+  const questionsRef = useRef<Question[]>([]);
+  const currentQuestionIndexRef = useRef(0);
 
   const skipProfileScoring = isGuestMode;
+
+  useEffect(() => {
+    isBuzzedRef.current = isBuzzed;
+  }, [isBuzzed]);
+  useEffect(() => {
+    isAnsweredRef.current = isAnswered;
+  }, [isAnswered]);
+  useEffect(() => {
+    questionsRef.current = questions;
+  }, [questions]);
+  useEffect(() => {
+    currentQuestionIndexRef.current = currentQuestionIndex;
+  }, [currentQuestionIndex]);
 
   // Load questions from database
   useEffect(() => {
@@ -349,6 +372,86 @@ export function PracticeGameScreen({
     };
   };
 
+  const clearPreBuzzTimer = () => {
+    if (preBuzzIntervalRef.current) {
+      clearInterval(preBuzzIntervalRef.current);
+      preBuzzIntervalRef.current = null;
+    }
+  };
+
+  const triggerFeedbackAnimation = (isCorrect: boolean) => {
+    setIsCorrectAnswer(isCorrect);
+    setShowFeedbackIcon(true);
+
+    feedbackScaleAnim.setValue(0);
+    feedbackOpacityAnim.setValue(0);
+
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(feedbackScaleAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.timing(feedbackOpacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.delay(800),
+      Animated.timing(feedbackOpacityAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowFeedbackIcon(false);
+    });
+  };
+
+  /** No buzz before PRE_BUZZ_SECONDS elapsed after the tossup finished — score as incorrect. */
+  const handleNoBuzzInTime = async () => {
+    if (isBuzzedRef.current || isAnsweredRef.current) return;
+    isAnsweredRef.current = true;
+
+    clearPreBuzzTimer();
+    setPreBuzzSecondsRemaining(null);
+    setIsAnswered(true);
+    setSelectedAnswer(null);
+    setDisplayedText(fullTextRef.current);
+    setStatusText("Time's up! You didn't buzz in time.");
+    triggerFeedbackAnimation(false);
+
+    const wrongMode = isWrongQuestionsMode;
+    const guest = isGuestMode;
+    if (!wrongMode && !guest) {
+      const user = await getCurrentUser();
+      const idx = currentQuestionIndexRef.current;
+      const qs = questionsRef.current;
+      if (user && qs[idx]) {
+        await markQuestionAsWrong(user.id, qs[idx].id);
+      }
+    }
+  };
+
+  const startPreBuzzCountdown = () => {
+    clearPreBuzzTimer();
+    setPreBuzzSecondsRemaining(PRE_BUZZ_SECONDS);
+    preBuzzIntervalRef.current = setInterval(() => {
+      setPreBuzzSecondsRemaining((prev) => {
+        if (prev === null || prev <= 0) return prev;
+        if (prev <= 1) {
+          clearPreBuzzTimer();
+          void handleNoBuzzInTime();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   // Start question
   const startQuestion = async () => {
     if (currentQuestionIndex >= questions.length) {
@@ -358,6 +461,10 @@ export function PracticeGameScreen({
     }
 
     // Reset state
+    clearPreBuzzTimer();
+    setPreBuzzSecondsRemaining(null);
+    isBuzzedRef.current = false;
+    isAnsweredRef.current = false;
     setIsBuzzed(false);
     setIsAnswered(false);
     setSelectedAnswer(null);
@@ -399,18 +506,22 @@ export function PracticeGameScreen({
           clearInterval(streamIntervalRef.current);
         }
         setStatusText('Waiting for buzz...');
+        startPreBuzzCountdown();
       }
     }, 50); // 50ms per character
   };
 
   // Handle buzz
   const handleBuzz = () => {
-    if (isBuzzed || isAnswered) return;
+    if (isBuzzedRef.current || isAnsweredRef.current) return;
+    isBuzzedRef.current = true;
 
     // Stop streaming immediately
     if (streamIntervalRef.current) {
       clearInterval(streamIntervalRef.current);
     }
+    clearPreBuzzTimer();
+    setPreBuzzSecondsRemaining(null);
 
     setIsBuzzed(true);
     setStatusText('Buzzed! Select your answer...');
@@ -432,54 +543,35 @@ export function PracticeGameScreen({
     }, 1000); // Decrease every second
   };
 
-  // Handle time running out
-  const handleTimeUp = () => {
-    if (isAnswered) return;
+  // Post-buzz answer window expired — no option selected
+  const handleTimeUp = async () => {
+    if (isAnsweredRef.current) return;
+    isAnsweredRef.current = true;
+
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
 
     setIsAnswered(true);
-    setSelectedAnswer(null); // No answer was selected
+    setSelectedAnswer(null);
     setDisplayedText(fullTextRef.current);
     setStatusText("Time's up! No answer selected.");
-  };
+    triggerFeedbackAnimation(false);
 
-  // Trigger feedback animation
-  const triggerFeedbackAnimation = (isCorrect: boolean) => {
-    setIsCorrectAnswer(isCorrect);
-    setShowFeedbackIcon(true);
-    
-    // Reset animation values
-    feedbackScaleAnim.setValue(0);
-    feedbackOpacityAnim.setValue(0);
-    
-    // Animate in and out
-    Animated.sequence([
-      Animated.parallel([
-        Animated.spring(feedbackScaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-        Animated.timing(feedbackOpacityAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.delay(800), // Show for 800ms
-      Animated.timing(feedbackOpacityAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setShowFeedbackIcon(false);
-    });
+    if (!isWrongQuestionsMode && !isGuestMode) {
+      const user = await getCurrentUser();
+      const q = questions[currentQuestionIndex];
+      if (user && q) {
+        await markQuestionAsWrong(user.id, q.id);
+      }
+    }
   };
 
   // Handle answer selection
   const handleAnswerSelect = async (option: {text: string; isCorrect: boolean}) => {
-    if (isAnswered) return;
+    if (isAnsweredRef.current) return;
+    isAnsweredRef.current = true;
 
     // Stop the timer
     if (timerIntervalRef.current) {
@@ -552,6 +644,7 @@ export function PracticeGameScreen({
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
       }
+      clearPreBuzzTimer();
       
       // Reset game state for fresh start on next entry
       // This ensures a new game starts when user returns
@@ -751,39 +844,39 @@ export function PracticeGameScreen({
         </View>
       )}
       
-      {/* Header (timer stays visible while scrolling — not inside ScrollView) */}
-      {isWrongQuestionsMode && !(isBuzzed && !isAnswered) ? (
-        <View style={[styles.header, styles.headerCentered]}>
+      {/* Header (pre-buzz + answer timers stay visible while scrolling) */}
+      <View style={styles.header}>
+        <View style={styles.headerColLeft}>
           <Text style={styles.headerText}>
             Question {currentQuestionIndex + 1}/{questions.length}
           </Text>
         </View>
-      ) : (
-        <View style={styles.header}>
-          <View style={styles.headerColLeft}>
-            <Text style={styles.headerText}>
-              Question {currentQuestionIndex + 1}/{questions.length}
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.headerColCenter,
-              isBuzzed && !isAnswered
-                ? styles.headerColCenterActive
-                : styles.headerColCenterHidden,
-            ]}
-          >
-            {isBuzzed && !isAnswered && (
-              <Text style={styles.headerTimerText}>Time: {timeRemaining}s</Text>
+        <View
+          style={[
+            styles.headerColCenter,
+            (isBuzzed && !isAnswered) ||
+            (!isBuzzed && !isAnswered && preBuzzSecondsRemaining !== null)
+              ? styles.headerColCenterActive
+              : styles.headerColCenterHidden,
+          ]}
+        >
+          {isBuzzed && !isAnswered && (
+            <Text style={styles.headerTimerText}>Time: {timeRemaining}s</Text>
+          )}
+          {!isBuzzed &&
+            !isAnswered &&
+            preBuzzSecondsRemaining !== null && (
+              <Text style={styles.headerTimerText}>
+                Buzz in: {preBuzzSecondsRemaining}s
+              </Text>
             )}
-          </View>
-          <View style={styles.headerColRight}>
-            {!isWrongQuestionsMode && !isGuestMode && (
-              <Text style={styles.headerText}>Score: {sessionScore}</Text>
-            )}
-          </View>
         </View>
-      )}
+        <View style={styles.headerColRight}>
+          {!isWrongQuestionsMode && !isGuestMode && (
+            <Text style={styles.headerText}>Score: {sessionScore}</Text>
+          )}
+        </View>
+      </View>
 
       {/* Game Area */}
       <ScrollView 
@@ -956,9 +1049,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  headerCentered: {
-    justifyContent: 'center',
   },
   headerColLeft: {
     flex: 1,
