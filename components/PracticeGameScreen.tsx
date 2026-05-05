@@ -1059,21 +1059,21 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
   },
   optionCorrect: {
-    backgroundColor: 'rgba(201, 169, 97, 0.2)',
-    borderColor: '#c9a961',
+    backgroundColor: 'rgba(72, 130, 88, 0.18)',
+    borderColor: 'rgba(52, 120, 72, 0.75)',
     borderWidth: 3,
   },
   optionWrong: {
-    backgroundColor: 'rgba(157, 133, 107, 0.15)',
-    borderColor: '#9d856b',
+    backgroundColor: 'rgba(176, 72, 72, 0.16)',
+    borderColor: 'rgba(160, 52, 52, 0.85)',
     borderWidth: 3,
   },
   optionTextCorrect: {
-    color: '#8b7355',
+    color: '#2d5c3a',
     fontWeight: '600',
   },
   optionTextWrong: {
-    color: '#6a5a4a',
+    color: '#7a2a2a',
     fontWeight: '600',
   },
   nextBtn: {
