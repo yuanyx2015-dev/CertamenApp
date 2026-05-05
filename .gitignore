@@ -19,3 +19,6 @@ web-build/
 # Environment variables (contains API keys - never commit!)
 .env.local
 supabase/.env.local
+
+# Supabase CLI local cache (changes when CLI runs)
+supabase/.temp/
