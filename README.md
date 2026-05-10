@@ -4,6 +4,10 @@ A mobile learning application for practicing Certamen questions with a beautiful
 
 ![App Banner](assets/screenshots/banner.png)
 
+**[Changelog](CHANGELOG.md)** — release notes and version history (same Markdown rendering as this README on GitHub).
+
+**[Dev log](DEVLOG.md)** — day-to-day notes for the team (newest entry at the top).
+
 ---
 
 ## 📱 Overview
