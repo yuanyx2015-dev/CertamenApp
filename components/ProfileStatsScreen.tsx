@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Modal, Alert, ScrollView } from 'react-native';
 import { getCurrentUser, signOut } from '../services/authService';
 import { clearAllLocalUserSettings } from '../services/userSettingsService';
 import { getOrCreateUserStats, UserStats } from '../services/userStatsService';
 import { getProfileByEmail, Profile, deleteAccount } from '../services/profileService';
-import Svg, { Path } from 'react-native-svg';
 
-function AnimatedButton({ label, onPress }: { label: string; onPress: () => void }) {
+function AnimatedButton({
+  label,
+  onPress,
+  isDanger = false,
+}: {
+  label: string;
+  onPress: () => void;
+  isDanger?: boolean;
+}) {
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -52,31 +59,10 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
         activeOpacity={1}
       >
         <Animated.View style={[styles.button, { backgroundColor }]}>
-          <Text style={styles.buttonText}>{label}</Text>
+          <Text style={[styles.buttonText, isDanger && styles.buttonTextDanger]}>{label}</Text>
         </Animated.View>
       </TouchableOpacity>
     </Animated.View>
-  );
-}
-
-function TrashIcon({ size = 20, color = '#d32f2f' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M10 11v6M14 11v6"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
   );
 }
 
@@ -253,92 +239,94 @@ export function ProfileStatsScreen({ onNavigate, previousScreen, onLogout }: { o
 
   return (
     <View style={styles.container}>
-      {/* Stats Container */}
-      <View style={styles.statsContainer}>
-        {/* Name Field */}
-        <View style={styles.statBox}>
-          <View style={styles.statRow}>
-            <Text style={styles.labelText}>Name:</Text>
-            <Text style={styles.valueText}>{userName}</Text>
-          </View>
-        </View>
-
-        {/* Score Field */}
-        <View style={styles.statBox}>
-          <View style={styles.statRow}>
-            <Text style={styles.labelText}>Score:</Text>
-            <Text style={styles.valueText}>{userStats?.score || 0}</Text>
-          </View>
-        </View>
-
-        {/* Rank Field */}
-        <View style={styles.statBox}>
-          <View style={styles.statRow}>
-            <Text style={styles.labelText}>Rank:</Text>
-            <Text style={styles.valueText}>{userStats?.rank || 'Miles'}</Text>
-          </View>
-        </View>
-
-        {/* Win Streak Field - Hidden for now */}
-        <View style={[styles.statBox, { opacity: 0, height: 0 }]}>
-          <View style={styles.statRow}>
-            <Text style={styles.labelText}>Win Streak:</Text>
-            <Text style={styles.valueText}>{userStats?.win_streak || 0}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Rank Progression Badges - 4 on top, 3 on bottom */}
-      <View style={styles.rankBadgesContainer}>
-        {/* Top row - First 4 ranks */}
-        <View style={styles.rankBadgesRow}>
-          {RANKS.slice(0, 4).map((rank) => {
-            const isActive = userStats?.rank === rank.name;
-            return (
-              <RankBadge
-                key={rank.name}
-                rank={rank}
-                isActive={isActive}
-                currentScore={userStats?.score || 0}
-              />
-            );
-          })}
-        </View>
-        
-        {/* Bottom row - Last 3 ranks */}
-        <View style={styles.rankBadgesRow}>
-          {RANKS.slice(4, 7).map((rank) => {
-            const isActive = userStats?.rank === rank.name;
-            return (
-              <RankBadge
-                key={rank.name}
-                rank={rank}
-                isActive={isActive}
-                currentScore={userStats?.score || 0}
-              />
-            );
-          })}
-        </View>
-      </View>
-
-      {/* Logout Button - At Bottom Center */}
-      <View style={styles.bottomContainer}>
-        {onLogout && (
-          <AnimatedButton 
-            label="Logout" 
-            onPress={onLogout}
-          />
-        )}
-      </View>
-
-      {/* Delete Account Button - Bottom Left Corner */}
-      <TouchableOpacity 
-        style={styles.deleteIconButton}
-        onPress={() => setShowDeleteModal(true)}
-        activeOpacity={0.7}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <TrashIcon size={20} color="#d32f2f" />
-      </TouchableOpacity>
+        {/* Stats Container */}
+        <View style={styles.statsContainer}>
+          {/* Name Field */}
+          <View style={styles.statBox}>
+            <View style={styles.statRow}>
+              <Text style={styles.labelText}>Name:</Text>
+              <Text style={styles.valueText}>{userName}</Text>
+            </View>
+          </View>
+
+          {/* Score Field */}
+          <View style={styles.statBox}>
+            <View style={styles.statRow}>
+              <Text style={styles.labelText}>Score:</Text>
+              <Text style={styles.valueText}>{userStats?.score || 0}</Text>
+            </View>
+          </View>
+
+          {/* Rank Field */}
+          <View style={styles.statBox}>
+            <View style={styles.statRow}>
+              <Text style={styles.labelText}>Rank:</Text>
+              <Text style={styles.valueText}>{userStats?.rank || 'Miles'}</Text>
+            </View>
+          </View>
+
+          {/* Win Streak Field - Hidden for now */}
+          <View style={[styles.statBox, { opacity: 0, height: 0 }]}>
+            <View style={styles.statRow}>
+              <Text style={styles.labelText}>Win Streak:</Text>
+              <Text style={styles.valueText}>{userStats?.win_streak || 0}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Rank Progression Badges - 4 on top, 3 on bottom */}
+        <View style={styles.rankBadgesContainer}>
+          {/* Top row - First 4 ranks */}
+          <View style={styles.rankBadgesRow}>
+            {RANKS.slice(0, 4).map((rank) => {
+              const isActive = userStats?.rank === rank.name;
+              return (
+                <RankBadge
+                  key={rank.name}
+                  rank={rank}
+                  isActive={isActive}
+                  currentScore={userStats?.score || 0}
+                />
+              );
+            })}
+          </View>
+
+          {/* Bottom row - Last 3 ranks */}
+          <View style={styles.rankBadgesRow}>
+            {RANKS.slice(4, 7).map((rank) => {
+              const isActive = userStats?.rank === rank.name;
+              return (
+                <RankBadge
+                  key={rank.name}
+                  rank={rank}
+                  isActive={isActive}
+                  currentScore={userStats?.score || 0}
+                />
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.bottomContainer}>
+          {onLogout && (
+            <AnimatedButton
+              label="Logout"
+              onPress={onLogout}
+            />
+          )}
+
+          <AnimatedButton
+            label="Delete Account"
+            onPress={() => setShowDeleteModal(true)}
+            isDanger
+          />
+        </View>
+      </ScrollView>
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -388,9 +376,16 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     alignSelf: 'center',
     width: '100%',
+    position: 'relative',
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
     paddingVertical: 80,
     paddingHorizontal: 24,
-    position: 'relative',
+    paddingBottom: 48,
   },
   loadingContainer: {
     flex: 1,
@@ -437,13 +432,9 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   bottomContainer: {
-    position: 'absolute',
-    bottom: 10,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 24,
     alignItems: 'center',
     gap: 12,
+    marginTop: 32,
   },
   button: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
@@ -463,9 +454,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.5,
   },
+  buttonTextDanger: {
+    color: '#8b1e5a',
+  },
   rankBadgesContainer: {
     marginTop: 32,
-    marginBottom: 80,
+    marginBottom: 32,
     gap: 20,
     alignItems: 'center',
   },
@@ -529,24 +523,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: 'center',
     fontWeight: '500',
-  },
-  deleteIconButton: {
-    position: 'absolute',
-    bottom: 10,
-    left: 24,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderWidth: 1,
-    borderColor: 'rgba(211, 47, 47, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: -2, height: 2 },
-    shadowOpacity: 0.19,
-    shadowRadius: 3,
-    elevation: 4,
   },
   modalOverlay: {
     flex: 1,

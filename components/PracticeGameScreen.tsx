@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Animated } from 'react-native';
 import Svg, { Path, Line, Circle } from 'react-native-svg';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
@@ -10,8 +10,6 @@ import {
   type UserSettings,
 } from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
-
-const { width, height } = Dimensions.get('window');
 
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
@@ -1167,15 +1165,17 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   optionsGrid: {
+    alignSelf: 'stretch',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     width: '100%',
     maxWidth: 600,
-    gap: 15,
+    rowGap: 14,
   },
   optionCard: {
-    width: width > 600 ? 285 : (width - 55) / 2,
+    width: '47.5%',
+    flexGrow: 0,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderWidth: 2,
     borderColor: 'rgba(201, 169, 97, 0.3)',

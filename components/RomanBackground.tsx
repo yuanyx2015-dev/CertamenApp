@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Animated } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { MainMenuScreen } from './MainMenuScreen';
 import { LaurelBranches } from './LaurelBranches';
 import { MeanderBorder } from './MeanderBorder';
@@ -11,11 +11,9 @@ import { LoginScreen } from './LoginScreen';
 import { VisitorMatchScreen } from './VisitorMatchScreen';
 import { HomeMatchScreen } from './HomeMatchScreen';
 import { SimulationMatchScreen } from './SimulationMatchScreen';
-import { PracticeModeScreen } from './PracticeModeScreen';
-import { StoryModeScreen } from './StoryModeScreen';
+import { MainTabsScreen, type MainTabId } from './MainTabsScreen';
 import { PracticeGameScreen } from './PracticeGameScreen';
 import { SettingsScreen } from './SettingsScreen';
-import { ReviewCategoryScreen } from './ReviewCategoryScreen';
 import { CategoryQuestionsScreen } from './CategoryQuestionsScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
 import type { UserSettingsScope } from '../services/userSettingsService';
@@ -35,6 +33,8 @@ export function RomanBackground() {
     useState<UserSettingsScope>('rank-up');
   /** Story Practice Mode: question category slug for the current session. */
   const [practiceGameStoryCategory, setPracticeGameStoryCategory] = useState<string | null>(null);
+  const [mainTab, setMainTab] = useState<MainTabId>('info');
+  const mainTabBeforeSettingsRef = useRef<MainTabId>('info');
   const previousScreen = useRef('login');
 
   useEffect(() => {
@@ -86,25 +86,61 @@ export function RomanBackground() {
       }
     }
 
+    let resolvedScreen = screen;
+    let explicitMainTab: MainTabId | null = null;
+
+    if (resolvedScreen === 'practice') {
+      explicitMainTab = 'rankup';
+      resolvedScreen = 'main';
+    } else if (resolvedScreen === 'story') {
+      explicitMainTab = 'practice';
+      resolvedScreen = 'main';
+    } else if (resolvedScreen === 'review') {
+      explicitMainTab = 'review';
+      resolvedScreen = 'main';
+    }
+
     if (practiceDifficulty !== undefined) {
       setPracticeGameDifficultyLock(practiceDifficulty);
     } else {
       setPracticeGameDifficultyLock(null);
     }
 
-    if (screen === 'practice-game') {
-      setPracticeGameSettingsScope(currentScreen === 'story' ? 'practice' : 'rank-up');
-      setPracticeGameStoryCategory(currentScreen === 'story' ? (category ?? null) : null);
+    if (resolvedScreen === 'practice-game') {
+      const fromPracticeTab = currentScreen === 'main' && mainTab === 'practice';
+      const legacyStory = currentScreen === 'story';
+      setPracticeGameSettingsScope(fromPracticeTab || legacyStory ? 'practice' : 'rank-up');
+      setPracticeGameStoryCategory(fromPracticeTab || legacyStory ? (category ?? null) : null);
       setPracticeGameKey((prev) => prev + 1);
+    }
+
+    if (resolvedScreen === 'settings' || resolvedScreen === 'settings-practice') {
+      if (currentScreen === 'main') {
+        mainTabBeforeSettingsRef.current = mainTab;
+      }
+    }
+
+    if (resolvedScreen === 'main') {
+      if (explicitMainTab !== null) {
+        setMainTab(explicitMainTab);
+      } else if (currentScreen === 'practice-game') {
+        setMainTab(practiceGameSettingsScope === 'practice' ? 'practice' : 'rankup');
+      } else if (currentScreen === 'categoryQuestions') {
+        setMainTab('review');
+      } else if (currentScreen === 'settings' || currentScreen === 'settings-practice') {
+        setMainTab(mainTabBeforeSettingsRef.current);
+      } else {
+        setMainTab('info');
+      }
     }
 
     if (currentScreen !== 'settings' && currentScreen !== 'settings-practice') {
       previousScreen.current = currentScreen;
     }
-    if (category && screen !== 'practice-game') {
+    if (category && resolvedScreen !== 'practice-game') {
       setSelectedCategory(category);
     }
-    setCurrentScreen(screen);
+    setCurrentScreen(resolvedScreen);
   };
 
   /** After Google or Apple login succeeds so we leave the login branch (not only onAuthStateChange). */
@@ -116,6 +152,7 @@ export function RomanBackground() {
 
   const handleGuestMode = () => {
     setIsGuestMode(true);
+    setMainTab('info');
     setCurrentScreen('main');
   };
 
@@ -139,16 +176,6 @@ export function RomanBackground() {
     }
 
     switch (currentScreen) {
-      case 'story':
-        return <StoryModeScreen onNavigate={handleNavigate} />;
-      case 'practice':
-        return (
-          <PracticeModeScreen
-            onNavigate={handleNavigate}
-            previousScreen={previousScreen.current}
-            isGuestMode={isGuestMode}
-          />
-        );
       case 'practice-game':
         return (
           <PracticeGameScreen
@@ -203,17 +230,6 @@ export function RomanBackground() {
             isGuestMode={isGuestMode}
           />
         );
-      case 'review':
-        return isAuthenticated ? (
-          <ReviewCategoryScreen onNavigate={handleNavigate} />
-        ) : (
-          <MainMenuScreen
-            onNavigate={handleNavigate}
-            isGuestMode={isGuestMode}
-            isAuthenticated={isAuthenticated}
-            onLeaveGuestMode={handleLeaveGuestMode}
-          />
-        );
       case 'categoryQuestions':
         return (
           <CategoryQuestionsScreen onNavigate={handleNavigate} category={selectedCategory} />
@@ -233,7 +249,9 @@ export function RomanBackground() {
       case 'main':
       default:
         return (
-          <MainMenuScreen
+          <MainTabsScreen
+            activeTab={mainTab}
+            onTabChange={setMainTab}
             onNavigate={handleNavigate}
             isGuestMode={isGuestMode}
             isAuthenticated={isAuthenticated}

@@ -48,6 +48,8 @@ type PracticeModeScreenProps = {
   ) => void;
   previousScreen?: string;
   isGuestMode?: boolean;
+  /** When false (e.g. bottom tabs), hide "Back to menu". */
+  showBackToMenu?: boolean;
 };
 
 /**
@@ -62,7 +64,7 @@ const BUTTON_NUDGE_DOWN = 20;
 /** Extra vertical space between Start Game and Back to menu (beyond STACK_GAP). */
 const BACK_BUTTON_EXTRA_GAP = 7;
 
-export function PracticeModeScreen({ onNavigate }: PracticeModeScreenProps) {
+export function PracticeModeScreen({ onNavigate, showBackToMenu = true }: PracticeModeScreenProps) {
   const { height: windowHeight } = useWindowDimensions();
   const mainColumnRef = React.useRef<View>(null);
   const [mainColumnY, setMainColumnY] = React.useState<number | null>(null);
@@ -84,17 +86,19 @@ export function PracticeModeScreen({ onNavigate }: PracticeModeScreenProps) {
     measureMainColumn();
   }, [measureMainColumn, windowHeight]);
 
+  const effectiveBackH = showBackToMenu ? backH : 0;
+
   const startGameTop = React.useMemo(() => {
     if (mainColumnY == null) return null;
     const windowCenterY = windowHeight / 2;
     let top = Math.round(windowCenterY - rowH / 2 - mainColumnY);
     const titleRoom = titleH + STACK_GAP + TITLE_NUDGE_UP;
-    const bottomRoom = BUTTON_NUDGE_DOWN + rowH + STACK_GAP + BACK_BUTTON_EXTRA_GAP + backH;
+    const bottomRoom = BUTTON_NUDGE_DOWN + rowH + STACK_GAP + (showBackToMenu ? BACK_BUTTON_EXTRA_GAP + effectiveBackH : 0);
     if (mainColumnH > 0) {
       top = Math.max(titleRoom, Math.min(top, mainColumnH - bottomRoom));
     }
     return top;
-  }, [mainColumnY, mainColumnH, windowHeight, rowH, titleH, backH]);
+  }, [mainColumnY, mainColumnH, windowHeight, rowH, titleH, effectiveBackH, showBackToMenu]);
 
   return (
     <View style={styles.container}>
@@ -121,25 +125,27 @@ export function PracticeModeScreen({ onNavigate }: PracticeModeScreenProps) {
               <AnimatedButton label="Start Game" onPress={() => onNavigate?.('practice-game')} />
             </View>
 
-            <View
-              style={[
-                styles.backAnchor,
-                { top: startGameTop + rowH + STACK_GAP + BACK_BUTTON_EXTRA_GAP + BUTTON_NUDGE_DOWN },
-              ]}
-              onLayout={(e) => setBackH(e.nativeEvent.layout.height)}
-            >
-              <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
-                <Text style={styles.backButtonText}>Back to menu</Text>
-              </TouchableOpacity>
-            </View>
+            {showBackToMenu && (
+              <View
+                style={[
+                  styles.backAnchor,
+                  { top: startGameTop + rowH + STACK_GAP + BACK_BUTTON_EXTRA_GAP + BUTTON_NUDGE_DOWN },
+                ]}
+                onLayout={(e) => setBackH(e.nativeEvent.layout.height)}
+              >
+                <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
+                  <Text style={styles.backButtonText}>Back to menu</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </>
         )}
       </View>
 
       <View style={styles.footerTextWrap}>
         <Text style={styles.bodyText}>
-          Advance by answering questions correctly to rise the ranks! Check your progress through your Profiles page,
-          accessed through the main menu.
+          Advance by answering questions correctly to rise the ranks! Check your progress through your Profile button
+          on the Info tab.
         </Text>
       </View>
     </View>

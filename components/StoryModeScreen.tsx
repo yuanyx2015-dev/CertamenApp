@@ -7,12 +7,14 @@ import { PracticeCategorySessionPicker } from './PracticeCategorySessionPicker';
  */
 export function StoryModeScreen({
   onNavigate,
+  showBackToMenu = true,
 }: {
   onNavigate?: (
     screen: string,
     category?: string,
     practiceDifficulty?: 'easy' | 'medium' | 'hard'
   ) => void;
+  showBackToMenu?: boolean;
 }) {
   return (
     <View style={styles.container}>
@@ -35,9 +37,11 @@ export function StoryModeScreen({
           <PracticeCategorySessionPicker onNavigate={onNavigate} />
         </View>
 
-        <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
-          <Text style={styles.backButtonText}>Back to menu</Text>
-        </TouchableOpacity>
+        {showBackToMenu && (
+          <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
+            <Text style={styles.backButtonText}>Back to menu</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.footerNote}>
           <Text style={styles.footerText}>
