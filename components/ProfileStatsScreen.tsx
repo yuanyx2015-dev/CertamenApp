@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   buttonTextDanger: {
-    color: '#8b1e5a',
+    color: '#a01f4f',
   },
   rankBadgesContainer: {
     marginTop: 32,
