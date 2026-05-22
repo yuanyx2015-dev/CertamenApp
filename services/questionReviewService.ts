@@ -127,62 +127,27 @@ export const getAllWrongQuestions = async (
 };
 
 /**
- * Mark a question as wrong (add to user_wrong_answers)
+ * Mark a question as wrong. Uses the atomic mark_wrong_question RPC, which:
+ *   - removes it from user_mastered_answers (if present)
+ *   - removes it from user_passed_answers (if present)
+ *   - upserts into user_wrong_answers, bumping times_wrong / times_attempted / last_wrong_at
  */
 export const markQuestionAsWrong = async (
   userId: string,
   questionId: string
 ): Promise<{ data: any; error: any }> => {
   try {
-    // Check if already exists
-    const { data: existing } = await supabase
-      .from('user_wrong_answers')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('question_id', questionId)
-      .single();
+    const { error } = await supabase.rpc('mark_wrong_question', {
+      p_user_id: userId,
+      p_question_id: questionId,
+    });
 
-    if (existing) {
-      // Update existing record
-      const { data, error } = await supabase
-        .from('user_wrong_answers')
-        .update({
-          times_wrong: existing.times_wrong + 1,
-          times_attempted: existing.times_attempted + 1,
-          last_wrong_at: new Date().toISOString()
-        })
-        .eq('user_id', userId)
-        .eq('question_id', questionId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating wrong answer:', error);
-        return { data: null, error };
-      }
-
-      return { data, error: null };
-    } else {
-      // Create new record
-      const { data, error } = await supabase
-        .from('user_wrong_answers')
-        .insert({
-          user_id: userId,
-          question_id: questionId,
-          times_wrong: 1,
-          times_attempted: 1,
-          last_wrong_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating wrong answer:', error);
-        return { data: null, error };
-      }
-
-      return { data, error: null };
+    if (error) {
+      console.error('Error marking question as wrong (RPC):', error);
+      return { data: null, error };
     }
+
+    return { data: null, error: null };
   } catch (error: any) {
     console.error('Unexpected error marking question as wrong:', error);
     return { data: null, error };

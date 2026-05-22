@@ -10,6 +10,11 @@ export interface UserStats {
   score: number;
   rank: string;
   win_streak: number;
+  /** Challenge Mode daily streak. Bumped at most once per calendar day. */
+  current_streak?: number;
+  /** All-time longest daily streak the user has reached. Never decreases. */
+  highest_streak?: number;
+  last_activity_date?: string | null;
   total_games: number;
   wins: number;
   losses: number;
@@ -113,6 +118,35 @@ export const incrementPracticeCompleted = async (userId: string) => {
   }
 
   return { data, error: null };
+};
+
+/**
+ * Daily streak bump (Duolingo-style).
+ *   - First action of the day:   +1 if yesterday, else reset to 1
+ *   - Subsequent actions today:  no change
+ * Idempotent: safe to call on every app open / every screen mount.
+ */
+export const bumpUserStreak = async (userId: string) => {
+  const { data, error } = await supabase.rpc('bump_user_streak', {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    console.error('Error bumping streak:', error);
+    return { data: null, error };
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    data: row
+      ? {
+          current_streak: Number(row.current_streak) || 0,
+          highest_streak: Number(row.highest_streak) || 0,
+          last_activity_date: row.last_activity_date as string | null,
+        }
+      : null,
+    error: null,
+  };
 };
 
 // Get or create user stats (helper function)

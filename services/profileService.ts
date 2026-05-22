@@ -207,6 +207,23 @@ export const searchUserByUsername = async (username: string): Promise<{ data: Pr
  */
 export const deleteAccount = async (): Promise<{ error: any }> => {
   try {
+    console.log('Cleaning Challenge-Mode tables before delete_user_account RPC...');
+
+    // The legacy delete_user_account RPC does not know about
+    // user_mastered_answers or user_passed_answers (added in the
+    // 20260521120000_mastered_and_streak migration). RLS limits these
+    // deletes to the caller's own rows, so this is safe.
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData?.user?.id;
+    if (userId) {
+      const [{ error: masteredErr }, { error: passedErr }] = await Promise.all([
+        supabase.from('user_mastered_answers').delete().eq('user_id', userId),
+        supabase.from('user_passed_answers').delete().eq('user_id', userId),
+      ]);
+      if (masteredErr) console.warn('Could not clean user_mastered_answers:', masteredErr);
+      if (passedErr) console.warn('Could not clean user_passed_answers:', passedErr);
+    }
+
     console.log('Calling delete_user_account RPC function...');
 
     // Call the database RPC function

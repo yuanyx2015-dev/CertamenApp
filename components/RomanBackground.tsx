@@ -16,6 +16,7 @@ import { PracticeGameScreen } from './PracticeGameScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { CategoryQuestionsScreen } from './CategoryQuestionsScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
+import { bumpUserStreak } from '../services/userStatsService';
 import type { UserSettingsScope } from '../services/userSettingsService';
 
 export function RomanBackground() {
@@ -33,8 +34,8 @@ export function RomanBackground() {
     useState<UserSettingsScope>('rank-up');
   /** Story Practice Mode: question category slug for the current session. */
   const [practiceGameStoryCategory, setPracticeGameStoryCategory] = useState<string | null>(null);
-  const [mainTab, setMainTab] = useState<MainTabId>('info');
-  const mainTabBeforeSettingsRef = useRef<MainTabId>('info');
+  const [mainTab, setMainTab] = useState<MainTabId>('profile');
+  const mainTabBeforeSettingsRef = useRef<MainTabId>('profile');
   const previousScreen = useRef('login');
 
   useEffect(() => {
@@ -66,6 +67,11 @@ export function RomanBackground() {
     if (session) {
       setIsAuthenticated(true);
       setCurrentScreen('main');
+      // Daily streak: one call per app session. bump_user_streak is idempotent —
+      // if the user already opened the app today it's a no-op on the DB.
+      if (session.user?.id) {
+        void bumpUserStreak(session.user.id);
+      }
     } else {
       setIsAuthenticated(false);
       setCurrentScreen('login');
@@ -89,11 +95,8 @@ export function RomanBackground() {
     let resolvedScreen = screen;
     let explicitMainTab: MainTabId | null = null;
 
-    if (resolvedScreen === 'practice') {
-      explicitMainTab = 'rankup';
-      resolvedScreen = 'main';
-    } else if (resolvedScreen === 'story') {
-      explicitMainTab = 'practice';
+    if (resolvedScreen === 'practice' || resolvedScreen === 'story') {
+      explicitMainTab = 'challenge';
       resolvedScreen = 'main';
     } else if (resolvedScreen === 'review') {
       explicitMainTab = 'review';
@@ -107,7 +110,7 @@ export function RomanBackground() {
     }
 
     if (resolvedScreen === 'practice-game') {
-      const fromPracticeTab = currentScreen === 'main' && mainTab === 'practice';
+      const fromPracticeTab = currentScreen === 'main' && mainTab === 'challenge';
       const legacyStory = currentScreen === 'story';
       setPracticeGameSettingsScope(fromPracticeTab || legacyStory ? 'practice' : 'rank-up');
       setPracticeGameStoryCategory(fromPracticeTab || legacyStory ? (category ?? null) : null);
@@ -124,13 +127,13 @@ export function RomanBackground() {
       if (explicitMainTab !== null) {
         setMainTab(explicitMainTab);
       } else if (currentScreen === 'practice-game') {
-        setMainTab(practiceGameSettingsScope === 'practice' ? 'practice' : 'rankup');
+        setMainTab('challenge');
       } else if (currentScreen === 'categoryQuestions') {
         setMainTab('review');
       } else if (currentScreen === 'settings' || currentScreen === 'settings-practice') {
         setMainTab(mainTabBeforeSettingsRef.current);
       } else {
-        setMainTab('info');
+        setMainTab('profile');
       }
     }
 
@@ -152,7 +155,7 @@ export function RomanBackground() {
 
   const handleGuestMode = () => {
     setIsGuestMode(true);
-    setMainTab('info');
+    setMainTab('profile');
     setCurrentScreen('main');
   };
 

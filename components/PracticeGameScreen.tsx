@@ -136,7 +136,16 @@ export function PracticeGameScreen({
   const questionsRef = useRef<Question[]>([]);
   const currentQuestionIndexRef = useRef(0);
 
-  const skipProfileScoring = isGuestMode;
+  /**
+   * Practice Mode (settingsScope='practice') is intentionally read-only:
+   *   - no wrong-answer tracking
+   *   - no score updates
+   *   - no rank updates
+   * It's just difficulty + category gameplay.
+   */
+  const isPracticeMode = settingsScope === 'practice';
+  const skipProfileScoring = isGuestMode || isPracticeMode;
+  const skipWrongTracking = isWrongQuestionsMode || isGuestMode || isPracticeMode;
 
   useEffect(() => {
     isBuzzedRef.current = isBuzzed;
@@ -422,9 +431,7 @@ export function PracticeGameScreen({
     setStatusText("Time's up! You didn't buzz in time.");
     triggerFeedbackAnimation(false);
 
-    const wrongMode = isWrongQuestionsMode;
-    const guest = isGuestMode;
-    if (!wrongMode && !guest) {
+    if (!skipWrongTracking) {
       const user = await getCurrentUser();
       const idx = currentQuestionIndexRef.current;
       const qs = questionsRef.current;
@@ -557,7 +564,7 @@ export function PracticeGameScreen({
     setStatusText("Time's up! No answer selected.");
     triggerFeedbackAnimation(false);
 
-    if (!isWrongQuestionsMode && !isGuestMode) {
+    if (!skipWrongTracking) {
       const user = await getCurrentUser();
       const q = questions[currentQuestionIndex];
       if (user && q) {
@@ -586,9 +593,9 @@ export function PracticeGameScreen({
     triggerFeedbackAnimation(option.isCorrect);
 
     if (option.isCorrect) {
-      if (isWrongQuestionsMode) {
+      if (skipProfileScoring) {
         setStatusText('Correct!');
-      } else if (isGuestMode) {
+      } else if (isWrongQuestionsMode) {
         setStatusText('Correct!');
       } else {
         const pointsAwarded = pointsForQuestionDifficulty(
@@ -611,9 +618,7 @@ export function PracticeGameScreen({
       }
     } else {
       setStatusText('Wrong! Better luck next time.');
-      
-      // Track wrong answers for Review whenever signed in (including Practice Mode; not in wrong-review-only sessions)
-      if (!isWrongQuestionsMode && !isGuestMode) {
+      if (!skipWrongTracking) {
         const user = await getCurrentUser();
         if (user && questions[currentQuestionIndex]) {
           await markQuestionAsWrong(user.id, questions[currentQuestionIndex].id);

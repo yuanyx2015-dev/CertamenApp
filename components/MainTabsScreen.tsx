@@ -1,17 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { InformationScreen } from './InformationScreen';
-import { PracticeModeScreen } from './PracticeModeScreen';
-import { StoryModeScreen } from './StoryModeScreen';
-import { ReviewCategoryScreen } from './ReviewCategoryScreen';
+import { ChallengeModeScreen } from './ChallengeModeScreen';
+import { ReviewWrongScreen } from './ReviewWrongScreen';
 
-export type MainTabId = 'info' | 'rankup' | 'practice' | 'review';
+export type MainTabId = 'profile' | 'challenge' | 'review';
 
 const TABS: { id: MainTabId; label: string }[] = [
-  { id: 'info', label: 'Info' },
-  { id: 'rankup', label: 'Rank-up' },
-  { id: 'practice', label: 'Practice' },
-  { id: 'review', label: 'Review' },
+  { id: 'profile', label: 'Profile' },
+  { id: 'challenge', label: 'Challenge Mode' },
+  { id: 'review', label: 'Review Wrong' },
 ];
 
 export function MainTabsScreen({
@@ -34,8 +32,8 @@ export function MainTabsScreen({
   onLeaveGuestMode?: () => void;
 }) {
   const handleTabPress = (tab: MainTabId) => {
-    if (tab === 'review' && isGuestMode && !isAuthenticated) {
-      Alert.alert('Sign In Required', 'Sign in to review your wrong answers and track your progress', [
+    if (tab === 'review' && (isGuestMode || !isAuthenticated)) {
+      Alert.alert('Sign In Required', 'Sign in to review your wrong questions.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Sign In', onPress: () => onNavigate?.('login') },
       ]);
@@ -46,23 +44,33 @@ export function MainTabsScreen({
 
   const panel = (() => {
     switch (activeTab) {
-      case 'info':
+      case 'profile':
         return (
           <InformationScreen
             onNavigate={onNavigate}
+            onTabChange={onTabChange}
             isGuestMode={isGuestMode}
             isAuthenticated={isAuthenticated}
             onLeaveGuestMode={onLeaveGuestMode}
           />
         );
-      case 'rankup':
-        return <PracticeModeScreen onNavigate={onNavigate} showBackToMenu={false} isGuestMode={isGuestMode} />;
-      case 'practice':
-        return <StoryModeScreen onNavigate={onNavigate} showBackToMenu={false} />;
+      case 'challenge':
+        return (
+          <ChallengeModeScreen
+            isAuthenticated={isAuthenticated}
+            isGuestMode={isGuestMode}
+            onNavigate={onNavigate}
+            onTabChange={onTabChange}
+          />
+        );
       case 'review':
-        return isAuthenticated ? (
-          <ReviewCategoryScreen onNavigate={onNavigate} />
-        ) : null;
+        return (
+          <ReviewWrongScreen
+            isAuthenticated={isAuthenticated}
+            onNavigate={onNavigate}
+            onTabChange={onTabChange}
+          />
+        );
       default:
         return null;
     }
