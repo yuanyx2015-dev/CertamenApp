@@ -220,6 +220,13 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
   return (
     <View style={styles.container}>
       {/* Header */}
+      <TouchableOpacity
+        style={styles.topBackButton}
+        onPress={() => onNavigate?.('reviewCategories')}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.topBackButtonText}>‹ All categories</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>{categoryNames[category] ?? category} Review</Text>
       <Text style={styles.subtitle}>{wrongQuestions.length} question{wrongQuestions.length !== 1 ? 's' : ''} to review</Text>
 
@@ -402,6 +409,18 @@ const styles = StyleSheet.create({
     marginTop: 15,
     fontSize: 16,
     color: '#666',
+  },
+  topBackButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+    marginBottom: 8,
+  },
+  topBackButtonText: {
+    fontSize: 14,
+    color: '#8a6a3a',
+    letterSpacing: 0.3,
+    fontWeight: '500',
   },
   title: {
     fontSize: 24,

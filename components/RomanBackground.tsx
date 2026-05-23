@@ -15,6 +15,7 @@ import { MainTabsScreen, type MainTabId } from './MainTabsScreen';
 import { PracticeGameScreen } from './PracticeGameScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { CategoryQuestionsScreen } from './CategoryQuestionsScreen';
+import { ReviewCategoryScreen } from './ReviewCategoryScreen';
 import {
   ChallengeGameScreen,
   type ChallengeGameConfig,
@@ -133,8 +134,13 @@ export function RomanBackground() {
         // Practice-game can be launched from either Challenge (rank-up flow) or
         // the Practice tab (story flow); the settings scope tells us which.
         setMainTab(practiceGameSettingsScope === 'practice' ? 'practice' : 'challenge');
-      } else if (currentScreen === 'categoryQuestions') {
-        setMainTab('review');
+      } else if (
+        currentScreen === 'categoryQuestions' ||
+        currentScreen === 'reviewCategories'
+      ) {
+        // The AI-explanation review flow is entered from the Profile screen,
+        // so closing it returns to Profile rather than the Review tab.
+        setMainTab('profile');
       } else if (currentScreen === 'settings' || currentScreen === 'settings-practice') {
         setMainTab(mainTabBeforeSettingsRef.current);
       } else {
@@ -256,6 +262,8 @@ export function RomanBackground() {
         return (
           <CategoryQuestionsScreen onNavigate={handleNavigate} category={selectedCategory} />
         );
+      case 'reviewCategories':
+        return <ReviewCategoryScreen onNavigate={handleNavigate} />;
       case 'random':
         return <RandomMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'friendly':

@@ -12,7 +12,7 @@ export type MainTabId = 'profile' | 'challenge' | 'review' | 'practice';
 const TABS: { id: MainTabId; label: string }[] = [
   { id: 'profile', label: 'Profile' },
   { id: 'challenge', label: 'Challenge' },
-  { id: 'review', label: 'Review Wrong' },
+  { id: 'review', label: 'Review' },
   { id: 'practice', label: 'Practice' },
 ];
 
@@ -43,7 +43,7 @@ export function MainTabsScreen({
 }) {
   const handleTabPress = (tab: MainTabId) => {
     if (tab === 'review' && (isGuestMode || !isAuthenticated)) {
-      Alert.alert('Sign In Required', 'Sign in to review your wrong questions.', [
+      Alert.alert('Sign In Required', 'Sign in to review your questions.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Sign In', onPress: () => onNavigate?.('login') },
       ]);

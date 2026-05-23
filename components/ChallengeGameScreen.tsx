@@ -206,7 +206,7 @@ export function ChallengeGameScreen({
       if (pool.length === 0) {
         setLoadError(
           config.mode === 'challenge'
-            ? 'No unmastered questions left at this difficulty. Try Review Wrong or pick another difficulty.'
+            ? 'No unmastered questions left at this difficulty. Try Review or pick another difficulty.'
             : 'No wrong questions to review. Take a Challenge set first!'
         );
         setIsLoading(false);
@@ -419,7 +419,7 @@ export function ChallengeGameScreen({
             }}
             activeOpacity={0.85}
           >
-            <Text style={styles.secondaryBtnText}>Review Wrong Questions</Text>
+            <Text style={styles.secondaryBtnText}>Review Questions</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

@@ -54,7 +54,7 @@ export function ReviewWrongScreen({
   if (!isAuthenticated) {
     return (
       <View style={[styles.container, styles.centerWrap]}>
-        <Text style={styles.title}>Review Wrong Questions</Text>
+        <Text style={styles.title}>Review Questions</Text>
         <Text style={styles.subtitle}>Sign in to review the questions you got wrong.</Text>
         <TouchableOpacity
           style={styles.signInBtn}
@@ -93,7 +93,7 @@ export function ReviewWrongScreen({
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.card, styles.summaryCard]}>
-        <Text style={styles.summaryLabel}>Wrong Questions</Text>
+        <Text style={styles.summaryLabel}>Review Questions</Text>
         <Text style={styles.summaryValue}>
           0<Text style={styles.summaryValueDim}> / {wrongCount}</Text>
         </Text>
@@ -103,7 +103,7 @@ export function ReviewWrongScreen({
       </View>
 
       <View style={[styles.card, styles.infoCard]}>
-        <Text style={styles.infoTitle}>How Review Wrong works</Text>
+        <Text style={styles.infoTitle}>How Review works</Text>
         <Text style={styles.infoBody}>
           Master these questions to remove them from your wrong pool and add them to your mastered count.
           Once mastered here, a question stays mastered — it will not reappear in Challenge Mode.

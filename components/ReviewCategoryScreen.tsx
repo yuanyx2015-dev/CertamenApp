@@ -152,7 +152,7 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Review Questions</Text>
+        <Text style={styles.title}>Your Wrong Questions</Text>
         <Text style={styles.subtitle}>Choose a category to review</Text>
         
         <View style={styles.categoriesGrid}>
@@ -167,6 +167,14 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
             </View>
           ))}
         </View>
+
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => onNavigate?.('main')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.backButtonText}>Back to Profile</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -269,5 +277,21 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  backButton: {
+    alignSelf: 'center',
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.45)',
+    borderRadius: 12,
+  },
+  backButtonText: {
+    fontSize: 14,
+    color: '#3a3a3a',
+    fontWeight: '600',
+    letterSpacing: 0.4,
   },
 });

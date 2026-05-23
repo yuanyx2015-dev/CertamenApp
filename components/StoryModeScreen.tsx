@@ -51,7 +51,7 @@ export function StoryModeScreen({
         <View style={styles.footerNote}>
           <Text style={styles.footerText}>
             Further adjustments (difficulty level, number of questions, etc...) are in the Settings. Progress here
-            affects your score and rank as usual.
+            does not affect your score or your rank.
           </Text>
         </View>
       </ScrollView>

@@ -115,7 +115,7 @@ export function ChallengeModeScreen({
         'No unmastered questions',
         `You have nothing left to learn at ${rank.name}. Master any wrong questions in the Review tab to finish this rank.`,
         [
-          { text: 'Open Review Wrong', onPress: () => onTabChange?.('review') },
+          { text: 'Open Review', onPress: () => onTabChange?.('review') },
           { text: 'Close', style: 'cancel' },
         ]
       );

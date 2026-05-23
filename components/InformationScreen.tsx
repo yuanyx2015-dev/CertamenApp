@@ -220,6 +220,17 @@ export function InformationScreen({
     onTabChange?.('challenge');
   };
 
+  const handleWrongQuestions = () => {
+    if (!isAuthenticated || isGuestMode) {
+      Alert.alert('Sign In Required', 'Sign in to browse the questions you got wrong.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign In', onPress: () => onNavigate?.('login') },
+      ]);
+      return;
+    }
+    onNavigate?.('reviewCategories');
+  };
+
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingWrap]}>
@@ -266,6 +277,17 @@ export function InformationScreen({
           </View>
         </View>
       </View>
+
+      <TouchableOpacity
+        style={styles.wrongQuestionsBtn}
+        onPress={handleWrongQuestions}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.wrongQuestionsBtnText}>Your Wrong Questions</Text>
+        <Text style={styles.wrongQuestionsBtnHint}>
+          Browse by category &middot; ask AI for an explanation
+        </Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -418,5 +440,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.3,
     lineHeight: 18,
+  },
+  wrongQuestionsBtn: {
+    marginTop: 6,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.45)',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: -1, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  wrongQuestionsBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#3a3a3a',
+    letterSpacing: 0.4,
+  },
+  wrongQuestionsBtnHint: {
+    marginTop: 4,
+    fontSize: 11,
+    color: '#8a6a3a',
+    letterSpacing: 0.2,
   },
 });
