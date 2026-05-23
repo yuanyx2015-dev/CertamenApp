@@ -15,9 +15,14 @@ import { MainTabsScreen, type MainTabId } from './MainTabsScreen';
 import { PracticeGameScreen } from './PracticeGameScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { CategoryQuestionsScreen } from './CategoryQuestionsScreen';
+import {
+  ChallengeGameScreen,
+  type ChallengeGameConfig,
+  type ChallengeGameMode,
+} from './ChallengeGameScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
-import { bumpUserStreak } from '../services/userStatsService';
 import type { UserSettingsScope } from '../services/userSettingsService';
+import type { ChallengeDifficulty } from '../lib/challengeRanks';
 
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
@@ -37,6 +42,9 @@ export function RomanBackground() {
   const [mainTab, setMainTab] = useState<MainTabId>('profile');
   const mainTabBeforeSettingsRef = useRef<MainTabId>('profile');
   const previousScreen = useRef('login');
+  /** Challenge Mode game session config (mode + setSize + difficulty). */
+  const [challengeConfig, setChallengeConfig] = useState<ChallengeGameConfig | null>(null);
+  const [challengeGameKey, setChallengeGameKey] = useState(0);
 
   useEffect(() => {
     checkSession();
@@ -67,11 +75,6 @@ export function RomanBackground() {
     if (session) {
       setIsAuthenticated(true);
       setCurrentScreen('main');
-      // Daily streak: one call per app session. bump_user_streak is idempotent —
-      // if the user already opened the app today it's a no-op on the DB.
-      if (session.user?.id) {
-        void bumpUserStreak(session.user.id);
-      }
     } else {
       setIsAuthenticated(false);
       setCurrentScreen('login');
@@ -96,7 +99,7 @@ export function RomanBackground() {
     let explicitMainTab: MainTabId | null = null;
 
     if (resolvedScreen === 'practice' || resolvedScreen === 'story') {
-      explicitMainTab = 'challenge';
+      explicitMainTab = 'practice';
       resolvedScreen = 'main';
     } else if (resolvedScreen === 'review') {
       explicitMainTab = 'review';
@@ -110,7 +113,7 @@ export function RomanBackground() {
     }
 
     if (resolvedScreen === 'practice-game') {
-      const fromPracticeTab = currentScreen === 'main' && mainTab === 'challenge';
+      const fromPracticeTab = currentScreen === 'main' && mainTab === 'practice';
       const legacyStory = currentScreen === 'story';
       setPracticeGameSettingsScope(fromPracticeTab || legacyStory ? 'practice' : 'rank-up');
       setPracticeGameStoryCategory(fromPracticeTab || legacyStory ? (category ?? null) : null);
@@ -127,7 +130,9 @@ export function RomanBackground() {
       if (explicitMainTab !== null) {
         setMainTab(explicitMainTab);
       } else if (currentScreen === 'practice-game') {
-        setMainTab('challenge');
+        // Practice-game can be launched from either Challenge (rank-up flow) or
+        // the Practice tab (story flow); the settings scope tells us which.
+        setMainTab(practiceGameSettingsScope === 'practice' ? 'practice' : 'challenge');
       } else if (currentScreen === 'categoryQuestions') {
         setMainTab('review');
       } else if (currentScreen === 'settings' || currentScreen === 'settings-practice') {
@@ -162,6 +167,20 @@ export function RomanBackground() {
   const handleLeaveGuestMode = () => {
     setIsGuestMode(false);
     setCurrentScreen('login');
+  };
+
+  /**
+   * Launch a Challenge / Review game. Called from the two picker screens and from
+   * the end-of-set "Another Set" button.
+   */
+  const handleStartChallengeGame = (
+    mode: ChallengeGameMode,
+    setSize: number,
+    difficulty?: ChallengeDifficulty
+  ) => {
+    setChallengeConfig({ mode, setSize, difficulty });
+    setChallengeGameKey((k) => k + 1);
+    setCurrentScreen('challenge-game');
   };
 
   const handleLogout = async () => {
@@ -249,6 +268,21 @@ export function RomanBackground() {
         return (
           <LoginScreen onLoginSuccess={handleLoginSuccess} onGuestMode={handleGuestMode} />
         );
+      case 'challenge-game':
+        if (!challengeConfig) {
+          // Defensive fallback if we somehow got here without a config.
+          setCurrentScreen('main');
+          return null;
+        }
+        return (
+          <ChallengeGameScreen
+            key={challengeGameKey}
+            config={challengeConfig}
+            onNavigate={handleNavigate}
+            onTabChange={setMainTab}
+            onStartGame={handleStartChallengeGame}
+          />
+        );
       case 'main':
       default:
         return (
@@ -259,6 +293,7 @@ export function RomanBackground() {
             isGuestMode={isGuestMode}
             isAuthenticated={isAuthenticated}
             onLeaveGuestMode={handleLeaveGuestMode}
+            onStartChallengeGame={handleStartChallengeGame}
           />
         );
     }

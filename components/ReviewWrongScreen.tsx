@@ -11,21 +11,25 @@ import {
 import { getCurrentUser } from '../services/authService';
 import { getAllWrongQuestions } from '../services/questionReviewService';
 import type { MainTabId } from './MainTabsScreen';
-
-const SET_SIZES = [10, 20, 30, 40, 50] as const;
+import type { ChallengeGameMode } from './ChallengeGameScreen';
+import type { ChallengeDifficulty } from '../lib/challengeRanks';
 
 export function ReviewWrongScreen({
   isAuthenticated,
   onNavigate,
-  onTabChange,
+  onStartChallengeGame,
 }: {
   isAuthenticated?: boolean;
   onNavigate?: (screen: string) => void;
   onTabChange?: (tab: MainTabId) => void;
+  onStartChallengeGame?: (
+    mode: ChallengeGameMode,
+    setSize: number,
+    difficulty?: ChallengeDifficulty
+  ) => void;
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [wrongCount, setWrongCount] = useState(0);
-  const [setSize, setSetSize] = useState<number>(10);
 
   const load = useCallback(async () => {
     if (!isAuthenticated) {
@@ -71,8 +75,6 @@ export function ReviewWrongScreen({
     );
   }
 
-  const effectiveSetSize = Math.min(setSize, wrongCount);
-
   const handleStart = () => {
     if (wrongCount === 0) {
       Alert.alert(
@@ -81,10 +83,7 @@ export function ReviewWrongScreen({
       );
       return;
     }
-    Alert.alert(
-      'Review game UI is coming next',
-      `Ready to review ${effectiveSetSize} wrong question${effectiveSetSize === 1 ? '' : 's'}. The in-question UI (Continue + hold-to-master star) is the next build phase.`
-    );
+    onStartChallengeGame?.('review', wrongCount);
   };
 
   return (
@@ -95,47 +94,20 @@ export function ReviewWrongScreen({
     >
       <View style={[styles.card, styles.summaryCard]}>
         <Text style={styles.summaryLabel}>Wrong Questions</Text>
-        <Text style={styles.summaryValue}>{wrongCount}</Text>
+        <Text style={styles.summaryValue}>
+          0<Text style={styles.summaryValueDim}> / {wrongCount}</Text>
+        </Text>
         <Text style={styles.summaryCaption}>
-          Master any of these to remove them from your wrong pool and add them to your mastered count.
+          Questions answered this set / total wrong questions
         </Text>
       </View>
 
-      <View style={[styles.card, styles.pickerCard]}>
-        <Text style={styles.pickerLabel}>Questions per session</Text>
-        <View style={styles.pickerRow}>
-          {SET_SIZES.map((n) => {
-            const selected = setSize === n;
-            const greyed = n > wrongCount;
-            return (
-              <TouchableOpacity
-                key={n}
-                style={[
-                  styles.pickerChip,
-                  selected && styles.pickerChipSelected,
-                  greyed && styles.pickerChipGreyed,
-                ]}
-                onPress={() => setSetSize(n)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.pickerChipText,
-                    selected && styles.pickerChipTextSelected,
-                    greyed && styles.pickerChipTextGreyed,
-                  ]}
-                >
-                  {n}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        {wrongCount > 0 && wrongCount < setSize && (
-          <Text style={styles.pickerCaption}>
-            Only {wrongCount} wrong question{wrongCount === 1 ? '' : 's'} available — your session will be capped.
-          </Text>
-        )}
+      <View style={[styles.card, styles.infoCard]}>
+        <Text style={styles.infoTitle}>How Review Wrong works</Text>
+        <Text style={styles.infoBody}>
+          Master these questions to remove them from your wrong pool and add them to your mastered count.
+          Once mastered here, a question stays mastered — it will not reappear in Challenge Mode.
+        </Text>
       </View>
 
       <TouchableOpacity
@@ -144,16 +116,10 @@ export function ReviewWrongScreen({
         activeOpacity={0.85}
       >
         <Text style={styles.startBtnText}>
-          {wrongCount === 0 ? 'No wrong questions' : `Start ${effectiveSetSize}-question session`}
+          {wrongCount === 0
+            ? 'No wrong questions'
+            : `Start review session (${wrongCount} question${wrongCount === 1 ? '' : 's'})`}
         </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.doneBtn}
-        onPress={() => onTabChange?.('profile')}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.doneBtnText}>Done with learning</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -234,57 +200,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#3a3a3a',
   },
+  summaryValueDim: {
+    color: '#9a8a6a',
+    fontWeight: '600',
+  },
   summaryCaption: {
     marginTop: 4,
     fontSize: 12,
     color: '#6a6a6a',
     lineHeight: 17,
   },
-  pickerCard: {
-    gap: 10,
+  infoCard: {
+    gap: 6,
   },
-  pickerLabel: {
+  infoTitle: {
     fontSize: 13,
     color: '#3a3a3a',
     fontWeight: '600',
     letterSpacing: 0.3,
   },
-  pickerRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  pickerChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(201, 169, 97, 0.45)',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    minWidth: 56,
-    alignItems: 'center',
-  },
-  pickerChipSelected: {
-    backgroundColor: 'rgba(201, 169, 97, 0.35)',
-    borderColor: '#c9a961',
-  },
-  pickerChipGreyed: {
-    opacity: 0.45,
-  },
-  pickerChipText: {
-    fontSize: 14,
+  infoBody: {
+    fontSize: 13,
     color: '#3a3a3a',
-    fontWeight: '500',
-  },
-  pickerChipTextSelected: {
-    fontWeight: '700',
-  },
-  pickerChipTextGreyed: {
-    color: '#9a9a9a',
-  },
-  pickerCaption: {
-    fontSize: 11,
-    color: '#8a6a3a',
+    lineHeight: 19,
     letterSpacing: 0.2,
   },
   startBtn: {
@@ -306,20 +244,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,
-  },
-  doneBtn: {
-    marginTop: 4,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    borderWidth: 1,
-    borderColor: 'rgba(201, 169, 97, 0.45)',
-  },
-  doneBtnText: {
-    color: '#3a3a3a',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.4,
   },
 });

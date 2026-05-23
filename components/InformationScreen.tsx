@@ -12,7 +12,6 @@ import {
 import { getCurrentUser } from '../services/authService';
 import {
   getOrCreateUserStats,
-  bumpUserStreak,
   type UserStats,
 } from '../services/userStatsService';
 import { getProfileByEmail } from '../services/profileService';
@@ -159,14 +158,10 @@ export function InformationScreen({
     }
     setUserName(displayName);
 
-    const streakRes = await bumpUserStreak(user.id);
-    if (streakRes.data) {
-      setStreak(streakRes.data.current_streak);
-      setHighStreak(streakRes.data.highest_streak);
-    } else {
-      const { data: stats } = await getOrCreateUserStats(user.id);
-      applyStreakFromStats(stats);
-    }
+    // Read streak only — never bump from Profile. Streak only changes when
+    // the user answers a question (handled in ChallengeGameScreen).
+    const { data: stats } = await getOrCreateUserStats(user.id);
+    applyStreakFromStats(stats);
 
     const { data: diffStats } = await getDifficultyStats(user.id);
     applyDifficultyStats(diffStats);
@@ -225,10 +220,6 @@ export function InformationScreen({
     onTabChange?.('challenge');
   };
 
-  const handlePracticeMode = () => {
-    onNavigate?.('story');
-  };
-
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingWrap]}>
@@ -243,10 +234,6 @@ export function InformationScreen({
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.card, styles.appNameCard]}>
-        <Text style={styles.appNameText}>CertamenApp</Text>
-      </View>
-
       <View style={[styles.card, styles.userCard]}>
         <Text style={styles.userNameText}>{userName}</Text>
         <Text style={styles.userRankText}>
@@ -279,10 +266,6 @@ export function InformationScreen({
           </View>
         </View>
       </View>
-
-      <TouchableOpacity style={styles.practiceLink} onPress={handlePracticeMode} activeOpacity={0.7}>
-        <Text style={styles.practiceLinkText}>Open Practice Mode</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -320,16 +303,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 2,
     elevation: 2,
-  },
-  appNameCard: {
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  appNameText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#3a3a3a',
-    letterSpacing: 0.8,
   },
   userCard: {
     gap: 8,
@@ -445,16 +418,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.3,
     lineHeight: 18,
-  },
-  practiceLink: {
-    alignSelf: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-  },
-  practiceLinkText: {
-    fontSize: 12,
-    color: '#6a6a6a',
-    textDecorationLine: 'underline',
-    letterSpacing: 0.3,
   },
 });

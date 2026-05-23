@@ -16,11 +16,16 @@ export function StoryModeScreen({
   ) => void;
   showBackToMenu?: boolean;
 }) {
+  const embedded = !showBackToMenu;
+
   return (
     <View style={styles.container}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          embedded && styles.scrollContentEmbedded,
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -30,7 +35,7 @@ export function StoryModeScreen({
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.titleText}>Practice Mode</Text>
+        <Text style={[styles.titleText, embedded && styles.titleTextEmbedded]}>Practice Mode</Text>
         <Text style={styles.subtitle}>Choose a category to start</Text>
 
         <View style={styles.pickerWrap}>
@@ -71,6 +76,11 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 16,
   },
+  scrollContentEmbedded: {
+    paddingTop: 8,
+    paddingBottom: 24,
+    gap: 12,
+  },
   settingsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -100,6 +110,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginTop: 8,
+  },
+  titleTextEmbedded: {
+    fontSize: 22,
+    marginTop: 0,
   },
   subtitle: {
     color: '#6a6a6a',

@@ -3,13 +3,17 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { InformationScreen } from './InformationScreen';
 import { ChallengeModeScreen } from './ChallengeModeScreen';
 import { ReviewWrongScreen } from './ReviewWrongScreen';
+import { StoryModeScreen } from './StoryModeScreen';
+import type { ChallengeGameMode } from './ChallengeGameScreen';
+import type { ChallengeDifficulty } from '../lib/challengeRanks';
 
-export type MainTabId = 'profile' | 'challenge' | 'review';
+export type MainTabId = 'profile' | 'challenge' | 'review' | 'practice';
 
 const TABS: { id: MainTabId; label: string }[] = [
   { id: 'profile', label: 'Profile' },
-  { id: 'challenge', label: 'Challenge Mode' },
+  { id: 'challenge', label: 'Challenge' },
   { id: 'review', label: 'Review Wrong' },
+  { id: 'practice', label: 'Practice' },
 ];
 
 export function MainTabsScreen({
@@ -19,6 +23,7 @@ export function MainTabsScreen({
   isGuestMode,
   isAuthenticated,
   onLeaveGuestMode,
+  onStartChallengeGame,
 }: {
   activeTab: MainTabId;
   onTabChange: (tab: MainTabId) => void;
@@ -30,6 +35,11 @@ export function MainTabsScreen({
   isGuestMode?: boolean;
   isAuthenticated?: boolean;
   onLeaveGuestMode?: () => void;
+  onStartChallengeGame?: (
+    mode: ChallengeGameMode,
+    setSize: number,
+    difficulty?: ChallengeDifficulty
+  ) => void;
 }) {
   const handleTabPress = (tab: MainTabId) => {
     if (tab === 'review' && (isGuestMode || !isAuthenticated)) {
@@ -61,6 +71,7 @@ export function MainTabsScreen({
             isGuestMode={isGuestMode}
             onNavigate={onNavigate}
             onTabChange={onTabChange}
+            onStartChallengeGame={onStartChallengeGame}
           />
         );
       case 'review':
@@ -69,8 +80,11 @@ export function MainTabsScreen({
             isAuthenticated={isAuthenticated}
             onNavigate={onNavigate}
             onTabChange={onTabChange}
+            onStartChallengeGame={onStartChallengeGame}
           />
         );
+      case 'practice':
+        return <StoryModeScreen onNavigate={onNavigate} showBackToMenu={false} />;
       default:
         return null;
     }

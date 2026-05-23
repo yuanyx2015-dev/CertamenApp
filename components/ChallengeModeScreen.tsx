@@ -20,6 +20,7 @@ import {
   type DifficultyStats,
 } from '../lib/challengeRanks';
 import type { MainTabId } from './MainTabsScreen';
+import type { ChallengeGameMode } from './ChallengeGameScreen';
 
 const SET_SIZES = [10, 20, 30, 40, 50] as const;
 
@@ -28,11 +29,17 @@ export function ChallengeModeScreen({
   isGuestMode,
   onNavigate,
   onTabChange,
+  onStartChallengeGame,
 }: {
   isAuthenticated?: boolean;
   isGuestMode?: boolean;
   onNavigate?: (screen: string) => void;
   onTabChange?: (tab: MainTabId) => void;
+  onStartChallengeGame?: (
+    mode: ChallengeGameMode,
+    setSize: number,
+    difficulty?: ChallengeDifficulty
+  ) => void;
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<DifficultyStats[]>([]);
@@ -114,10 +121,7 @@ export function ChallengeModeScreen({
       );
       return;
     }
-    Alert.alert(
-      'Challenge game UI is coming next',
-      `Ready to start a ${effectiveSetSize}-question ${rank.name} set. The in-question UI (Continue + hold-to-master star) is the next build phase.`
-    );
+    onStartChallengeGame?.('challenge', effectiveSetSize, diff);
   };
 
   return (
