@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Animated } from 'react-native';
-import Svg, { Path, Line, Circle } from 'react-native-svg';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
@@ -10,78 +9,12 @@ import {
   type UserSettings,
 } from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
+import { FeedbackOverlay } from './RomanFeedback';
+import type { FeedbackOverlayHandle } from './RomanFeedback';
+import { ButtonDot } from './ButtonDot';
 
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
-
-// Ornate Roman-style Checkmark
-function RomanCheckmark() {
-  return (
-    <Svg width="250" height="250" viewBox="0 0 250 250">
-      {/* Main checkmark stroke with Roman style */}
-      <Path
-        d="M 60 130 L 100 180 L 200 60"
-        stroke="#7B8866"
-        strokeWidth="20"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      
-      {/* Inner highlight for depth */}
-      <Path
-        d="M 65 130 L 100 175 L 195 65"
-        stroke="#98A885"
-        strokeWidth="8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-        opacity="0.7"
-      />
-    </Svg>
-  );
-}
-
-// Ornate Roman-style X
-function RomanCross() {
-  return (
-    <Svg width="250" height="250" viewBox="0 0 250 250">
-      {/* Main X strokes with Roman style */}
-      <Path
-        d="M 50 50 L 200 200"
-        stroke="#8B4C4C"
-        strokeWidth="20"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <Path
-        d="M 200 50 L 50 200"
-        stroke="#8B4C4C"
-        strokeWidth="20"
-        strokeLinecap="round"
-        fill="none"
-      />
-      
-      {/* Inner highlight for depth */}
-      <Path
-        d="M 55 55 L 195 195"
-        stroke="#A86464"
-        strokeWidth="8"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.7"
-      />
-      <Path
-        d="M 195 55 L 55 195"
-        stroke="#A86464"
-        strokeWidth="8"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.7"
-      />
-    </Svg>
-  );
-}
 
 interface PracticeGameScreenProps {
   onNavigate?: (screen: string) => void;
@@ -119,18 +52,15 @@ export function PracticeGameScreen({
   const [timeRemaining, setTimeRemaining] = useState(5);
   /** Countdown after the full question is shown; null = not running (still streaming or already buzzed/resolved). */
   const [preBuzzSecondsRemaining, setPreBuzzSecondsRemaining] = useState<number | null>(null);
-  const [showFeedbackIcon, setShowFeedbackIcon] = useState(false);
-  const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   const [isWrongQuestionsMode, setIsWrongQuestionsMode] = useState(false); // Track if using wrong questions mode
   const [isPreviouslyWrong, setIsPreviouslyWrong] = useState(false); // Track if current question was previously answered wrong
-  
+
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const preBuzzIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fullTextRef = useRef('');
-  const feedbackScaleAnim = useRef(new Animated.Value(0)).current;
-  const feedbackOpacityAnim = useRef(new Animated.Value(0)).current;
+  const feedbackRef = useRef<FeedbackOverlayHandle>(null);
   const isBuzzedRef = useRef(false);
   const isAnsweredRef = useRef(false);
   const questionsRef = useRef<Question[]>([]);
@@ -387,35 +317,7 @@ export function PracticeGameScreen({
   };
 
   const triggerFeedbackAnimation = (isCorrect: boolean) => {
-    setIsCorrectAnswer(isCorrect);
-    setShowFeedbackIcon(true);
-
-    feedbackScaleAnim.setValue(0);
-    feedbackOpacityAnim.setValue(0);
-
-    Animated.sequence([
-      Animated.parallel([
-        Animated.spring(feedbackScaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-        Animated.timing(feedbackOpacityAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.delay(800),
-      Animated.timing(feedbackOpacityAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setShowFeedbackIcon(false);
-    });
+    feedbackRef.current?.show(isCorrect ? 'correct' : 'wrong');
   };
 
   /** No buzz before PRE_BUZZ_SECONDS elapsed after the tossup finished — score as incorrect. */
@@ -695,6 +597,7 @@ export function PracticeGameScreen({
             style={styles.restartButton}
             onPress={() => onNavigate?.('main')}
           >
+            <ButtonDot color="#fff" />
             <Text style={styles.restartButtonText}>Back to Menu</Text>
           </TouchableOpacity>
         </View>
@@ -725,6 +628,7 @@ export function PracticeGameScreen({
                 style={styles.signInPromptButton}
                 onPress={() => onNavigate?.('login')}
               >
+                <ButtonDot color="#fff" />
                 <Text style={styles.signInPromptButtonText}>Sign In</Text>
               </TouchableOpacity>
             </View>
@@ -817,6 +721,7 @@ export function PracticeGameScreen({
               setStatusText('Ready...');
             }}
           >
+            <ButtonDot color="#fff" />
             <Text style={styles.restartButtonText}>Try Again</Text>
           </TouchableOpacity>
 
@@ -824,6 +729,7 @@ export function PracticeGameScreen({
             style={styles.backButton}
             onPress={() => onNavigate?.('main')}
           >
+            <ButtonDot />
             <Text style={styles.backButtonText}>Back to Menu</Text>
           </TouchableOpacity>
         </View>
@@ -842,6 +748,7 @@ export function PracticeGameScreen({
             onPress={() => onNavigate?.('login')}
             activeOpacity={0.7}
           >
+            <ButtonDot color="#c9a961" />
             <Text style={styles.guestSignInButtonText}>Sign In</Text>
           </TouchableOpacity>
         </View>
@@ -970,36 +877,13 @@ export function PracticeGameScreen({
             style={styles.nextBtn}
             onPress={nextQuestion}
           >
+            <ButtonDot color="#fff" />
             <Text style={styles.nextBtnText}>Next Question →</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
 
-      {/* Feedback Icon Overlay */}
-      {showFeedbackIcon && (
-        <Animated.View 
-          style={[
-            styles.feedbackOverlay,
-            {
-              opacity: feedbackOpacityAnim,
-              transform: [{ scale: feedbackScaleAnim }],
-            },
-          ]}
-          pointerEvents="none"
-        >
-          {isCorrectAnswer ? (
-            // Ornate Roman Green Checkmark
-            <View style={styles.checkmark}>
-              <RomanCheckmark />
-            </View>
-          ) : (
-            // Ornate Roman Red X
-            <View style={styles.cross}>
-              <RomanCross />
-            </View>
-          )}
-        </Animated.View>
-      )}
+      <FeedbackOverlay ref={feedbackRef} />
     </View>
   );
 }
@@ -1007,7 +891,9 @@ export function PracticeGameScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5efe3',
+    width: '100%',
+    maxWidth: 448,
+    alignSelf: 'center',
   },
   loadingContainer: {
     flex: 1,
@@ -1017,8 +903,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 15,
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#6a6a6a',
     textAlign: 'center',
   },
   errorContainer: {
@@ -1028,30 +914,26 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#c9a961',
-    marginBottom: 15,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#3a3a3a',
+    marginBottom: 8,
   },
   errorText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#6a6a6a',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 20,
+    lineHeight: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 2,
-    borderBottomColor: '#c9a961',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(245, 239, 227, 0.85)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(201, 169, 97, 0.3)',
   },
   headerColLeft: {
     flex: 1,
@@ -1081,92 +963,95 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   headerTimerText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#c9a961',
   },
   headerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#3a3a3a',
   },
   gameArea: {
     flex: 1,
   },
   gameAreaContent: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     alignItems: 'center',
-    minHeight: 600,
+    gap: 18,
+    paddingBottom: 24,
   },
   statusContainer: {
     alignItems: 'center',
-    marginBottom: 15,
-    minHeight: 50,
+    minHeight: 20,
   },
   statusText: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#7a7a7a',
     fontStyle: 'italic',
-    minHeight: 25,
+    textAlign: 'center',
   },
   statusTextBuzzed: {
     color: '#c9a961',
     fontWeight: '600',
   },
   questionBox: {
-    width: '100%',
-    maxWidth: 600,
-    minHeight: 150,
-    marginBottom: 30,
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.35)',
+    borderRadius: 12,
+    padding: 16,
+    minHeight: 120,
     position: 'relative',
   },
   previouslyWrongIndicator: {
     position: 'absolute',
     top: -8,
-    right: 0,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    right: 8,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
     borderRadius: 4,
     borderWidth: 1,
     borderColor: 'rgba(139, 76, 76, 0.3)',
-    backgroundColor: 'rgba(139, 76, 76, 0.05)',
+    backgroundColor: 'rgba(245, 239, 227, 0.95)',
   },
   previouslyWrongText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#8B4C4C',
     fontWeight: '600',
   },
   questionText: {
-    fontSize: 20,
-    lineHeight: 32,
+    fontSize: 16,
+    lineHeight: 24,
     color: '#3a3a3a',
-    fontWeight: '500',
   },
   cursor: {
     fontWeight: 'bold',
-    fontSize: 24,
+    fontSize: 20,
     color: '#c9a961',
   },
   buzzerBtn: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: 128,
+    height: 128,
+    borderRadius: 64,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: '#c9a961',
     shadowColor: '#c9a961',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
+    shadowRadius: 12,
+    elevation: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    marginVertical: 8,
   },
   buzzerText: {
     color: '#c9a961',
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     letterSpacing: 2,
   },
   optionsGrid: {
@@ -1175,40 +1060,35 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     width: '100%',
-    maxWidth: 600,
-    rowGap: 14,
+    rowGap: 10,
   },
   optionCard: {
-    width: '47.5%',
+    width: '48%',
     flexGrow: 0,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    borderWidth: 2,
-    borderColor: 'rgba(201, 169, 97, 0.3)',
-    borderRadius: 8,
-    padding: 20,
-    minHeight: 80,
+    borderWidth: 1.5,
+    borderColor: 'rgba(201, 169, 97, 0.45)',
+    borderRadius: 10,
+    padding: 14,
+    minHeight: 72,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
     color: '#3a3a3a',
+    lineHeight: 19,
   },
   optionCorrect: {
     backgroundColor: 'rgba(72, 130, 88, 0.18)',
     borderColor: 'rgba(52, 120, 72, 0.75)',
-    borderWidth: 3,
+    borderWidth: 2,
   },
   optionWrong: {
     backgroundColor: 'rgba(176, 72, 72, 0.16)',
     borderColor: 'rgba(160, 52, 52, 0.85)',
-    borderWidth: 3,
+    borderWidth: 2,
   },
   optionTextCorrect: {
     color: '#2d5c3a',
@@ -1219,23 +1099,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   nextBtn: {
-    marginTop: 20,
-    paddingHorizontal: 30,
+    marginTop: 8,
+    paddingHorizontal: 40,
     paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    borderWidth: 2,
-    borderColor: 'rgba(201, 169, 97, 0.3)',
-    borderRadius: 8,
-    shadowColor: '#000',
+    backgroundColor: '#c9a961',
+    borderRadius: 10,
+    shadowColor: '#9d856b',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   nextBtnText: {
-    color: '#3a3a3a',
-    fontSize: 18,
-    fontWeight: '600',
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
   gameOverContainer: {
@@ -1305,34 +1183,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     letterSpacing: 0.5,
-  },
-  feedbackOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  checkmark: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#7B8866',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  cross: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#8B4C4C',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
   },
   guestBanner: {
     flexDirection: 'row',

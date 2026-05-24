@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { ButtonDot } from './ButtonDot';
 
 const PRACTICE_CATEGORIES: { key: string; label: string }[] = [
   { key: 'mythology', label: 'Mythology' },
@@ -42,6 +43,7 @@ function CategoryBox({ label, onPress }: { label: string; onPress: () => void })
         activeOpacity={1}
       >
         <Animated.View style={[styles.categoryButton, { backgroundColor }]}>
+          <ButtonDot />
           <Text style={styles.categoryLabel}>{label}</Text>
         </Animated.View>
       </TouchableOpacity>

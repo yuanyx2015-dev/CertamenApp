@@ -10,9 +10,21 @@ import {
 } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getAllWrongQuestions } from '../services/questionReviewService';
+import { ButtonDot } from './ButtonDot';
 import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
 import type { ChallengeDifficulty } from '../lib/challengeRanks';
+
+/**
+ * Format a wrong-question count: < 1000 stays as a plain integer;
+ * >= 1000 shrinks to "X.YYY k" with trailing zeros trimmed for readability
+ * (e.g. 1249 -> "1.249 k", 2000 -> "2 k", 1050 -> "1.05 k").
+ */
+function formatWrongCount(n: number): string {
+  if (n < 1000) return String(n);
+  const trimmed = (n / 1000).toFixed(3).replace(/\.?0+$/, '');
+  return `${trimmed} k`;
+}
 
 export function ReviewWrongScreen({
   isAuthenticated,
@@ -61,6 +73,7 @@ export function ReviewWrongScreen({
           onPress={() => onNavigate?.('login')}
           activeOpacity={0.85}
         >
+          <ButtonDot />
           <Text style={styles.signInBtnText}>Sign In</Text>
         </TouchableOpacity>
       </View>
@@ -94,12 +107,8 @@ export function ReviewWrongScreen({
     >
       <View style={[styles.card, styles.summaryCard]}>
         <Text style={styles.summaryLabel}>Review Questions</Text>
-        <Text style={styles.summaryValue}>
-          0<Text style={styles.summaryValueDim}> / {wrongCount}</Text>
-        </Text>
-        <Text style={styles.summaryCaption}>
-          Questions answered this set / total wrong questions
-        </Text>
+        <Text style={styles.summaryValue}>{formatWrongCount(wrongCount)}</Text>
+        <Text style={styles.summaryCaption}>Total questions to review</Text>
       </View>
 
       <View style={[styles.card, styles.infoCard]}>
@@ -108,6 +117,10 @@ export function ReviewWrongScreen({
           Master these questions to remove them from your wrong pool and add them to your mastered count.
           Once mastered here, a question stays mastered — it will not reappear in Challenge Mode.
         </Text>
+        <Text style={styles.infoBodyMuted}>
+          Note: questions you miss in Practice Mode don't show up here — only Challenge Mode and Review
+          itself feed this list.
+        </Text>
       </View>
 
       <TouchableOpacity
@@ -115,11 +128,10 @@ export function ReviewWrongScreen({
         onPress={handleStart}
         activeOpacity={0.85}
       >
-        <Text style={styles.startBtnText}>
-          {wrongCount === 0
-            ? 'No wrong questions'
-            : `Start review session (${wrongCount} question${wrongCount === 1 ? '' : 's'})`}
-        </Text>
+          <ButtonDot color="#fff" />
+          <Text style={styles.startBtnText}>
+            {wrongCount === 0 ? 'No wrong questions' : 'Start review session'}
+          </Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -200,10 +212,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#3a3a3a',
   },
-  summaryValueDim: {
-    color: '#9a8a6a',
-    fontWeight: '600',
-  },
   summaryCaption: {
     marginTop: 4,
     fontSize: 12,
@@ -224,6 +232,14 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     lineHeight: 19,
     letterSpacing: 0.2,
+  },
+  infoBodyMuted: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#8a8a8a',
+    lineHeight: 17,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
   },
   startBtn: {
     backgroundColor: '#c9a961',

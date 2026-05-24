@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getCategoryStats } from '../services/questionReviewService';
+import { ButtonDot } from './ButtonDot';
 
 // Simple reusable animated button component
 function AnimatedCategoryButton({ 
@@ -65,6 +66,7 @@ function AnimatedCategoryButton({
         activeOpacity={isEnabled ? 1 : 0.7}
       >
         <Animated.View style={[styles.categoryButton, { backgroundColor }]}>
+          <ButtonDot color={isEnabled ? '#c9a961' : '#aaa'} />
           <Text style={[styles.categoryLabel, !isEnabled && styles.disabledLabel]}>{label}</Text>
           {isEnabled && wrongQuestions > 0 && (
             <Text style={styles.wrongText}>{wrongQuestions} to review</Text>
@@ -173,6 +175,7 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
           onPress={() => onNavigate?.('main')}
           activeOpacity={0.85}
         >
+          <ButtonDot />
           <Text style={styles.backButtonText}>Back to Profile</Text>
         </TouchableOpacity>
       </ScrollView>

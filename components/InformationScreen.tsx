@@ -27,6 +27,7 @@ import {
   type DifficultyStats,
 } from '../lib/challengeRanks';
 import type { MainTabId } from './MainTabsScreen';
+import { ButtonDot } from './ButtonDot';
 
 function AnimatedCardButton({
   label,
@@ -67,6 +68,7 @@ function AnimatedCardButton({
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
       <TouchableOpacity onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={onPress} activeOpacity={1}>
         <Animated.View style={[styles.card, styles.dailyChallengeCard, innerStyle, { backgroundColor }]}>
+          <ButtonDot />
           <Text style={[styles.dailyChallengeText, textStyle]}>{label}</Text>
         </Animated.View>
       </TouchableOpacity>
@@ -283,7 +285,11 @@ export function InformationScreen({
         onPress={handleWrongQuestions}
         activeOpacity={0.85}
       >
+        <ButtonDot />
         <Text style={styles.wrongQuestionsBtnText}>Your Wrong Questions</Text>
+        <Text style={styles.wrongQuestionsBtnSubtitle}>
+          All wrong questions can be seen here, including ones from Practice Mode.
+        </Text>
         <Text style={styles.wrongQuestionsBtnHint}>
           Browse by category &middot; ask AI for an explanation
         </Text>
@@ -461,6 +467,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#3a3a3a',
     letterSpacing: 0.4,
+  },
+  wrongQuestionsBtnSubtitle: {
+    marginTop: 4,
+    fontSize: 11,
+    color: '#8a8a8a',
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    lineHeight: 15,
   },
   wrongQuestionsBtnHint: {
     marginTop: 4,

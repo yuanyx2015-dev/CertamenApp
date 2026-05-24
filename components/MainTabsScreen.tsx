@@ -10,7 +10,7 @@ import type { ChallengeDifficulty } from '../lib/challengeRanks';
 export type MainTabId = 'profile' | 'challenge' | 'review' | 'practice';
 
 const TABS: { id: MainTabId; label: string }[] = [
-  { id: 'profile', label: 'Profile' },
+  { id: 'profile', label: 'Home' },
   { id: 'challenge', label: 'Challenge' },
   { id: 'review', label: 'Review' },
   { id: 'practice', label: 'Practice' },

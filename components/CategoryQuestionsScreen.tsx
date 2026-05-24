@@ -12,9 +12,9 @@ import {
 import { getCurrentUser } from '../services/authService';
 import { 
   getWrongQuestionsByCategory,
-  markQuestionAsCorrect,
   QuestionWithStats 
 } from '../services/questionReviewService';
+import { masterQuestion } from '../services/userMasteredService';
 import {
   AI_TUTOR_DAILY_LIMIT,
   AI_TUTOR_MAX_QUESTION_CHARS,
@@ -86,17 +86,18 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
     setDisplayedQuestions(questions);
   };
 
-  const handleMarkCorrect = async (questionId: string) => {
+  const handleMarkMastered = async (questionId: string) => {
     if (!userId) return;
 
-    const { error } = await markQuestionAsCorrect(userId, questionId);
-    
+    // Atomic master_question RPC: removes from user_wrong_answers AND inserts
+    // into user_mastered_answers, so Profile / Challenge progress all update.
+    const { error } = await masterQuestion(userId, questionId);
+
     if (error) {
-      Alert.alert('Error', 'Failed to remove question from review list');
+      Alert.alert('Error', 'Failed to master this question. Please try again.');
       return;
     }
 
-    // Reload questions
     await loadQuestions();
   };
 
@@ -269,11 +270,6 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
                 <Text style={styles.difficultyBadge}>
                   {question.difficulty}
                 </Text>
-                {question.times_wrong && question.times_wrong > 1 && (
-                  <Text style={styles.timesWrongBadge}>
-                    Wrong {question.times_wrong}x
-                  </Text>
-                )}
               </View>
               
               <Text style={styles.questionText}>
@@ -375,7 +371,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
 
                 <TouchableOpacity
                   style={styles.markCorrectButton}
-                  onPress={() => handleMarkCorrect(question.id)}
+                  onPress={() => handleMarkMastered(question.id)}
                 >
                   <Text style={styles.markCorrectButtonText}>
                     ✓ Mark as Mastered

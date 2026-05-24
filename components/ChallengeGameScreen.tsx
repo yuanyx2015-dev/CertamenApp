@@ -23,6 +23,8 @@ import type {
   ChallengeDifficulty,
 } from '../lib/challengeRanks';
 import type { MainTabId } from './MainTabsScreen';
+import { FeedbackOverlay, type FeedbackOverlayHandle } from './RomanFeedback';
+import { ButtonDot } from './ButtonDot';
 
 const HOLD_TO_MASTER_MS = 1000;
 
@@ -147,6 +149,7 @@ export function ChallengeGameScreen({
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   /** Bumped once per game session on the first answer (server-side same-day no-op). */
   const streakBumpedRef = useRef(false);
+  const feedbackRef = useRef<FeedbackOverlayHandle>(null);
 
   // ----- LOAD POOL -----
   useEffect(() => {
@@ -259,6 +262,7 @@ export function ChallengeGameScreen({
       setIsAnswered(true);
       setIsCorrect(option.isCorrect);
       setSelectedAnswer(option.text);
+      feedbackRef.current?.show(option.isCorrect ? 'correct' : 'wrong');
 
       // Streak: bump once per session on the first answer. The DB function
       // is idempotent within the same calendar day, so repeated sessions
@@ -368,6 +372,7 @@ export function ChallengeGameScreen({
             onPress={() => onNavigate?.('main')}
             activeOpacity={0.85}
           >
+            <ButtonDot />
             <Text style={styles.secondaryBtnText}>Back to Main</Text>
           </TouchableOpacity>
         </View>
@@ -408,6 +413,7 @@ export function ChallengeGameScreen({
             }
             activeOpacity={0.85}
           >
+            <ButtonDot color="#fff" />
             <Text style={styles.primaryBtnText}>Another Set</Text>
           </TouchableOpacity>
 
@@ -419,6 +425,7 @@ export function ChallengeGameScreen({
             }}
             activeOpacity={0.85}
           >
+            <ButtonDot />
             <Text style={styles.secondaryBtnText}>Review Questions</Text>
           </TouchableOpacity>
 
@@ -430,6 +437,7 @@ export function ChallengeGameScreen({
             }}
             activeOpacity={0.85}
           >
+            <ButtonDot />
             <Text style={styles.secondaryBtnText}>Return to Main</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -442,11 +450,7 @@ export function ChallengeGameScreen({
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>{headerLabel}</Text>
-        <View style={styles.headerCountsRow}>
-          <Text style={styles.headerCount}>★ {masteredCount}</Text>
-          <Text style={styles.headerCount}>✓ {passedCount}</Text>
-          <Text style={styles.headerCount}>✕ {wrongCount}</Text>
-        </View>
+        <Text style={styles.headerCount}>★ {masteredCount} mastered</Text>
       </View>
 
       <ScrollView
@@ -499,6 +503,7 @@ export function ChallengeGameScreen({
                   onPress={handlePass}
                   activeOpacity={0.85}
                 >
+                  <ButtonDot color="#fff" />
                   <Text style={styles.continueBtnText}>Continue</Text>
                 </TouchableOpacity>
 
@@ -520,6 +525,7 @@ export function ChallengeGameScreen({
                 onPress={handleNextAfterWrong}
                 activeOpacity={0.85}
               >
+                <ButtonDot color="#fff" />
                 <Text style={styles.nextBtnText}>Next</Text>
               </TouchableOpacity>
             )}
@@ -535,9 +541,12 @@ export function ChallengeGameScreen({
           }}
           activeOpacity={0.7}
         >
-          <Text style={styles.footerLink}>Quit set</Text>
+          <ButtonDot color="#8a6a3a" />
+          <Text style={styles.footerLink}>Done learning? Click me</Text>
         </TouchableOpacity>
       </View>
+
+      <FeedbackOverlay ref={feedbackRef} />
     </View>
   );
 }
@@ -588,10 +597,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#3a3a3a',
-  },
-  headerCountsRow: {
-    flexDirection: 'row',
-    gap: 12,
   },
   headerCount: {
     fontSize: 13,

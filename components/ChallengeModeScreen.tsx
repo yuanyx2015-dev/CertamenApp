@@ -21,6 +21,7 @@ import {
 } from '../lib/challengeRanks';
 import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
+import { ButtonDot } from './ButtonDot';
 
 const SET_SIZES = [10, 20, 30, 40, 50] as const;
 
@@ -75,6 +76,7 @@ export function ChallengeModeScreen({
           onPress={() => onNavigate?.('login')}
           activeOpacity={0.85}
         >
+          <ButtonDot />
           <Text style={styles.signInBtnText}>Sign In</Text>
         </TouchableOpacity>
       </View>
@@ -133,8 +135,11 @@ export function ChallengeModeScreen({
       <View style={[styles.card, styles.rankCard]}>
         <Text style={styles.rankLabel}>Current Rank</Text>
         <Text style={styles.rankName}>{rank.name}</Text>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
+        <View style={styles.progressRow}>
+          <View style={[styles.progressTrack, { flex: 1 }]}>
+            <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
+          </View>
+          <Text style={styles.progressPct}>{Math.round(progress * 100)}%</Text>
         </View>
         <View style={styles.statsRow}>
           <Text style={styles.statsRowText}>Mastered: {cur?.mastered ?? 0}</Text>
@@ -145,34 +150,37 @@ export function ChallengeModeScreen({
 
       <View style={[styles.card, styles.pickerCard]}>
         <Text style={styles.pickerLabel}>Questions per set</Text>
-        <View style={styles.pickerRow}>
-          {SET_SIZES.map((n) => {
-            const selected = setSize === n;
-            const greyed = n > unmasteredHere;
-            return (
-              <TouchableOpacity
-                key={n}
-                style={[
-                  styles.pickerChip,
-                  selected && styles.pickerChipSelected,
-                  greyed && styles.pickerChipGreyed,
-                ]}
-                onPress={() => setSetSize(n)}
-                activeOpacity={0.7}
-              >
-                <Text
+        {([SET_SIZES.slice(0, 3), SET_SIZES.slice(3)] as const).map((row, rowIdx) => (
+          <View key={rowIdx} style={styles.pickerRow}>
+            {row.map((n) => {
+              const selected = setSize === n;
+              const greyed = n > unmasteredHere;
+              return (
+                <TouchableOpacity
+                  key={n}
                   style={[
-                    styles.pickerChipText,
-                    selected && styles.pickerChipTextSelected,
-                    greyed && styles.pickerChipTextGreyed,
+                    styles.pickerChip,
+                    selected && styles.pickerChipSelected,
+                    greyed && styles.pickerChipGreyed,
                   ]}
+                  onPress={() => setSetSize(n)}
+                  activeOpacity={0.7}
                 >
-                  {n}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                  <ButtonDot color={selected ? '#8a6a3a' : '#c9a961'} />
+                  <Text
+                    style={[
+                      styles.pickerChipText,
+                      selected && styles.pickerChipTextSelected,
+                      greyed && styles.pickerChipTextGreyed,
+                    ]}
+                  >
+                    {n}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
         {unmasteredHere > 0 && unmasteredHere < setSize && (
           <Text style={styles.pickerCaption}>
             Only {unmasteredHere} unmastered questions left at {rank.name} — your set will be capped.
@@ -185,9 +193,10 @@ export function ChallengeModeScreen({
         onPress={handleStart}
         activeOpacity={0.85}
       >
-        <Text style={styles.startBtnText}>
-          {unmasteredHere === 0 ? 'Rank Complete' : `Start ${effectiveSetSize}-question set`}
-        </Text>
+          <ButtonDot color="#fff" />
+          <Text style={styles.startBtnText}>
+            {unmasteredHere === 0 ? 'Rank Complete' : `Start ${effectiveSetSize}-question set`}
+          </Text>
       </TouchableOpacity>
 
       <View style={[styles.card, styles.allRanksCard]}>
@@ -291,12 +300,25 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     letterSpacing: 0.4,
   },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  progressPct: {
+    fontSize: 11,
+    color: '#8a6a3a',
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    minWidth: 32,
+    textAlign: 'right',
+  },
   progressTrack: {
     height: 10,
     borderRadius: 5,
     backgroundColor: 'rgba(201, 169, 97, 0.18)',
     overflow: 'hidden',
-    marginTop: 4,
   },
   progressTrackSmall: {
     height: 6,
@@ -331,17 +353,18 @@ const styles = StyleSheet.create({
   },
   pickerRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 8,
   },
   pickerChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingLeft: 32,
+    paddingRight: 14,
+    paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    minWidth: 56,
+    minWidth: 72,
     alignItems: 'center',
   },
   pickerChipSelected: {
