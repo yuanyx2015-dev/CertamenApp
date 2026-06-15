@@ -17,6 +17,8 @@ export interface Question {
   wrong_answers: [string, string, string];
   category: QuestionCategory;
   difficulty: 'easy' | 'medium' | 'hard';
+  mastery_rank?: number | null;
+  pool_order?: number | null;
   block_label?: string | null;
   confidence?: 'high' | 'web-verified' | 'medium-spot-check' | null;
   yale_attestation?: string | null;

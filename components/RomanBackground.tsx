@@ -23,7 +23,6 @@ import {
 } from './ChallengeGameScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
 import type { UserSettingsScope } from '../services/userSettingsService';
-import type { ChallengeDifficulty } from '../lib/challengeRanks';
 
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
@@ -43,7 +42,7 @@ export function RomanBackground() {
   const [mainTab, setMainTab] = useState<MainTabId>('profile');
   const mainTabBeforeSettingsRef = useRef<MainTabId>('profile');
   const previousScreen = useRef('login');
-  /** Challenge Mode game session config (mode + setSize + difficulty). */
+  /** Challenge Mode game session config (mode + setSize + rankIndex). */
   const [challengeConfig, setChallengeConfig] = useState<ChallengeGameConfig | null>(null);
   const [challengeGameKey, setChallengeGameKey] = useState(0);
 
@@ -182,9 +181,9 @@ export function RomanBackground() {
   const handleStartChallengeGame = (
     mode: ChallengeGameMode,
     setSize: number,
-    difficulty?: ChallengeDifficulty
+    rankIndex?: number
   ) => {
-    setChallengeConfig({ mode, setSize, difficulty });
+    setChallengeConfig({ mode, setSize, rankIndex });
     setChallengeGameKey((k) => k + 1);
     setCurrentScreen('challenge-game');
   };

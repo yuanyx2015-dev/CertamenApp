@@ -12,20 +12,20 @@ import {
 import { getCurrentUser } from '../services/authService';
 import {
   getOrCreateUserStats,
+  expireStreakIfMissed,
   type UserStats,
 } from '../services/userStatsService';
 import { getProfileByEmail } from '../services/profileService';
 import {
-  getDifficultyStats,
+  getRankStats,
   getMasteredCount,
 } from '../services/userMasteredService';
 import { getAllWrongQuestions } from '../services/questionReviewService';
 import {
-  currentDifficulty,
-  difficultyProgress,
-  rankForDifficulty,
-  type DifficultyStats,
-} from '../lib/challengeRanks';
+  MASTERY_RANKS,
+  currentRankFromStats,
+  rankProgressFromStats,
+} from '../lib/masteryRanks';
 import type { MainTabId } from './MainTabsScreen';
 import { ButtonDot } from './ButtonDot';
 
@@ -145,44 +145,49 @@ export function InformationScreen({
     }
 
     setIsLoading(true);
-    const user = await getCurrentUser();
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
-
-    let displayName = user.user_metadata?.name || user.email?.split('@')[0] || 'User';
-    if (user.email) {
-      const { data: profileData } = await getProfileByEmail(user.email);
-      if (profileData) {
-        displayName = profileData.display_name || profileData.username || displayName;
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        setIsLoading(false);
+        return;
       }
+
+      let displayName = user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+      if (user.email) {
+        const { data: profileData } = await getProfileByEmail(user.email);
+        if (profileData) {
+          displayName = profileData.display_name || profileData.username || displayName;
+        }
+      }
+      setUserName(displayName);
+
+      // Read streak, resetting to 0 if the user missed a day.
+      const { data: stats } = await getOrCreateUserStats(user.id);
+      const liveStats = stats ? await expireStreakIfMissed(user.id) : null;
+      applyStreakFromStats(liveStats ?? stats);
+
+      const [{ data: rankData }, { data: mastered }, { data: wrongQuestions }] = await Promise.all([
+        getRankStats(user.id),
+        getMasteredCount(user.id),
+        getAllWrongQuestions(user.id, 1000),
+      ]);
+
+      const totalMastered = mastered ?? 0;
+      setMasteredCount(totalMastered);
+      setWrongCount(wrongQuestions?.length ?? 0);
+
+      const rankStats = rankData ?? [];
+      const rankIdx = currentRankFromStats(rankStats);
+      const cur = rankStats.find((s) => s.rankIndex === rankIdx);
+
+      setRankName(MASTERY_RANKS[rankIdx]);
+      setProgress(rankProgressFromStats(cur));
+      setUnmasteredCount(cur?.unmastered ?? 0);
+    } catch (e) {
+      console.error('[InformationScreen] loadData error:', e);
+    } finally {
+      setIsLoading(false);
     }
-    setUserName(displayName);
-
-    // Read streak only — never bump from Profile. Streak only changes when
-    // the user answers a question (handled in ChallengeGameScreen).
-    const { data: stats } = await getOrCreateUserStats(user.id);
-    applyStreakFromStats(stats);
-
-    const { data: diffStats } = await getDifficultyStats(user.id);
-    applyDifficultyStats(diffStats);
-
-    const [{ data: mastered }, { data: wrongQuestions }] = await Promise.all([
-      getMasteredCount(user.id),
-      getAllWrongQuestions(user.id, 1000),
-    ]);
-    setMasteredCount(mastered ?? 0);
-    setWrongCount(wrongQuestions?.length ?? 0);
-
-    if (diffStats) {
-      const totalUnmastered = diffStats.reduce((sum, s) => sum + s.unmastered, 0);
-      setUnmasteredCount(totalUnmastered);
-    } else {
-      setUnmasteredCount(0);
-    }
-
-    setIsLoading(false);
   }, [isAuthenticated, isGuestMode]);
 
   const applyStreakFromStats = (stats: UserStats | null) => {
@@ -193,18 +198,6 @@ export function InformationScreen({
     }
     setStreak(stats.current_streak ?? stats.win_streak ?? 0);
     setHighStreak(stats.highest_streak ?? stats.current_streak ?? 0);
-  };
-
-  const applyDifficultyStats = (stats: DifficultyStats[] | null) => {
-    if (!stats || stats.length === 0) {
-      setRankName(rankForDifficulty('easy').name);
-      setProgress(0);
-      return;
-    }
-    const diff = currentDifficulty(stats);
-    setRankName(rankForDifficulty(diff).name);
-    const cur = stats.find((s) => s.difficulty === diff);
-    setProgress(difficultyProgress(cur));
   };
 
   useEffect(() => {

@@ -5,7 +5,6 @@ import { ChallengeModeScreen } from './ChallengeModeScreen';
 import { ReviewWrongScreen } from './ReviewWrongScreen';
 import { StoryModeScreen } from './StoryModeScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
-import type { ChallengeDifficulty } from '../lib/challengeRanks';
 
 export type MainTabId = 'profile' | 'challenge' | 'review' | 'practice';
 
@@ -38,7 +37,7 @@ export function MainTabsScreen({
   onStartChallengeGame?: (
     mode: ChallengeGameMode,
     setSize: number,
-    difficulty?: ChallengeDifficulty
+    rankIndex?: number
   ) => void;
 }) {
   const handleTabPress = (tab: MainTabId) => {

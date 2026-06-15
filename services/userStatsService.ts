@@ -121,6 +121,40 @@ export const incrementPracticeCompleted = async (userId: string) => {
 };
 
 /**
+ * Check whether the user missed one or more days since their last challenge.
+ * If so, reset current_streak to 0 in the DB and return the corrected stats.
+ * Safe to call on every home-screen mount — no-ops if the streak is still valid.
+ */
+export const expireStreakIfMissed = async (userId: string): Promise<UserStats | null> => {
+  const { data: stats } = await getUserStats(userId);
+  if (!stats) return null;
+
+  const streak = stats.current_streak ?? 0;
+  const lastDate = stats.last_activity_date;
+
+  if (streak > 0 && lastDate) {
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+
+    const yesterdayMidnight = new Date(todayMidnight);
+    yesterdayMidnight.setDate(yesterdayMidnight.getDate() - 1);
+
+    const lastActivity = new Date(lastDate);
+    lastActivity.setHours(0, 0, 0, 0);
+
+    if (lastActivity < yesterdayMidnight) {
+      await supabase
+        .from('user_stats')
+        .update({ current_streak: 0 })
+        .eq('user_id', userId);
+      return { ...stats, current_streak: 0 };
+    }
+  }
+
+  return stats;
+};
+
+/**
  * Daily streak bump (Duolingo-style).
  *   - First action of the day:   +1 if yesterday, else reset to 1
  *   - Subsequent actions today:  no change

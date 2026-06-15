@@ -10,15 +10,15 @@ import {
   Alert,
 } from 'react-native';
 import { getCurrentUser } from '../services/authService';
-import { getDifficultyStats } from '../services/userMasteredService';
+import { getRankStats } from '../services/userMasteredService';
 import {
-  CHALLENGE_RANKS,
-  currentDifficulty,
-  difficultyProgress,
-  rankForDifficulty,
-  type ChallengeDifficulty,
-  type DifficultyStats,
-} from '../lib/challengeRanks';
+  MASTERY_RANKS,
+  MASTERY_RANK_COUNT,
+  allRanksComplete,
+  currentRankFromStats,
+  rankProgressFromStats,
+  type RankStats,
+} from '../lib/masteryRanks';
 import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
 import { ButtonDot } from './ButtonDot';
@@ -39,11 +39,11 @@ export function ChallengeModeScreen({
   onStartChallengeGame?: (
     mode: ChallengeGameMode,
     setSize: number,
-    difficulty?: ChallengeDifficulty
+    rankIndex?: number
   ) => void;
 }) {
   const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState<DifficultyStats[]>([]);
+  const [rankStats, setRankStats] = useState<RankStats[]>([]);
   const [setSize, setSetSize] = useState<number>(10);
 
   const load = useCallback(async () => {
@@ -57,8 +57,8 @@ export function ChallengeModeScreen({
       setIsLoading(false);
       return;
     }
-    const { data } = await getDifficultyStats(user.id);
-    setStats(data ?? []);
+    const { data: rankData } = await getRankStats(user.id);
+    setRankStats(rankData ?? []);
     setIsLoading(false);
   }, [isAuthenticated, isGuestMode]);
 
@@ -91,12 +91,12 @@ export function ChallengeModeScreen({
     );
   }
 
-  const diff: ChallengeDifficulty = currentDifficulty(stats);
-  const cur = stats.find((s) => s.difficulty === diff);
-  const rank = rankForDifficulty(diff);
-  const progress = difficultyProgress(cur);
+  const rankIdx = currentRankFromStats(rankStats);
+  const cur = rankStats.find((s) => s.rankIndex === rankIdx);
+  const rankName = MASTERY_RANKS[rankIdx];
+  const progress = rankProgressFromStats(cur);
   const unmasteredHere = cur?.unmastered ?? 0;
-  const allDone = stats.length > 0 && stats.every((s) => s.unmastered + s.wrong === 0);
+  const allDone = allRanksComplete(rankStats);
 
   const effectiveSetSize = Math.min(setSize, Math.max(unmasteredHere, 0));
 
@@ -115,7 +115,7 @@ export function ChallengeModeScreen({
     if (unmasteredHere === 0) {
       Alert.alert(
         'No unmastered questions',
-        `You have nothing left to learn at ${rank.name}. Master any wrong questions in the Review tab to finish this rank.`,
+        `You have nothing left to learn at ${rankName}. Master any wrong questions in the Review tab to finish this rank.`,
         [
           { text: 'Open Review', onPress: () => onTabChange?.('review') },
           { text: 'Close', style: 'cancel' },
@@ -123,7 +123,7 @@ export function ChallengeModeScreen({
       );
       return;
     }
-    onStartChallengeGame?.('challenge', effectiveSetSize, diff);
+    onStartChallengeGame?.('challenge', effectiveSetSize, rankIdx);
   };
 
   return (
@@ -134,7 +134,7 @@ export function ChallengeModeScreen({
     >
       <View style={[styles.card, styles.rankCard]}>
         <Text style={styles.rankLabel}>Current Rank</Text>
-        <Text style={styles.rankName}>{rank.name}</Text>
+        <Text style={styles.rankName}>{rankName}</Text>
         <View style={styles.progressRow}>
           <View style={[styles.progressTrack, { flex: 1 }]}>
             <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
@@ -183,7 +183,7 @@ export function ChallengeModeScreen({
         ))}
         {unmasteredHere > 0 && unmasteredHere < setSize && (
           <Text style={styles.pickerCaption}>
-            Only {unmasteredHere} unmastered questions left at {rank.name} — your set will be capped.
+            Only {unmasteredHere} unmastered questions left at {rankName} — your set will be capped.
           </Text>
         )}
       </View>
@@ -201,16 +201,21 @@ export function ChallengeModeScreen({
 
       <View style={[styles.card, styles.allRanksCard]}>
         <Text style={styles.allRanksTitle}>All ranks</Text>
-        {(['easy', 'medium', 'hard'] as ChallengeDifficulty[]).map((d) => {
-          const s = stats.find((x) => x.difficulty === d);
-          const r = CHALLENGE_RANKS[d];
-          const p = difficultyProgress(s);
+        {Array.from({ length: MASTERY_RANK_COUNT }, (_, idx) => {
+          const name = MASTERY_RANKS[idx];
+          const s = rankStats.find((x) => x.rankIndex === idx);
+          const inRank = s?.mastered ?? 0;
+          const total = s?.totalQuestions ?? 100;
+          const p = rankProgressFromStats(s);
+          const isCurrentRank = idx === rankIdx;
           return (
-            <View key={d} style={styles.rankRow}>
+            <View key={name} style={styles.rankRow}>
               <View style={styles.rankRowHead}>
-                <Text style={styles.rankRowName}>{r.name}</Text>
+                <Text style={[styles.rankRowName, isCurrentRank && styles.rankRowNameCurrent]}>
+                  {name}
+                </Text>
                 <Text style={styles.rankRowCaption}>
-                  {s ? `${s.mastered}/${s.totalQuestions}` : '—'}
+                  {s ? `${inRank}/${total}` : '—'}
                 </Text>
               </View>
               <View style={styles.progressTrackSmall}>
@@ -427,6 +432,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#3a3a3a',
     letterSpacing: 0.2,
+  },
+  rankRowNameCurrent: {
+    fontWeight: '700',
+    color: '#8a6a3a',
   },
   rankRowCaption: {
     fontSize: 11,

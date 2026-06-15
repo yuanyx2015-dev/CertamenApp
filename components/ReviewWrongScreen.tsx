@@ -13,7 +13,6 @@ import { getAllWrongQuestions } from '../services/questionReviewService';
 import { ButtonDot } from './ButtonDot';
 import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
-import type { ChallengeDifficulty } from '../lib/challengeRanks';
 
 /**
  * Format a wrong-question count: < 1000 stays as a plain integer;
@@ -37,7 +36,7 @@ export function ReviewWrongScreen({
   onStartChallengeGame?: (
     mode: ChallengeGameMode,
     setSize: number,
-    difficulty?: ChallengeDifficulty
+    rankIndex?: number
   ) => void;
 }) {
   const [isLoading, setIsLoading] = useState(true);

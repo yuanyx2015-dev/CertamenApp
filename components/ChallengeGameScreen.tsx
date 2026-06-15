@@ -13,15 +13,12 @@ import Svg, { Path } from 'react-native-svg';
 import { getCurrentUser } from '../services/authService';
 import { bumpUserStreak } from '../services/userStatsService';
 import {
-  getUnmasteredQuestions,
+  getRankPoolQuestions,
   masterQuestion,
 } from '../services/userMasteredService';
 import { getAllWrongQuestions, markQuestionAsWrong } from '../services/questionReviewService';
 import { recordPassedQuestion } from '../services/userPassedService';
 import type { Question } from '../services/questionService';
-import type {
-  ChallengeDifficulty,
-} from '../lib/challengeRanks';
 import type { MainTabId } from './MainTabsScreen';
 import { FeedbackOverlay, type FeedbackOverlayHandle } from './RomanFeedback';
 import { ButtonDot } from './ButtonDot';
@@ -33,8 +30,8 @@ export type ChallengeGameMode = 'challenge' | 'review';
 export interface ChallengeGameConfig {
   mode: ChallengeGameMode;
   setSize: number;
-  /** Required for 'challenge' mode; ignored in 'review' mode (which spans all difficulties). */
-  difficulty?: ChallengeDifficulty;
+  /** Required for 'challenge' mode; ignored in 'review' mode. */
+  rankIndex?: number;
 }
 
 interface ShuffledOption {
@@ -125,7 +122,7 @@ export function ChallengeGameScreen({
   onNavigate?: (screen: string) => void;
   onTabChange?: (tab: MainTabId) => void;
   /** Restart with a brand-new pool (used by "Another Set" button). */
-  onStartGame?: (mode: ChallengeGameMode, setSize: number, difficulty?: ChallengeDifficulty) => void;
+  onStartGame?: (mode: ChallengeGameMode, setSize: number, rankIndex?: number) => void;
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -177,16 +174,16 @@ export function ChallengeGameScreen({
       let pool: Question[] = [];
       try {
         if (config.mode === 'challenge') {
-          if (!config.difficulty) {
+          if (config.rankIndex === undefined) {
             if (!cancelled) {
-              setLoadError('Missing difficulty for challenge.');
+              setLoadError('Missing rank for challenge.');
               setIsLoading(false);
             }
             return;
           }
-          const { data, error } = await getUnmasteredQuestions(
+          const { data, error } = await getRankPoolQuestions(
             user.id,
-            config.difficulty,
+            config.rankIndex,
             config.setSize
           );
           if (error) throw error;
@@ -209,7 +206,7 @@ export function ChallengeGameScreen({
       if (pool.length === 0) {
         setLoadError(
           config.mode === 'challenge'
-            ? 'No unmastered questions left at this difficulty. Try Review or pick another difficulty.'
+            ? 'No unmastered questions left in this rank. Try Review or advance to the next rank.'
             : 'No wrong questions to review. Take a Challenge set first!'
         );
         setIsLoading(false);
@@ -224,7 +221,7 @@ export function ChallengeGameScreen({
     return () => {
       cancelled = true;
     };
-  }, [config.mode, config.setSize, config.difficulty]);
+  }, [config.mode, config.setSize, config.rankIndex]);
 
   // ----- HOLD TIMER CLEANUP -----
   useEffect(() => {
@@ -409,7 +406,7 @@ export function ChallengeGameScreen({
           <TouchableOpacity
             style={styles.primaryBtn}
             onPress={() =>
-              onStartGame?.(config.mode, config.setSize, config.difficulty)
+              onStartGame?.(config.mode, config.setSize, config.rankIndex)
             }
             activeOpacity={0.85}
           >
