@@ -23,6 +23,7 @@ export function MainTabsScreen({
   isAuthenticated,
   onLeaveGuestMode,
   onStartChallengeGame,
+  onLogout,
 }: {
   activeTab: MainTabId;
   onTabChange: (tab: MainTabId) => void;
@@ -39,6 +40,7 @@ export function MainTabsScreen({
     setSize: number,
     rankIndex?: number
   ) => void;
+  onLogout?: () => void;
 }) {
   const handleTabPress = (tab: MainTabId) => {
     if (tab === 'review' && (isGuestMode || !isAuthenticated)) {
@@ -61,6 +63,7 @@ export function MainTabsScreen({
             isGuestMode={isGuestMode}
             isAuthenticated={isAuthenticated}
             onLeaveGuestMode={onLeaveGuestMode}
+            onLogout={onLogout}
           />
         );
       case 'challenge':

@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { MainMenuScreen } from './MainMenuScreen';
 import { LaurelBranches } from './LaurelBranches';
 import { MeanderBorder } from './MeanderBorder';
-import { ProfileStatsScreen } from './ProfileStatsScreen';
 import { MatchSelectionScreen } from './MatchSelectionScreen';
 import { FriendlyMatchScreen } from './FriendlyMatchScreen';
 import { RandomMatchScreen } from './RandomMatchScreen';
@@ -224,21 +222,6 @@ export function RomanBackground() {
         return (
           <SimulationMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />
         );
-      case 'profile':
-        return isAuthenticated ? (
-          <ProfileStatsScreen
-            onNavigate={handleNavigate}
-            previousScreen={previousScreen.current}
-            onLogout={handleLogout}
-          />
-        ) : (
-          <MainMenuScreen
-            onNavigate={handleNavigate}
-            isGuestMode={isGuestMode}
-            isAuthenticated={isAuthenticated}
-            onLeaveGuestMode={handleLeaveGuestMode}
-          />
-        );
       case 'settings':
         return (
           <SettingsScreen
@@ -301,6 +284,7 @@ export function RomanBackground() {
             isAuthenticated={isAuthenticated}
             onLeaveGuestMode={handleLeaveGuestMode}
             onStartChallengeGame={handleStartChallengeGame}
+            onLogout={handleLogout}
           />
         );
     }

@@ -8,14 +8,16 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Modal,
 } from 'react-native';
-import { getCurrentUser } from '../services/authService';
+import { getCurrentUser, signOut } from '../services/authService';
 import {
   getOrCreateUserStats,
   expireStreakIfMissed,
   type UserStats,
 } from '../services/userStatsService';
-import { getProfileByEmail } from '../services/profileService';
+import { getProfileByEmail, deleteAccount } from '../services/profileService';
+import { clearAllLocalUserSettings } from '../services/userSettingsService';
 import {
   getRankStats,
   getMasteredCount,
@@ -113,12 +115,14 @@ export function InformationScreen({
   onTabChange,
   isGuestMode,
   isAuthenticated,
+  onLogout,
 }: {
   onNavigate?: (screen: string) => void;
   onTabChange?: (tab: MainTabId) => void;
   isGuestMode?: boolean;
   isAuthenticated?: boolean;
   onLeaveGuestMode?: () => void;
+  onLogout?: () => void;
 }) {
   const [userName, setUserName] = useState('—');
   const [rankName, setRankName] = useState('—');
@@ -129,6 +133,60 @@ export function InformationScreen({
   const [unmasteredCount, setUnmasteredCount] = useState<string | number>('—');
   const [wrongCount, setWrongCount] = useState<string | number>('—');
   const [isLoading, setIsLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const user = await getCurrentUser();
+      if (!user) {
+        Alert.alert('Error', 'Could not verify user identity.', [{ text: 'OK' }]);
+        setIsDeleting(false);
+        setShowDeleteModal(false);
+        return;
+      }
+
+      try {
+        await clearAllLocalUserSettings(user.id);
+      } catch (storageError) {
+        console.warn('Error clearing local settings:', storageError);
+      }
+
+      const { error: deleteError } = await deleteAccount();
+      if (deleteError) {
+        console.error('Delete account error details:', deleteError);
+        Alert.alert(
+          'Error',
+          `Failed to delete account: ${deleteError.message || 'Unknown error'}. Please try again or contact support.`,
+          [{ text: 'OK' }]
+        );
+        setIsDeleting(false);
+        setShowDeleteModal(false);
+        return;
+      }
+
+      await signOut();
+      setShowDeleteModal(false);
+      onLogout?.();
+    } catch (error: any) {
+      console.error('Error during account deletion:', error);
+      Alert.alert(
+        'Error',
+        `An unexpected error occurred: ${error.message || 'Unknown error'}. Please try again.`,
+        [{ text: 'OK' }]
+      );
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const handleLogoutPress = () => {
+    Alert.alert('Log Out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log Out', style: 'destructive', onPress: () => onLogout?.() },
+    ]);
+  };
 
   const loadData = useCallback(async () => {
     if (!isAuthenticated || isGuestMode) {
@@ -287,6 +345,66 @@ export function InformationScreen({
           Browse by category &middot; ask AI for an explanation
         </Text>
       </TouchableOpacity>
+
+      {isAuthenticated && !isGuestMode && (
+        <View style={styles.accountSection}>
+          <TouchableOpacity
+            style={styles.accountBtn}
+            onPress={handleLogoutPress}
+            activeOpacity={0.85}
+          >
+            <ButtonDot />
+            <Text style={styles.accountBtnText}>Log Out</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            onPress={() => setShowDeleteModal(true)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.deleteBtnText}>Delete Account</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !isDeleting && setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Account?</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete your account? All of your information, including your
+              score, rank, and progress will be permanently lost. This action cannot be undone.
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmDeleteButton]}
+                onPress={handleDeleteAccount}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.confirmDeleteButtonText}>Delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -474,5 +592,103 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8a6a3a',
     letterSpacing: 0.2,
+  },
+  accountSection: {
+    marginTop: 6,
+    gap: 8,
+  },
+  accountBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.45)',
+    alignItems: 'center',
+  },
+  accountBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3a3a3a',
+    letterSpacing: 0.4,
+  },
+  deleteBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(160, 31, 79, 0.4)',
+    alignItems: 'center',
+  },
+  deleteBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#a01f4f',
+    letterSpacing: 0.4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#3a3a3a',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: '#6a6a6a',
+    lineHeight: 22,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  cancelButton: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  cancelButtonText: {
+    color: '#3a3a3a',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmDeleteButton: {
+    backgroundColor: '#d32f2f',
+  },
+  confirmDeleteButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
