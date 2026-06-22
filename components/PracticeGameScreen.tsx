@@ -11,8 +11,6 @@ import {
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
 import { FeedbackOverlay } from './RomanFeedback';
 import type { FeedbackOverlayHandle } from './RomanFeedback';
-import { ButtonDot } from './ButtonDot';
-
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
 
@@ -597,7 +595,6 @@ export function PracticeGameScreen({
             style={styles.restartButton}
             onPress={() => onNavigate?.('main')}
           >
-            <ButtonDot color="#fff" />
             <Text style={styles.restartButtonText}>Back to Menu</Text>
           </TouchableOpacity>
         </View>
@@ -628,7 +625,6 @@ export function PracticeGameScreen({
                 style={styles.signInPromptButton}
                 onPress={() => onNavigate?.('login')}
               >
-                <ButtonDot color="#fff" />
                 <Text style={styles.signInPromptButtonText}>Sign In</Text>
               </TouchableOpacity>
             </View>
@@ -721,7 +717,6 @@ export function PracticeGameScreen({
               setStatusText('Ready...');
             }}
           >
-            <ButtonDot color="#fff" />
             <Text style={styles.restartButtonText}>Try Again</Text>
           </TouchableOpacity>
 
@@ -729,7 +724,6 @@ export function PracticeGameScreen({
             style={styles.backButton}
             onPress={() => onNavigate?.('main')}
           >
-            <ButtonDot />
             <Text style={styles.backButtonText}>Back to Menu</Text>
           </TouchableOpacity>
         </View>
@@ -748,7 +742,6 @@ export function PracticeGameScreen({
             onPress={() => onNavigate?.('login')}
             activeOpacity={0.7}
           >
-            <ButtonDot color="#c9a961" />
             <Text style={styles.guestSignInButtonText}>Sign In</Text>
           </TouchableOpacity>
         </View>
@@ -877,7 +870,6 @@ export function PracticeGameScreen({
             style={styles.nextBtn}
             onPress={nextQuestion}
           >
-            <ButtonDot color="#fff" />
             <Text style={styles.nextBtnText}>Next Question →</Text>
           </TouchableOpacity>
         )}
@@ -1144,7 +1136,7 @@ const styles = StyleSheet.create({
   restartButton: {
     paddingHorizontal: 40,
     paddingVertical: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 2,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 8,
@@ -1166,7 +1158,7 @@ const styles = StyleSheet.create({
   backButton: {
     paddingHorizontal: 40,
     paddingVertical: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 2,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 8,
@@ -1202,7 +1194,7 @@ const styles = StyleSheet.create({
   guestSignInButton: {
     paddingHorizontal: 16,
     paddingVertical: 6,
-    backgroundColor: 'rgba(201, 169, 97, 0.3)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderRadius: 6,
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.5)',
@@ -1227,7 +1219,7 @@ const styles = StyleSheet.create({
   signInPromptButton: {
     paddingHorizontal: 32,
     paddingVertical: 12,
-    backgroundColor: 'rgba(201, 169, 97, 0.3)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderRadius: 8,
     borderWidth: 2,
     borderColor: 'rgba(201, 169, 97, 0.5)',

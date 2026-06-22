@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getAllWrongQuestions } from '../services/questionReviewService';
-import { ButtonDot } from './ButtonDot';
 import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
 
@@ -72,7 +71,6 @@ export function ReviewWrongScreen({
           onPress={() => onNavigate?.('login')}
           activeOpacity={0.85}
         >
-          <ButtonDot />
           <Text style={styles.signInBtnText}>Sign In</Text>
         </TouchableOpacity>
       </View>
@@ -127,7 +125,6 @@ export function ReviewWrongScreen({
         onPress={handleStart}
         activeOpacity={0.85}
       >
-          <ButtonDot color="#fff" />
           <Text style={styles.startBtnText}>
             {wrongCount === 0 ? 'No wrong questions' : 'Start review session'}
           </Text>
@@ -173,7 +170,7 @@ const styles = StyleSheet.create({
   },
   signInBtn: {
     marginTop: 12,
-    backgroundColor: 'rgba(201, 169, 97, 0.3)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.55)',
     paddingHorizontal: 24,

@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { PracticeCategorySessionPicker } from './PracticeCategorySessionPicker';
-import { ButtonDot } from './ButtonDot';
 
 /**
  * Practice Mode (story route): pick a category, then timed session using difficulty from Practice settings.
@@ -32,7 +31,6 @@ export function StoryModeScreen({
       >
         <View style={styles.settingsRow}>
           <TouchableOpacity style={styles.settingsButton} onPress={() => onNavigate?.('settings-practice')}>
-            <ButtonDot />
             <Text style={styles.settingsButtonText}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -46,7 +44,6 @@ export function StoryModeScreen({
 
         {showBackToMenu && (
           <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
-            <ButtonDot />
             <Text style={styles.backButtonText}>Back to menu</Text>
           </TouchableOpacity>
         )}
@@ -89,10 +86,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   settingsButton: {
-    paddingLeft: 36,
-    paddingRight: 20,
+    paddingHorizontal: 20,
     paddingVertical: 11,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 16,
@@ -147,7 +143,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 24,
     paddingVertical: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 12,

@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getCategoryStats } from '../services/questionReviewService';
-import { ButtonDot } from './ButtonDot';
-
 // Simple reusable animated button component
 function AnimatedCategoryButton({ 
   label, 
@@ -52,7 +50,7 @@ function AnimatedCategoryButton({
   const backgroundColor = bgColorAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [
-      isEnabled ? 'rgba(255, 255, 255, 0.6)' : 'rgba(200, 200, 200, 0.3)',
+      isEnabled ? 'rgba(201, 169, 97, 0.12)' : 'rgba(200, 200, 200, 0.3)',
       isEnabled ? 'rgba(201, 169, 97, 0.25)' : 'rgba(200, 200, 200, 0.3)'
     ],
   });
@@ -66,7 +64,6 @@ function AnimatedCategoryButton({
         activeOpacity={isEnabled ? 1 : 0.7}
       >
         <Animated.View style={[styles.categoryButton, { backgroundColor }]}>
-          <ButtonDot color={isEnabled ? '#c9a961' : '#aaa'} />
           <Text style={[styles.categoryLabel, !isEnabled && styles.disabledLabel]}>{label}</Text>
           {isEnabled && wrongQuestions > 0 && (
             <Text style={styles.wrongText}>{wrongQuestions} to review</Text>
@@ -175,7 +172,6 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
           onPress={() => onNavigate?.('main')}
           activeOpacity={0.85}
         >
-          <ButtonDot />
           <Text style={styles.backButtonText}>Back to Profile</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -286,7 +282,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
     borderRadius: 12,

@@ -29,7 +29,6 @@ import {
   rankProgressFromStats,
 } from '../lib/masteryRanks';
 import type { MainTabId } from './MainTabsScreen';
-import { ButtonDot } from './ButtonDot';
 
 function AnimatedCardButton({
   label,
@@ -63,14 +62,13 @@ function AnimatedCardButton({
 
   const backgroundColor = bgColorAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
+    outputRange: ['rgba(201, 169, 97, 0.12)', 'rgba(201, 169, 97, 0.25)'],
   });
 
   return (
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
       <TouchableOpacity onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={onPress} activeOpacity={1}>
         <Animated.View style={[styles.card, styles.dailyChallengeCard, innerStyle, { backgroundColor }]}>
-          <ButtonDot />
           <Text style={[styles.dailyChallengeText, textStyle]}>{label}</Text>
         </Animated.View>
       </TouchableOpacity>
@@ -336,7 +334,6 @@ export function InformationScreen({
         onPress={handleWrongQuestions}
         activeOpacity={0.85}
       >
-        <ButtonDot />
         <Text style={styles.wrongQuestionsBtnText}>Your Wrong Questions</Text>
         <Text style={styles.wrongQuestionsBtnSubtitle}>
           All wrong questions can be seen here, including ones from Practice Mode.
@@ -353,7 +350,6 @@ export function InformationScreen({
             onPress={handleLogoutPress}
             activeOpacity={0.85}
           >
-            <ButtonDot />
             <Text style={styles.accountBtnText}>Log Out</Text>
           </TouchableOpacity>
 
@@ -563,7 +559,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
     alignItems: 'center',
@@ -601,7 +597,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
     alignItems: 'center',
@@ -616,7 +612,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(160, 31, 79, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(160, 31, 79, 0.4)',
     alignItems: 'center',

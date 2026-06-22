@@ -21,8 +21,6 @@ import {
 } from '../lib/masteryRanks';
 import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
-import { ButtonDot } from './ButtonDot';
-
 const SET_SIZES = [10, 20, 30, 40, 50] as const;
 
 export function ChallengeModeScreen({
@@ -76,7 +74,6 @@ export function ChallengeModeScreen({
           onPress={() => onNavigate?.('login')}
           activeOpacity={0.85}
         >
-          <ButtonDot />
           <Text style={styles.signInBtnText}>Sign In</Text>
         </TouchableOpacity>
       </View>
@@ -166,7 +163,6 @@ export function ChallengeModeScreen({
                   onPress={() => setSetSize(n)}
                   activeOpacity={0.7}
                 >
-                  <ButtonDot color={selected ? '#8a6a3a' : '#c9a961'} />
                   <Text
                     style={[
                       styles.pickerChipText,
@@ -193,7 +189,6 @@ export function ChallengeModeScreen({
         onPress={handleStart}
         activeOpacity={0.85}
       >
-          <ButtonDot color="#fff" />
           <Text style={styles.startBtnText}>
             {unmasteredHere === 0 ? 'Rank Complete' : `Start ${effectiveSetSize}-question set`}
           </Text>
@@ -266,7 +261,7 @@ const styles = StyleSheet.create({
   },
   signInBtn: {
     marginTop: 12,
-    backgroundColor: 'rgba(201, 169, 97, 0.3)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.55)',
     paddingHorizontal: 24,
@@ -362,13 +357,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pickerChip: {
-    paddingLeft: 32,
-    paddingRight: 14,
+    paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     minWidth: 72,
     alignItems: 'center',
   },

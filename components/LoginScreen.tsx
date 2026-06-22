@@ -8,7 +8,6 @@ import {
   Alert,
 } from 'react-native';
 import { Mail, Apple } from './Icons';
-import { ButtonDot } from './ButtonDot';
 import { signInWithGoogle, signInWithApple } from '../services/authService';
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
@@ -105,7 +104,6 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
               disabled={isLoading}
               activeOpacity={0.7}
             >
-              <ButtonDot color="#9d856b" />
               <Text style={styles.guestButtonText}>Continue as Guest</Text>
             </TouchableOpacity>
           )}
@@ -161,7 +159,7 @@ function LoginButton({
 
   const backgroundColor = bgColorAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
+    outputRange: ['rgba(201, 169, 97, 0.12)', 'rgba(201, 169, 97, 0.25)'],
   });
 
   return (
@@ -179,7 +177,6 @@ function LoginButton({
         disabled={disabled}
       >
         <Animated.View style={[styles.button, { backgroundColor }]}>
-          <ButtonDot />
           <View style={styles.iconContainer}>{icon}</View>
           <Text style={styles.buttonText}>{label}</Text>
         </Animated.View>

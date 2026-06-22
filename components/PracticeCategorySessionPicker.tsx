@@ -1,7 +1,5 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { ButtonDot } from './ButtonDot';
-
 const PRACTICE_CATEGORIES: { key: string; label: string }[] = [
   { key: 'mythology', label: 'Mythology' },
   { key: 'history', label: 'History' },
@@ -31,7 +29,7 @@ function CategoryBox({ label, onPress }: { label: string; onPress: () => void })
 
   const backgroundColor = bgColorAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
+    outputRange: ['rgba(201, 169, 97, 0.12)', 'rgba(201, 169, 97, 0.25)'],
   });
 
   return (
@@ -43,7 +41,6 @@ function CategoryBox({ label, onPress }: { label: string; onPress: () => void })
         activeOpacity={1}
       >
         <Animated.View style={[styles.categoryButton, { backgroundColor }]}>
-          <ButtonDot />
           <Text style={styles.categoryLabel}>{label}</Text>
         </Animated.View>
       </TouchableOpacity>
