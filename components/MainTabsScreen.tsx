@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, PanResponder } from 'react-native';
 import { InformationScreen } from './InformationScreen';
 import { ChallengeModeScreen } from './ChallengeModeScreen';
 import { ReviewWrongScreen } from './ReviewWrongScreen';
@@ -14,6 +14,11 @@ const TABS: { id: MainTabId; label: string }[] = [
   { id: 'review', label: 'Review' },
   { id: 'practice', label: 'Practice' },
 ];
+
+/** Minimum horizontal travel (px) to register a deliberate tab swipe. */
+const SWIPE_DISTANCE_THRESHOLD = 60;
+/** A quick flick counts even if it's shorter, as long as it has enough velocity. */
+const SWIPE_VELOCITY_THRESHOLD = 0.3;
 
 export function MainTabsScreen({
   activeTab,
@@ -52,6 +57,37 @@ export function MainTabsScreen({
     }
     onTabChange(tab);
   };
+
+  // Move to the adjacent tab. Routed through handleTabPress so the Review
+  // tab's sign-in gating behaves the same as tapping the tab bar.
+  // Kept in a ref so the (once-created) PanResponder always sees fresh props.
+  const swipeToAdjacentTabRef = useRef<(direction: 1 | -1) => void>(() => {});
+  swipeToAdjacentTabRef.current = (direction) => {
+    const currentIndex = TABS.findIndex((t) => t.id === activeTab);
+    if (currentIndex === -1) return;
+    const nextIndex = currentIndex + direction;
+    if (nextIndex < 0 || nextIndex >= TABS.length) return;
+    handleTabPress(TABS[nextIndex].id);
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      // Only claim the gesture for clearly-horizontal drags so vertical
+      // scrolling and button taps inside panels keep working.
+      onMoveShouldSetPanResponder: (_evt, gesture) =>
+        Math.abs(gesture.dx) > 24 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5,
+      onPanResponderRelease: (_evt, gesture) => {
+        const { dx, vx } = gesture;
+        const fastFlick =
+          Math.abs(vx) > SWIPE_VELOCITY_THRESHOLD && Math.abs(dx) > 20;
+        if (dx <= -SWIPE_DISTANCE_THRESHOLD || (fastFlick && dx < 0)) {
+          swipeToAdjacentTabRef.current(1); // swipe left → next tab
+        } else if (dx >= SWIPE_DISTANCE_THRESHOLD || (fastFlick && dx > 0)) {
+          swipeToAdjacentTabRef.current(-1); // swipe right → previous tab
+        }
+      },
+    })
+  ).current;
 
   const panel = (() => {
     switch (activeTab) {
@@ -94,7 +130,9 @@ export function MainTabsScreen({
 
   return (
     <View style={styles.root}>
-      <View style={styles.panel}>{panel}</View>
+      <View style={styles.panel} {...panResponder.panHandlers}>
+        {panel}
+      </View>
       <View style={styles.tabBar}>
         {TABS.map((tab) => {
           const selected = activeTab === tab.id;
