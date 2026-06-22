@@ -21,9 +21,13 @@ import { recordPassedQuestion } from '../services/userPassedService';
 import type { Question } from '../services/questionService';
 import type { MainTabId } from './MainTabsScreen';
 import { FeedbackOverlay, type FeedbackOverlayHandle } from './RomanFeedback';
-import { ButtonDot } from './ButtonDot';
-
 const HOLD_TO_MASTER_MS = 1000;
+/** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
+const PRE_BUZZ_SECONDS = 10;
+/** After buzzing, the player has this many seconds to pick an answer. */
+const ANSWER_SECONDS = 5;
+/** Milliseconds per character for the typewriter stream. */
+const STREAM_INTERVAL_MS = 50;
 
 export type ChallengeGameMode = 'challenge' | 'review';
 
@@ -142,11 +146,31 @@ export function ChallengeGameScreen({
 
   const [isFinished, setIsFinished] = useState(false);
 
+  // ----- TYPEWRITER + BUZZ + TIMER (mirrors Practice mode) -----
+  const [displayedText, setDisplayedText] = useState('');
+  const [isBuzzed, setIsBuzzed] = useState(false);
+  const [statusText, setStatusText] = useState('');
+  const [timeRemaining, setTimeRemaining] = useState(ANSWER_SECONDS);
+  /** Countdown after the full question is shown; null = not running (still streaming or already buzzed/resolved). */
+  const [preBuzzSecondsRemaining, setPreBuzzSecondsRemaining] = useState<number | null>(null);
+  /** Bumped on each load/advance to (re)start the typewriter stream for the new head question. */
+  const [roundId, setRoundId] = useState(0);
+
   const holdAnim = useRef(new Animated.Value(0)).current;
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   /** Bumped once per game session on the first answer (server-side same-day no-op). */
   const streakBumpedRef = useRef(false);
   const feedbackRef = useRef<FeedbackOverlayHandle>(null);
+
+  const charIndexRef = useRef(0);
+  const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const answerTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const preBuzzIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const fullTextRef = useRef('');
+  const isBuzzedRef = useRef(false);
+  const isAnsweredRef = useRef(false);
+  const currentQuestionRef = useRef<Question | null>(null);
+  const userIdRef = useRef<string | null>(null);
 
   // ----- LOAD POOL -----
   useEffect(() => {
@@ -215,6 +239,7 @@ export function ChallengeGameScreen({
 
       setQueue(pool.map(buildQueueEntry));
       setIsLoading(false);
+      setRoundId((r) => r + 1);
     };
 
     void loadPool();
@@ -230,12 +255,50 @@ export function ChallengeGameScreen({
     };
   }, []);
 
+  // ----- KEEP REFS IN SYNC FOR TIMER CALLBACKS -----
+  useEffect(() => {
+    isBuzzedRef.current = isBuzzed;
+  }, [isBuzzed]);
+  useEffect(() => {
+    isAnsweredRef.current = isAnswered;
+  }, [isAnswered]);
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
+
   const current = queue[0];
   const totalAnswered = masteredCount + passedCount + wrongCount;
+
+  useEffect(() => {
+    currentQuestionRef.current = current?.question ?? null;
+  }, [current]);
+
+  // ----- TIMER HELPERS -----
+  const clearStreamTimer = () => {
+    if (streamIntervalRef.current) {
+      clearInterval(streamIntervalRef.current);
+      streamIntervalRef.current = null;
+    }
+  };
+  const clearAnswerTimer = () => {
+    if (answerTimerRef.current) {
+      clearInterval(answerTimerRef.current);
+      answerTimerRef.current = null;
+    }
+  };
+  const clearPreBuzzTimer = () => {
+    if (preBuzzIntervalRef.current) {
+      clearInterval(preBuzzIntervalRef.current);
+      preBuzzIntervalRef.current = null;
+    }
+  };
 
   // ----- RESET PER QUESTION -----
   const advanceToNext = useCallback(
     (next: QueueEntry[]) => {
+      clearStreamTimer();
+      clearAnswerTimer();
+      clearPreBuzzTimer();
       setQueue(next);
       setSelectedAnswer(null);
       setIsAnswered(false);
@@ -248,17 +311,155 @@ export function ChallengeGameScreen({
       if (next.length === 0) {
         setIsFinished(true);
       }
+      setRoundId((r) => r + 1);
     },
     [holdAnim]
   );
+
+  // ----- NO BUZZ IN TIME (pre-buzz countdown expired) → scored incorrect -----
+  const handleNoBuzzInTime = async () => {
+    if (isBuzzedRef.current || isAnsweredRef.current) return;
+    const q = currentQuestionRef.current;
+    const uid = userIdRef.current;
+    if (!q || !uid) return;
+    isAnsweredRef.current = true;
+
+    clearPreBuzzTimer();
+    setPreBuzzSecondsRemaining(null);
+    setIsAnswered(true);
+    setIsCorrect(false);
+    setSelectedAnswer(null);
+    setDisplayedText(fullTextRef.current);
+    setStatusText("Time's up! You didn't buzz in time.");
+    feedbackRef.current?.show('wrong');
+
+    if (!streakBumpedRef.current) {
+      streakBumpedRef.current = true;
+      void bumpUserStreak(uid);
+    }
+    await markQuestionAsWrong(uid, q.id);
+    setWrongCount((n) => n + 1);
+  };
+
+  // ----- POST-BUZZ ANSWER WINDOW EXPIRED → scored incorrect -----
+  const handleAnswerTimeUp = async () => {
+    if (isAnsweredRef.current) return;
+    const q = currentQuestionRef.current;
+    const uid = userIdRef.current;
+    if (!q || !uid) return;
+    isAnsweredRef.current = true;
+
+    clearAnswerTimer();
+    setIsAnswered(true);
+    setIsCorrect(false);
+    setSelectedAnswer(null);
+    setDisplayedText(fullTextRef.current);
+    setStatusText("Time's up! No answer selected.");
+    feedbackRef.current?.show('wrong');
+
+    if (!streakBumpedRef.current) {
+      streakBumpedRef.current = true;
+      void bumpUserStreak(uid);
+    }
+    await markQuestionAsWrong(uid, q.id);
+    setWrongCount((n) => n + 1);
+  };
+
+  const startPreBuzzCountdown = () => {
+    clearPreBuzzTimer();
+    setPreBuzzSecondsRemaining(PRE_BUZZ_SECONDS);
+    preBuzzIntervalRef.current = setInterval(() => {
+      setPreBuzzSecondsRemaining((prev) => {
+        if (prev === null || prev <= 0) return prev;
+        if (prev <= 1) {
+          clearPreBuzzTimer();
+          void handleNoBuzzInTime();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // ----- BUZZ -----
+  const handleBuzz = () => {
+    if (isBuzzedRef.current || isAnsweredRef.current) return;
+    isBuzzedRef.current = true;
+
+    clearStreamTimer();
+    clearPreBuzzTimer();
+    setPreBuzzSecondsRemaining(null);
+    setIsBuzzed(true);
+    setStatusText('Buzzed! Select your answer...');
+    setTimeRemaining(ANSWER_SECONDS);
+
+    answerTimerRef.current = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          clearAnswerTimer();
+          void handleAnswerTimeUp();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // ----- TYPEWRITER STREAM -----
+  const startStreaming = (text: string) => {
+    clearStreamTimer();
+    clearAnswerTimer();
+    clearPreBuzzTimer();
+    isBuzzedRef.current = false;
+    isAnsweredRef.current = false;
+    setIsBuzzed(false);
+    setDisplayedText('');
+    setPreBuzzSecondsRemaining(null);
+    setTimeRemaining(ANSWER_SECONDS);
+    setStatusText('Reading question...');
+    charIndexRef.current = 0;
+    fullTextRef.current = text;
+
+    streamIntervalRef.current = setInterval(() => {
+      if (charIndexRef.current < fullTextRef.current.length) {
+        setDisplayedText(fullTextRef.current.substring(0, charIndexRef.current + 1));
+        charIndexRef.current++;
+      } else {
+        clearStreamTimer();
+        setStatusText('Waiting for buzz...');
+        startPreBuzzCountdown();
+      }
+    }, STREAM_INTERVAL_MS);
+  };
+
+  // (Re)start the stream whenever a new head question is presented.
+  useEffect(() => {
+    if (isLoading || loadError || isFinished) return;
+    const head = queue[0];
+    if (!head) return;
+    startStreaming(head.question.question_text);
+    return () => {
+      clearStreamTimer();
+      clearAnswerTimer();
+      clearPreBuzzTimer();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roundId, isLoading, loadError, isFinished]);
 
   // ----- ANSWER -----
   const handleAnswerSelect = useCallback(
     async (option: ShuffledOption) => {
       if (isAnswered || !current || !userId) return;
+      isAnsweredRef.current = true;
+      if (answerTimerRef.current) {
+        clearInterval(answerTimerRef.current);
+        answerTimerRef.current = null;
+      }
       setIsAnswered(true);
       setIsCorrect(option.isCorrect);
       setSelectedAnswer(option.text);
+      setDisplayedText(fullTextRef.current);
+      setStatusText(option.isCorrect ? 'Correct!' : 'Wrong! Better luck next time.');
       feedbackRef.current?.show(option.isCorrect ? 'correct' : 'wrong');
 
       // Streak: bump once per session on the first answer. The DB function
@@ -369,7 +570,6 @@ export function ChallengeGameScreen({
             onPress={() => onNavigate?.('main')}
             activeOpacity={0.85}
           >
-            <ButtonDot />
             <Text style={styles.secondaryBtnText}>Back to Main</Text>
           </TouchableOpacity>
         </View>
@@ -410,7 +610,6 @@ export function ChallengeGameScreen({
             }
             activeOpacity={0.85}
           >
-            <ButtonDot color="#fff" />
             <Text style={styles.primaryBtnText}>Another Set</Text>
           </TouchableOpacity>
 
@@ -422,7 +621,6 @@ export function ChallengeGameScreen({
             }}
             activeOpacity={0.85}
           >
-            <ButtonDot />
             <Text style={styles.secondaryBtnText}>Review Questions</Text>
           </TouchableOpacity>
 
@@ -434,7 +632,6 @@ export function ChallengeGameScreen({
             }}
             activeOpacity={0.85}
           >
-            <ButtonDot />
             <Text style={styles.secondaryBtnText}>Return to Main</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -446,8 +643,28 @@ export function ChallengeGameScreen({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>{headerLabel}</Text>
-        <Text style={styles.headerCount}>★ {masteredCount} mastered</Text>
+        <View style={styles.headerColLeft}>
+          <Text style={styles.headerText}>{headerLabel}</Text>
+        </View>
+        <View
+          style={[
+            styles.headerColCenter,
+            (isBuzzed && !isAnswered) ||
+            (!isBuzzed && !isAnswered && preBuzzSecondsRemaining !== null)
+              ? styles.headerColCenterActive
+              : styles.headerColCenterHidden,
+          ]}
+        >
+          {isBuzzed && !isAnswered && (
+            <Text style={styles.headerTimerText}>Time: {timeRemaining}s</Text>
+          )}
+          {!isBuzzed && !isAnswered && preBuzzSecondsRemaining !== null && (
+            <Text style={styles.headerTimerText}>Buzz in: {preBuzzSecondsRemaining}s</Text>
+          )}
+        </View>
+        <View style={styles.headerColRight}>
+          <Text style={styles.headerCount}>★ {masteredCount} mastered</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -455,41 +672,79 @@ export function ChallengeGameScreen({
         contentContainerStyle={styles.gameAreaContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.questionBox}>
-          <Text style={styles.questionText}>{current.question.question_text}</Text>
+        <View style={styles.statusContainer}>
+          <Text style={[styles.statusText, isBuzzed && styles.statusTextBuzzed]}>
+            {statusText}
+          </Text>
         </View>
 
-        <View style={styles.optionsGrid}>
-          {current.options.map((option, i) => {
-            const selected = selectedAnswer === option.text;
-            const showCorrect = isAnswered && option.isCorrect;
-            const showWrong = isAnswered && selected && !option.isCorrect;
+        <View style={styles.questionBox}>
+          <Text style={styles.questionText}>
+            {displayedText}
+            {!isBuzzed && !isAnswered && charIndexRef.current < fullTextRef.current.length && (
+              <Text style={styles.cursor}>|</Text>
+            )}
+          </Text>
+        </View>
 
-            return (
+        {/* Buzz button (while reading / waiting to buzz) */}
+        {!isBuzzed && !isAnswered && (
+          <TouchableOpacity
+            style={styles.buzzerBtn}
+            onPress={handleBuzz}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.buzzerText}>BUZZ</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Options become tappable only after buzzing */}
+        {isBuzzed && !isAnswered && (
+          <View style={styles.optionsGrid}>
+            {current.options.map((option, i) => (
               <TouchableOpacity
                 key={i}
-                style={[
-                  styles.optionCard,
-                  showCorrect && styles.optionCorrect,
-                  showWrong && styles.optionWrong,
-                ]}
+                style={styles.optionCard}
                 onPress={() => handleAnswerSelect(option)}
-                disabled={isAnswered}
                 activeOpacity={0.75}
               >
-                <Text
+                <Text style={styles.optionText}>{option.text}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Answer feedback */}
+        {isAnswered && (
+          <View style={styles.optionsGrid}>
+            {current.options.map((option, i) => {
+              const selected = selectedAnswer === option.text;
+              const showCorrect = option.isCorrect;
+              const showWrong = selected && !option.isCorrect;
+
+              return (
+                <View
+                  key={i}
                   style={[
-                    styles.optionText,
-                    showCorrect && styles.optionTextCorrect,
-                    showWrong && styles.optionTextWrong,
+                    styles.optionCard,
+                    showCorrect && styles.optionCorrect,
+                    showWrong && styles.optionWrong,
                   ]}
                 >
-                  {option.text}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                  <Text
+                    style={[
+                      styles.optionText,
+                      showCorrect && styles.optionTextCorrect,
+                      showWrong && styles.optionTextWrong,
+                    ]}
+                  >
+                    {option.text}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {isAnswered && (
           <View style={styles.actionRow}>
@@ -500,7 +755,6 @@ export function ChallengeGameScreen({
                   onPress={handlePass}
                   activeOpacity={0.85}
                 >
-                  <ButtonDot color="#fff" />
                   <Text style={styles.continueBtnText}>Continue</Text>
                 </TouchableOpacity>
 
@@ -522,7 +776,6 @@ export function ChallengeGameScreen({
                 onPress={handleNextAfterWrong}
                 activeOpacity={0.85}
               >
-                <ButtonDot color="#fff" />
                 <Text style={styles.nextBtnText}>Next</Text>
               </TouchableOpacity>
             )}
@@ -538,7 +791,6 @@ export function ChallengeGameScreen({
           }}
           activeOpacity={0.7}
         >
-          <ButtonDot color="#8a6a3a" />
           <Text style={styles.footerLink}>Done learning? Click me</Text>
         </TouchableOpacity>
       </View>
@@ -582,13 +834,44 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: 'rgba(245, 239, 227, 0.85)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(201, 169, 97, 0.3)',
+  },
+  headerColLeft: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  headerColCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerColCenterHidden: {
+    width: 0,
+    minWidth: 0,
+    paddingHorizontal: 0,
+    overflow: 'hidden',
+  },
+  headerColCenterActive: {
+    flexShrink: 0,
+    minWidth: 88,
+    paddingHorizontal: 6,
+  },
+  headerColRight: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  headerTimerText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#c9a961',
   },
   headerText: {
     fontSize: 14,
@@ -599,6 +882,48 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6a6a6a',
     fontWeight: '500',
+  },
+  statusContainer: {
+    alignItems: 'center',
+    minHeight: 20,
+  },
+  statusText: {
+    fontSize: 12,
+    color: '#7a7a7a',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  statusTextBuzzed: {
+    color: '#c9a961',
+    fontWeight: '600',
+  },
+  cursor: {
+    fontWeight: 'bold',
+    fontSize: 20,
+    color: '#c9a961',
+  },
+  buzzerBtn: {
+    alignSelf: 'center',
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderWidth: 3,
+    borderColor: '#c9a961',
+    shadowColor: '#c9a961',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 8,
+  },
+  buzzerText: {
+    color: '#c9a961',
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: 2,
   },
   gameArea: {
     flex: 1,
@@ -794,7 +1119,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
   },
