@@ -1,0 +1,29 @@
+---
+description: Commit title formatting convention for this project
+alwaysApply: true
+---
+
+# Commit Title Format
+
+When proposing a git commit title, ALWAYS format it as a single
+slash-and-hyphen delimited string: a `Type/` prefix followed by a
+kebab-case description. No spaces, no trailing period.
+
+Format:
+
+```
+Type/short-kebab-case-description
+```
+
+Examples:
+
+```
+Fix/set-length-to-fixed-question-count-instead-of-mastered-only
+Add/apple-sign-in-support
+Update/review-screen-counter-label
+```
+
+- Use a capitalized verb prefix (`Fix`, `Add`, `Update`, `Remove`, `Refactor`, etc.).
+- Replace every space in the description with a hyphen.
+- Keep a longer body/summary as normal prose below the title when useful.
+- NEVER commit or push unless the user explicitly instructs it.

@@ -144,6 +144,9 @@ export function ChallengeGameScreen({
   const [passedCount, setPassedCount] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
 
+  /** Number of questions this set actually started with (<= setSize if the pool is small). */
+  const [initialPoolSize, setInitialPoolSize] = useState(0);
+
   const [isFinished, setIsFinished] = useState(false);
 
   // ----- TYPEWRITER + BUZZ + TIMER (mirrors Practice mode) -----
@@ -184,6 +187,7 @@ export function ChallengeGameScreen({
       setMasteredCount(0);
       setPassedCount(0);
       setWrongCount(0);
+      setInitialPoolSize(0);
 
       const user = await getCurrentUser();
       if (!user) {
@@ -238,6 +242,7 @@ export function ChallengeGameScreen({
       }
 
       setQueue(pool.map(buildQueueEntry));
+      setInitialPoolSize(pool.length);
       setIsLoading(false);
       setRoundId((r) => r + 1);
     };
@@ -491,10 +496,10 @@ export function ChallengeGameScreen({
     if (!current || !userId) return;
     await recordPassedQuestion(userId, current.question.id);
     setPassedCount((n) => n + 1);
-    // In-session re-queue: move to back of queue so the user finishes
-    // all other unmastered questions before seeing this one again.
-    const [head, ...rest] = queue;
-    advanceToNext([...rest, head]);
+    // Correct-but-not-mastered still consumes the question for this set.
+    // It stays unmastered server-side, so it can resurface in a future set,
+    // but it will NOT repeat within the current set.
+    advanceToNext(queue.slice(1));
   }, [advanceToNext, current, queue, userId]);
 
   // ----- MASTER (hold star) -----
@@ -533,12 +538,11 @@ export function ChallengeGameScreen({
 
   // ----- DERIVED -----
   const totalForHeader = useMemo(() => {
-    // Challenge mode: if user keeps passing, total may grow beyond setSize because
-    // pass re-queues, so show the larger of the two. Review mode: total is always
-    // the initial wrong-pool size we started with (locked at config.setSize).
-    if (config.mode === 'review') return config.setSize;
-    return Math.max(config.setSize, totalAnswered + queue.length);
-  }, [config.mode, config.setSize, queue.length, totalAnswered]);
+    // Every answer (right or wrong) consumes exactly one question, so the set
+    // is a fixed number of questions: the size of the pool we started with.
+    // Falls back to setSize before the pool has loaded.
+    return initialPoolSize || config.setSize;
+  }, [config.setSize, initialPoolSize]);
 
   const headerLabel = useMemo(() => {
     const current = Math.min(totalAnswered + 1, totalForHeader);
