@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Animated,
+  Easing,
+} from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
@@ -9,10 +19,62 @@ import {
   type UserSettings,
 } from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
+import { masterQuestion } from '../services/userMasteredService';
 import { FeedbackOverlay } from './RomanFeedback';
 import type { FeedbackOverlayHandle } from './RomanFeedback';
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
+/** Hold duration on the star to master a question. */
+const HOLD_TO_MASTER_MS = 1000;
+
+function StarIcon({ filled, progress }: { filled: number; progress: Animated.Value }) {
+  // `filled` is the static fill before any animation; `progress` (0..1) drives the live overlay.
+  return (
+    <View style={starStyles.wrap}>
+      {/* Outline (always visible) */}
+      <Svg width={48} height={48} viewBox="0 0 24 24">
+        <Path
+          d="M12 17.27l5.18 3.04-1.37-5.91 4.59-3.97-6.06-.52L12 4l-2.34 5.91-6.06.52 4.59 3.97-1.37 5.91L12 17.27z"
+          fill={filled > 0 ? '#c9a961' : 'rgba(255,255,255,0.6)'}
+          stroke="#9d856b"
+          strokeWidth={1}
+        />
+      </Svg>
+      {/* Animated fill overlay using opacity */}
+      <Animated.View
+        pointerEvents="none"
+        style={[starStyles.overlay, { opacity: progress }]}
+      >
+        <Svg width={48} height={48} viewBox="0 0 24 24">
+          <Path
+            d="M12 17.27l5.18 3.04-1.37-5.91 4.59-3.97-6.06-.52L12 4l-2.34 5.91-6.06.52 4.59 3.97-1.37 5.91L12 17.27z"
+            fill="#c9a961"
+            stroke="#7d6543"
+            strokeWidth={1}
+          />
+        </Svg>
+      </Animated.View>
+    </View>
+  );
+}
+
+const starStyles = StyleSheet.create({
+  wrap: {
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 interface PracticeGameScreenProps {
   onNavigate?: (screen: string) => void;
@@ -52,6 +114,8 @@ export function PracticeGameScreen({
   const [preBuzzSecondsRemaining, setPreBuzzSecondsRemaining] = useState<number | null>(null);
   const [isWrongQuestionsMode, setIsWrongQuestionsMode] = useState(false); // Track if using wrong questions mode
   const [isPreviouslyWrong, setIsPreviouslyWrong] = useState(false); // Track if current question was previously answered wrong
+  const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false); // Whether the current question was answered correctly
+  const [justMastered, setJustMastered] = useState(false); // Current question has been marked mastered
 
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -63,6 +127,8 @@ export function PracticeGameScreen({
   const isAnsweredRef = useRef(false);
   const questionsRef = useRef<Question[]>([]);
   const currentQuestionIndexRef = useRef(0);
+  const holdAnim = useRef(new Animated.Value(0)).current;
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * Practice Mode (settingsScope='practice') is intentionally read-only:
@@ -377,6 +443,13 @@ export function PracticeGameScreen({
     charIndexRef.current = 0;
     setStatusText('Reading question...');
     setIsPreviouslyWrong(false); // Reset indicator
+    setLastAnswerCorrect(false);
+    setJustMastered(false);
+    holdAnim.setValue(0);
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
 
     const currentQuestion = questions[currentQuestionIndex];
     fullTextRef.current = currentQuestion.question_text;
@@ -485,6 +558,7 @@ export function PracticeGameScreen({
 
     setIsAnswered(true);
     setSelectedAnswer(option.text);
+    setLastAnswerCorrect(option.isCorrect);
 
     // Show full text
     setDisplayedText(fullTextRef.current);
@@ -532,6 +606,44 @@ export function PracticeGameScreen({
     setCurrentQuestionIndex(currentQuestionIndex + 1);
   };
 
+  // Mark the current (correctly answered) question as mastered, then advance.
+  const fireMaster = async () => {
+    if (justMastered) return;
+    setJustMastered(true);
+    const user = await getCurrentUser();
+    const q = questions[currentQuestionIndex];
+    if (user && q) {
+      await masterQuestion(user.id, q.id);
+    }
+    nextQuestion();
+  };
+
+  const handleStarPressIn = () => {
+    if (!lastAnswerCorrect || justMastered) return;
+    holdAnim.setValue(0);
+    Animated.timing(holdAnim, {
+      toValue: 1,
+      duration: HOLD_TO_MASTER_MS,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start();
+    holdTimerRef.current = setTimeout(() => {
+      void fireMaster();
+    }, HOLD_TO_MASTER_MS);
+  };
+
+  const handleStarPressOut = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    Animated.timing(holdAnim, {
+      toValue: 0,
+      duration: 180,
+      useNativeDriver: false,
+    }).start();
+  };
+
   // Start first question on mount (only when questions are loaded)
   useEffect(() => {
     if (!isLoading && questions.length > 0) {
@@ -548,6 +660,10 @@ export function PracticeGameScreen({
         clearInterval(timerIntervalRef.current);
       }
       clearPreBuzzTimer();
+      if (holdTimerRef.current) {
+        clearTimeout(holdTimerRef.current);
+        holdTimerRef.current = null;
+      }
       
       // Reset game state for fresh start on next entry
       // This ensures a new game starts when user returns
@@ -864,14 +980,30 @@ export function PracticeGameScreen({
           </View>
         )}
 
-        {/* Next Button */}
+        {/* Action Buttons */}
         {isAnswered && (
-          <TouchableOpacity 
-            style={styles.nextBtn}
-            onPress={nextQuestion}
-          >
-            <Text style={styles.nextBtnText}>Next Question →</Text>
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={styles.nextBtn}
+              onPress={nextQuestion}
+            >
+              <Text style={styles.nextBtnText}>Next Question →</Text>
+            </TouchableOpacity>
+
+            {isPracticeMode && !isGuestMode && lastAnswerCorrect && (
+              <View style={styles.starWrap}>
+                <TouchableOpacity
+                  onPressIn={handleStarPressIn}
+                  onPressOut={handleStarPressOut}
+                  activeOpacity={1}
+                  style={styles.starPress}
+                >
+                  <StarIcon filled={0} progress={holdAnim} />
+                </TouchableOpacity>
+                <Text style={styles.starHint}>Hold to master</Text>
+              </View>
+            )}
+          </View>
         )}
       </ScrollView>
 
@@ -1090,8 +1222,29 @@ const styles = StyleSheet.create({
     color: '#7a2a2a',
     fontWeight: '600',
   },
-  nextBtn: {
+  actionRow: {
     marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  starWrap: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  starPress: {
+    width: 56,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  starHint: {
+    fontSize: 10,
+    color: '#6a6a6a',
+    letterSpacing: 0.3,
+  },
+  nextBtn: {
     paddingHorizontal: 40,
     paddingVertical: 12,
     backgroundColor: '#c9a961',
