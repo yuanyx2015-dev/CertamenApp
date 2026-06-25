@@ -1,4 +1,4 @@
-# CertamenApp — App Store promotional text (iOS)
+# CertamenPrep — App Store promotional text (iOS)
 
 ## Promotional Text (170 characters max - appears at top)
 
@@ -8,7 +8,7 @@ Master Latin and Roman knowledge with adaptive quizzes. Track your progress thro
 
 ### Main Description
 
-**CertamenApp** brings the excitement of Latin Certamen competition right to your fingertips. Whether you're preparing for your next tournament or simply passionate about ancient Rome, our comprehensive quiz platform helps you master mythology, history, language, literature, culture and life, and living Latin.
+**CertamenPrep** brings the excitement of Latin Certamen competition right to your fingertips. Whether you're preparing for your next tournament or simply passionate about ancient Rome, our comprehensive quiz platform helps you master mythology, history, language, literature, culture and life, and living Latin.
 
 **RANK-UP MODE**
 Test your knowledge with adaptive difficulty that grows with your skill. Questions stream character-by-character just like real Certamen. Buzz in within 15 seconds and choose from multiple-choice answers. Earn points based on difficulty: 10 for easy, 15 for medium, 25 for hard challenges.
@@ -98,7 +98,7 @@ https://github.com/yuanyx2015-dev/CertamenApp
 
 ## Privacy Policy Summary
 
-CertamenApp collects minimal user data:
+CertamenPrep collects minimal user data:
 - Authentication via Google OAuth
 - Quiz performance and progress statistics
 - No data is sold to third parties

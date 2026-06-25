@@ -1,4 +1,4 @@
-# CertamenApp 🏛️
+# CertamenPrep 🏛️
 
 A mobile learning application for practicing Certamen questions with a beautiful Roman-themed UI. Master your knowledge of Roman mythology, history, language, literature, and culture while tracking your progress through a gamified rank system.
 
@@ -12,7 +12,7 @@ A mobile learning application for practicing Certamen questions with a beautiful
 
 ## 📱 Overview
 
-CertamenApp is a comprehensive practice tool designed for students preparing for Certamen competitions. The app provides an engaging way to study through adaptive difficulty, progress tracking, and a dedicated review system for questions you've gotten wrong.
+CertamenPrep is a comprehensive practice tool designed for students preparing for Certamen competitions. The app provides an engaging way to study through adaptive difficulty, progress tracking, and a dedicated review system for questions you've gotten wrong.
 
 ---
 
@@ -232,7 +232,7 @@ See the [Profile Integration Guide](guides/PROFILE_INTEGRATION_GUIDE.md) for com
 
 ## 🎨 Design Philosophy
 
-CertamenApp features a **Roman-themed aesthetic** throughout:
+CertamenPrep features a **Roman-themed aesthetic** throughout:
 
 - **Color Palette**: 
   - Creamy beige backgrounds (`#f4e8d0`)

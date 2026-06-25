@@ -38,7 +38,7 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
       await getOrCreateUserStats(user.id);
       await getOrCreateUserSettings(user.id);
 
-      Alert.alert('Success!', 'Welcome to CertamenApp!');
+      Alert.alert('Success!', 'Welcome to CertamenPrep!');
       onLoginSuccess();
     }
   };
@@ -60,7 +60,7 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
       await getOrCreateUserStats(user.id);
       await getOrCreateUserSettings(user.id);
 
-      Alert.alert('Success!', 'Welcome to CertamenApp!');
+      Alert.alert('Success!', 'Welcome to CertamenPrep!');
       onLoginSuccess();
     }
   };
@@ -76,7 +76,7 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
           <View style={styles.dividerLine} />
         </View>
 
-        <Text style={styles.appName}>CertamenApp</Text>
+        <Text style={styles.appName}>CertamenPrep</Text>
       </View>
 
       <View style={styles.loginSection}>

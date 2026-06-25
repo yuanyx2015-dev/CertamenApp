@@ -1,7 +1,7 @@
 # Profile & Stats Integration Guide
 
 ## Overview
-This guide explains how profiles and user stats are now linked and synchronized in your CertamenApp.
+This guide explains how profiles and user stats are now linked and synchronized in your CertamenPrep.
 
 ---
 

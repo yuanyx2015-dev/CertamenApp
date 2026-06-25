@@ -1,11 +1,11 @@
-# CertamenApp Video Script
+# CertamenPrep Video Script
 
 ## Opening (0:00-0:20)
 
 **[VISUAL: App logo with Roman-themed background, laurel wreaths]**
 
 **NARRATOR:**
-"Welcome to CertamenApp—the ultimate quiz experience for Latin students and Roman history enthusiasts. Whether you're preparing for competition or just love ancient Rome, CertamenApp brings the excitement of Certamen right to your fingertips."
+"Welcome to CertamenPrep—the ultimate quiz experience for Latin students and Roman history enthusiasts. Whether you're preparing for competition or just love ancient Rome, CertamenPrep brings the excitement of Certamen right to your fingertips."
 
 ---
 
@@ -64,7 +64,7 @@
 **[VISUAL: Settings screen with various toggles and sliders]**
 
 **NARRATOR:**
-"Make CertamenApp yours. Adjust the number of questions per session, toggle 'wrong questions only' mode for targeted practice, and customize sound, notifications, and theme preferences—including dark mode for late-night study sessions."
+"Make CertamenPrep yours. Adjust the number of questions per session, toggle 'wrong questions only' mode for targeted practice, and customize sound, notifications, and theme preferences—including dark mode for late-night study sessions."
 
 ---
 
@@ -99,7 +99,7 @@
 **[VISUAL: Quick glimpse of app interface with smooth animations]**
 
 **NARRATOR:**
-"Built with React Native and powered by a robust Supabase backend, CertamenApp delivers a seamless experience. Our adaptive question system uses your performance data to serve you the right challenges at the right time. Every answer is tracked, every statistic is saved, and your progress is always secure."
+"Built with React Native and powered by a robust Supabase backend, CertamenPrep delivers a seamless experience. Our adaptive question system uses your performance data to serve you the right challenges at the right time. Every answer is tracked, every statistic is saved, and your progress is always secure."
 
 ---
 
@@ -108,12 +108,12 @@
 **[VISUAL: Return to main menu with all four game mode icons visible, Roman-themed borders]**
 
 **NARRATOR:**
-"From Miles to Legatus Legionis—from solo practice to multiplayer competition—CertamenApp is your complete platform for mastering Latin and Roman knowledge. Download today and start your journey to the top ranks."
+"From Miles to Legatus Legionis—from solo practice to multiplayer competition—CertamenPrep is your complete platform for mastering Latin and Roman knowledge. Download today and start your journey to the top ranks."
 
 **[VISUAL: App name and "Available Now" text with download call-to-action]**
 
 **NARRATOR:**
-"CertamenApp. Where knowledge meets glory."
+"CertamenPrep. Where knowledge meets glory."
 
 ---
 

@@ -1,10 +1,10 @@
-# Privacy Policy for CertamenApp
+# Privacy Policy for CertamenPrep
 
 Last updated: March 28, 2026
 
 ## Information We Collect
 
-CertamenApp collects the following information:
+CertamenPrep collects the following information:
 - Email address and name (via Google or Apple Sign-In)
 - Quiz performance and progress statistics
 - Practice session history

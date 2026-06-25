@@ -300,7 +300,7 @@ export function RomanBackground() {
           onPress={() => handleNavigate('main')}
           activeOpacity={0.6}
         >
-          <Text style={styles.titleText}>CertamenApp</Text>
+          <Text style={styles.titleText}>CertamenPrep</Text>
         </TouchableOpacity>
       )}
 
