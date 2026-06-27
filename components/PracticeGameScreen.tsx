@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Modal,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { getRandomQuestions, Question } from '../services/questionService';
@@ -19,7 +20,12 @@ import {
   type UserSettings,
 } from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
-import { masterQuestion } from '../services/userMasteredService';
+import { masterQuestion, getMasteredCount } from '../services/userMasteredService';
+import {
+  shouldShowReviewPrompt,
+  markReviewPromptShown,
+  confirmReview,
+} from '../lib/appReview';
 import { FeedbackOverlay } from './RomanFeedback';
 import type { FeedbackOverlayHandle } from './RomanFeedback';
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
@@ -116,6 +122,7 @@ export function PracticeGameScreen({
   const [isPreviouslyWrong, setIsPreviouslyWrong] = useState(false); // Track if current question was previously answered wrong
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false); // Whether the current question was answered correctly
   const [justMastered, setJustMastered] = useState(false); // Current question has been marked mastered
+  const [showReviewModal, setShowReviewModal] = useState(false); // Custom "rate the app" popup
 
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -682,6 +689,36 @@ export function PracticeGameScreen({
   // Check if game is over
   const isGameOver = questions.length > 0 && currentQuestionIndex >= questions.length;
 
+  // At the end of a real (scored) set, decide whether to show the custom "rate the app" popup:
+  // first set ever, then again each time mastered questions reach 10/20/30..., until the user rates.
+  useEffect(() => {
+    if (!(isGameOver && !isGuestMode && !isPracticeMode && !isWrongQuestionsMode)) return;
+    let cancelled = false;
+    (async () => {
+      const user = await getCurrentUser();
+      if (!user) return;
+      const { data: masteredCount } = await getMasteredCount(user.id);
+      const count = masteredCount ?? 0;
+      const show = await shouldShowReviewPrompt(count);
+      if (show && !cancelled) {
+        await markReviewPromptShown(count);
+        setShowReviewModal(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isGameOver, isGuestMode, isPracticeMode, isWrongQuestionsMode]);
+
+  const handleRateApp = async () => {
+    setShowReviewModal(false);
+    await confirmReview();
+  };
+
+  const handleReviewNotNow = () => {
+    setShowReviewModal(false);
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -843,6 +880,48 @@ export function PracticeGameScreen({
             <Text style={styles.backButtonText}>Back to Menu</Text>
           </TouchableOpacity>
         </View>
+
+        <Modal
+          visible={showReviewModal}
+          transparent
+          animationType="fade"
+          onRequestClose={handleReviewNotNow}
+        >
+          <View style={styles.reviewModalOverlay}>
+            <View style={styles.reviewModalContent}>
+              <TouchableOpacity
+                style={styles.reviewCloseButton}
+                onPress={handleReviewNotNow}
+                activeOpacity={0.7}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Text style={styles.reviewCloseButtonText}>✕</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.reviewModalTitle}>Please rate CertamenPrep</Text>
+              <Text style={styles.reviewModalMessage}>
+                Enjoying the app? Please keep supporting our free app by leaving us a rating or a
+                review!
+              </Text>
+
+              <TouchableOpacity
+                style={styles.reviewRateButton}
+                onPress={handleRateApp}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.reviewRateButtonText}>Rate</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.reviewNotNowButton}
+                onPress={handleReviewNotNow}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.reviewNotNowButtonText}>Maybe later</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -1387,5 +1466,88 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#3a3a3a',
     letterSpacing: 0.5,
+  },
+  reviewModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  reviewModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    paddingTop: 28,
+    width: '100%',
+    maxWidth: 400,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  reviewCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  reviewCloseButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#9a9a9a',
+    lineHeight: 20,
+  },
+  reviewModalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#3a3a3a',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  reviewModalMessage: {
+    fontSize: 15,
+    color: '#6a6a6a',
+    lineHeight: 22,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  reviewRateButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  reviewRateButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  reviewNotNowButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+  },
+  reviewNotNowButtonText: {
+    color: '#8a8a8a',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.4,
   },
 });
