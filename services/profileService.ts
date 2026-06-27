@@ -80,79 +80,6 @@ export const getOrCreateProfile = async (user: User): Promise<{ data: Profile | 
 };
 
 /**
- * Update an existing profile
- */
-export const updateProfile = async (
-  profileId: string,
-  updates: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>
-): Promise<{ data: Profile | null; error: any }> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', profileId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating profile:', error);
-      return { data: null, error };
-    }
-
-    return { data, error: null };
-  } catch (error: any) {
-    console.error('Unexpected error updating profile:', error);
-    return { data: null, error };
-  }
-};
-
-/**
- * Get profile by ID
- */
-export const getProfileById = async (profileId: string): Promise<{ data: Profile | null; error: any }> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', profileId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching profile:', error);
-      return { data: null, error };
-    }
-
-    return { data, error: null };
-  } catch (error: any) {
-    console.error('Unexpected error fetching profile:', error);
-    return { data: null, error };
-  }
-};
-
-/**
- * Get profile by username
- */
-export const getProfileByUsername = async (username: string): Promise<{ data: Profile | null; error: any }> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('username', username)
-      .single();
-
-    if (error) {
-      console.error('Error fetching profile by username:', error);
-      return { data: null, error };
-    }
-
-    return { data, error: null };
-  } catch (error: any) {
-    console.error('Unexpected error fetching profile by username:', error);
-    return { data: null, error };
-  }
-};
-
-/**
  * Get profile by email
  */
 export const getProfileByEmail = async (email: string): Promise<{ data: Profile | null; error: any }> => {
@@ -171,30 +98,6 @@ export const getProfileByEmail = async (email: string): Promise<{ data: Profile 
     return { data, error: null };
   } catch (error: any) {
     console.error('Unexpected error fetching profile by email:', error);
-    return { data: null, error };
-  }
-};
-
-/**
- * Search for a user by username (for friend matches)
- */
-export const searchUserByUsername = async (username: string): Promise<{ data: Profile | null; error: any }> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, username, display_name, avatar_url')
-      .eq('username', username)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return { data: null, error: { message: 'User not found' } };
-      }
-      return { data: null, error };
-    }
-
-    return { data, error: null };
-  } catch (error: any) {
     return { data: null, error };
   }
 };

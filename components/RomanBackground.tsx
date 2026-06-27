@@ -167,11 +167,6 @@ export function RomanBackground() {
     setCurrentScreen('main');
   };
 
-  const handleLeaveGuestMode = () => {
-    setIsGuestMode(false);
-    setCurrentScreen('login');
-  };
-
   /**
    * Launch a Challenge / Review game. Called from the two picker screens and from
    * the end-of-set "Another Set" button.
@@ -282,7 +277,6 @@ export function RomanBackground() {
             onNavigate={handleNavigate}
             isGuestMode={isGuestMode}
             isAuthenticated={isAuthenticated}
-            onLeaveGuestMode={handleLeaveGuestMode}
             onStartChallengeGame={handleStartChallengeGame}
             onLogout={handleLogout}
           />

@@ -119,19 +119,3 @@ export const updateSetting = async (
 ) => {
   return updateUserSettings(userId, { [settingName]: value }, scope);
 };
-
-export const resetUserSettings = async (userId: string, scope: UserSettingsScope = 'rank-up') => {
-  return updateUserSettings(
-    userId,
-    {
-      num_tossups: 20,
-      wrong_questions_only: false,
-      ...(scope === 'practice' ? { practice_session_difficulty: 'easy' as const } : {}),
-      sound_enabled: true,
-      notifications_enabled: true,
-      theme: 'light',
-      language: 'en',
-    },
-    scope
-  );
-};

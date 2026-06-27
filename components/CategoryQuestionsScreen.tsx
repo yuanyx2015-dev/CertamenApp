@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -42,6 +42,12 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
   const [customAnswer, setCustomAnswer] = useState<string | null>(null);
   const [isLoadingCustom, setIsLoadingCustom] = useState(false);
   const [remainingQuestions, setRemainingQuestions] = useState(AI_TUTOR_DAILY_LIMIT);
+
+  /** Mirrors expandedQuestionId so async AI handlers can detect a question switch. */
+  const expandedQuestionIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    expandedQuestionIdRef.current = expandedQuestionId;
+  }, [expandedQuestionId]);
 
   useEffect(() => {
     loadQuestions();
@@ -122,6 +128,10 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       correctAnswer,
       questionId
     );
+
+    // The user expanded a different question (or collapsed) while this was in
+    // flight — discard this stale response so it can't show under the wrong card.
+    if (expandedQuestionIdRef.current !== questionId) return;
 
     setIsLoadingExplanation(false);
 
@@ -485,12 +495,6 @@ const styles = StyleSheet.create({
     color: '#c9a961',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    fontWeight: '500',
-  },
-  timesWrongBadge: {
-    fontSize: 12,
-    color: '#d98080',
-    letterSpacing: 0.5,
     fontWeight: '500',
   },
   questionText: {

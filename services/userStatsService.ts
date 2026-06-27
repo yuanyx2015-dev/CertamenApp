@@ -39,16 +39,6 @@ export const getUserStats = async (userId: string) => {
   return { data, error: null };
 };
 
-// Get current user's stats
-export const getCurrentUserStats = async () => {
-  const user = await getCurrentUser();
-  if (!user) {
-    return { data: null, error: { message: 'No user logged in' } };
-  }
-
-  return getUserStats(user.id);
-};
-
 // Create initial user stats
 export const createUserStats = async (userId: string, username?: string, profileId?: string, email?: string) => {
   const { data, error } = await supabase
@@ -91,29 +81,6 @@ export const updateUserScore = async (userId: string, newScore: number, newRank:
 
   if (error) {
     console.error('Error updating user score:', error);
-    return { data: null, error };
-  }
-
-  return { data, error: null };
-};
-
-// Increment practice completed count
-export const incrementPracticeCompleted = async (userId: string) => {
-  // Get current stats
-  const { data: currentStats } = await getUserStats(userId);
-  if (!currentStats) return { data: null, error: { message: 'Stats not found' } };
-
-  const { data, error } = await supabase
-    .from('user_stats')
-    .update({
-      practice_completed: currentStats.practice_completed + 1
-    })
-    .eq('user_id', userId)
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error incrementing practice completed:', error);
     return { data: null, error };
   }
 

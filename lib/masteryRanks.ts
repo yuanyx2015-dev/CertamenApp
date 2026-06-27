@@ -36,6 +36,9 @@ export interface RankStats {
 
 /** Lowest rank that still has unmastered or wrong questions; else final rank. */
 export function currentRankFromStats(stats: RankStats[]): number {
+  // No populated ranks yet (new user, or stats failed to load): hold at the
+  // first rank rather than falsely reporting the final rank.
+  if (!stats.some((s) => s.totalQuestions > 0)) return 0;
   for (let idx = 0; idx < MASTERY_RANK_COUNT; idx++) {
     const s = stats.find((x) => x.rankIndex === idx);
     if (!s || s.totalQuestions <= 0) continue;

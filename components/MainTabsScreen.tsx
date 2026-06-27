@@ -26,7 +26,6 @@ export function MainTabsScreen({
   onNavigate,
   isGuestMode,
   isAuthenticated,
-  onLeaveGuestMode,
   onStartChallengeGame,
   onLogout,
 }: {
@@ -39,7 +38,6 @@ export function MainTabsScreen({
   ) => void;
   isGuestMode?: boolean;
   isAuthenticated?: boolean;
-  onLeaveGuestMode?: () => void;
   onStartChallengeGame?: (
     mode: ChallengeGameMode,
     setSize: number,
@@ -98,7 +96,6 @@ export function MainTabsScreen({
             onTabChange={onTabChange}
             isGuestMode={isGuestMode}
             isAuthenticated={isAuthenticated}
-            onLeaveGuestMode={onLeaveGuestMode}
             onLogout={onLogout}
           />
         );
@@ -117,7 +114,6 @@ export function MainTabsScreen({
           <ReviewWrongScreen
             isAuthenticated={isAuthenticated}
             onNavigate={onNavigate}
-            onTabChange={onTabChange}
             onStartChallengeGame={onStartChallengeGame}
           />
         );

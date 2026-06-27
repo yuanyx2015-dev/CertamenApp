@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getAllWrongQuestions } from '../services/questionReviewService';
-import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
 
 /**
@@ -31,7 +30,6 @@ export function ReviewWrongScreen({
 }: {
   isAuthenticated?: boolean;
   onNavigate?: (screen: string) => void;
-  onTabChange?: (tab: MainTabId) => void;
   onStartChallengeGame?: (
     mode: ChallengeGameMode,
     setSize: number,

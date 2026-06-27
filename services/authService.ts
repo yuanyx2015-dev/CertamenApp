@@ -99,58 +99,8 @@ export interface AuthResponse {
   error?: AuthError;
 }
 
-// Sign up a new user
-
-// export const signUp = async (
-//   email: string,
-//   password: string
-// ): Promise<AuthResponse> => {
-//   try {
-//     const { data, error } = await supabase.auth.signUp({
-//       email,
-//       password,
-//     });
-
-//     if (error) {
-//       return { error: { message: error.message } };
-//     }
-
-//     return {
-//       user: data.user || undefined,
-//       session: data.session || undefined,
-//     };
-//   } catch (error) {
-//     return {
-//       error: { message: 'An unexpected error occurred during sign up' },
-//     };
-//   }
-// };
-
-// // Sign in an existing user
-// export const signIn = async (
-//   email: string,
-//   password: string
-// ): Promise<AuthResponse> => {
-//   try {
-//     const { data, error } = await supabase.auth.signInWithPassword({
-//       email,
-//       password,
-//     });
-
-//     if (error) {
-//       return { error: { message: error.message } };
-//     }
-
-//     return {
-//       user: data.user || undefined,
-//       session: data.session || undefined,
-//     };
-//   } catch (error) {
-//     return {
-//       error: { message: 'An unexpected error occurred during sign in' },
-//     };
-//   }
-// };
+// Email/password auth is intentionally unsupported — the app is OAuth-only
+// (Google + Apple). See signInWithGoogle / signInWithApple below.
 
 // Sign in with Google OAuth
 export const signInWithGoogle = async (): Promise<AuthResponse> => {

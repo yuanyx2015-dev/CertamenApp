@@ -8,6 +8,7 @@ import {
   Animated,
   ActivityIndicator,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import {
@@ -123,21 +124,24 @@ export function SettingsScreen({
     setIsLoading(false);
   }, [isGuestMode, settingsScope]);
 
-  // Load settings on mount AND whenever component becomes visible
+  // Load on mount and whenever the user/scope changes. The screen remounts on
+  // each navigation, so a single effect keyed on loadSettingsData covers both
+  // initial load and re-entry without the double-fetch race of two effects.
   useEffect(() => {
     loadSettingsData();
-  }, []); // Run on mount
-
-  // Refresh data when navigating back to this screen
-  useEffect(() => {
-    if (previousScreen) {
-      // If we came from another screen, refresh the data
-      loadSettingsData();
-    }
-  }, [previousScreen, loadSettingsData]);
+  }, [loadSettingsData]);
 
   // Handle toggle change and save to database
   const handleWrongQuestionsToggle = async (value: boolean) => {
+    // A wrong-questions-only session needs at least one wrong question, otherwise
+    // the game would load an empty set. Block enabling it and explain why.
+    if (value && wrongQuestionCount === 0) {
+      Alert.alert(
+        'No wrong questions yet',
+        'You have no wrong questions to review right now. Practice or take a Challenge set first.'
+      );
+      return;
+    }
     setWrongQuestionsOnly(value);
     
     if (userId) {

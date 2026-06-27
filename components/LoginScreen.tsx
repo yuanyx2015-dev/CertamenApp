@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { Mail, Apple } from './Icons';
-import { signInWithGoogle, signInWithApple } from '../services/authService';
+import { signInWithGoogle, signInWithApple, type AuthResponse } from '../services/authService';
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
 import { getOrCreateProfile } from '../services/profileService';
@@ -21,20 +21,24 @@ interface LoginScreenProps {
 export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
   const [isLoading, setLoading] = useState(false);
 
-  const handleGoogleLogin = async () => {
+  // Shared flow for both providers: sign in, then bootstrap profile/stats/settings.
+  const runLogin = async (
+    providerLabel: 'Google' | 'Apple',
+    signIn: () => Promise<AuthResponse>
+  ) => {
     setLoading(true);
 
-    const { user, error } = await signInWithGoogle();
+    const { user, error } = await signIn();
 
     setLoading(false);
 
     if (error) {
-      Alert.alert('Google Login Failed', error.message);
+      Alert.alert(`${providerLabel} Login Failed`, error.message);
       return;
     }
     if (user) {
+      // Best-effort bootstrap; these are also created lazily on first use elsewhere.
       await getOrCreateProfile(user);
-
       await getOrCreateUserStats(user.id);
       await getOrCreateUserSettings(user.id);
 
@@ -43,27 +47,8 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
     }
   };
 
-  const handleAppleLogin = async () => {
-    setLoading(true);
-
-    const { user, error } = await signInWithApple();
-
-    setLoading(false);
-
-    if (error) {
-      Alert.alert('Apple Login Failed', error.message);
-      return;
-    }
-    if (user) {
-      await getOrCreateProfile(user);
-
-      await getOrCreateUserStats(user.id);
-      await getOrCreateUserSettings(user.id);
-
-      Alert.alert('Success!', 'Welcome to CertamenPrep!');
-      onLoginSuccess();
-    }
-  };
+  const handleGoogleLogin = () => runLogin('Google', signInWithGoogle);
+  const handleAppleLogin = () => runLogin('Apple', signInWithApple);
 
   return (
     <View style={styles.container}>

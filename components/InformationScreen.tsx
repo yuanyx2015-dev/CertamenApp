@@ -119,7 +119,6 @@ export function InformationScreen({
   onTabChange?: (tab: MainTabId) => void;
   isGuestMode?: boolean;
   isAuthenticated?: boolean;
-  onLeaveGuestMode?: () => void;
   onLogout?: () => void;
 }) {
   const [userName, setUserName] = useState('—');

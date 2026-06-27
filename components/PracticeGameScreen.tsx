@@ -10,7 +10,6 @@ import {
   Easing,
   Modal,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
@@ -28,59 +27,11 @@ import {
 } from '../lib/appReview';
 import { FeedbackOverlay } from './RomanFeedback';
 import type { FeedbackOverlayHandle } from './RomanFeedback';
+import { StarIcon } from './StarIcon';
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
 /** Hold duration on the star to master a question. */
 const HOLD_TO_MASTER_MS = 1000;
-
-function StarIcon({ filled, progress }: { filled: number; progress: Animated.Value }) {
-  // `filled` is the static fill before any animation; `progress` (0..1) drives the live overlay.
-  return (
-    <View style={starStyles.wrap}>
-      {/* Outline (always visible) */}
-      <Svg width={48} height={48} viewBox="0 0 24 24">
-        <Path
-          d="M12 17.27l5.18 3.04-1.37-5.91 4.59-3.97-6.06-.52L12 4l-2.34 5.91-6.06.52 4.59 3.97-1.37 5.91L12 17.27z"
-          fill={filled > 0 ? '#c9a961' : 'rgba(255,255,255,0.6)'}
-          stroke="#9d856b"
-          strokeWidth={1}
-        />
-      </Svg>
-      {/* Animated fill overlay using opacity */}
-      <Animated.View
-        pointerEvents="none"
-        style={[starStyles.overlay, { opacity: progress }]}
-      >
-        <Svg width={48} height={48} viewBox="0 0 24 24">
-          <Path
-            d="M12 17.27l5.18 3.04-1.37-5.91 4.59-3.97-6.06-.52L12 4l-2.34 5.91-6.06.52 4.59 3.97-1.37 5.91L12 17.27z"
-            fill="#c9a961"
-            stroke="#7d6543"
-            strokeWidth={1}
-          />
-        </Svg>
-      </Animated.View>
-    </View>
-  );
-}
-
-const starStyles = StyleSheet.create({
-  wrap: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
 
 interface PracticeGameScreenProps {
   onNavigate?: (screen: string) => void;
@@ -123,6 +74,8 @@ export function PracticeGameScreen({
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false); // Whether the current question was answered correctly
   const [justMastered, setJustMastered] = useState(false); // Current question has been marked mastered
   const [showReviewModal, setShowReviewModal] = useState(false); // Custom "rate the app" popup
+  /** Bumped by "Try Again" to re-run the loader with the SAME mode/settings. */
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -166,6 +119,9 @@ export function PracticeGameScreen({
     const loadQuestionsAndStats = async () => {
       setIsLoading(true);
       setLoadError(null);
+      // Always start a fresh set (covers the "Try Again" reload path too).
+      setCurrentQuestionIndex(0);
+      setSessionScore(0);
       
       // Load user stats and settings first (skip for guest mode)
       let currentRank = 'Miles';
@@ -327,7 +283,7 @@ export function PracticeGameScreen({
     };
     
     loadQuestionsAndStats();
-  }, [isGuestMode, fixedDifficulty, settingsScope, storyPracticeCategory]);
+  }, [isGuestMode, fixedDifficulty, settingsScope, storyPracticeCategory, reloadNonce]);
 
   // Shuffle function
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -677,15 +633,6 @@ export function PracticeGameScreen({
     };
   }, [currentQuestionIndex, isLoading, questions]);
 
-  // Additional cleanup on unmount to ensure fresh game on return
-  useEffect(() => {
-    return () => {
-      // This cleanup runs when user exits the practice game screen
-      // All state will be reset on next mount, ensuring a new game starts
-      console.log('Practice game ended - will start fresh on next entry');
-    };
-  }, []);
-
   // Check if game is over
   const isGameOver = questions.length > 0 && currentQuestionIndex >= questions.length;
 
@@ -785,90 +732,7 @@ export function PracticeGameScreen({
           
           <TouchableOpacity 
             style={styles.restartButton}
-            onPress={async () => {
-              // Reset game state
-              setCurrentQuestionIndex(0);
-              setSessionScore(0); // Reset session score
-              setQuestions([]);
-              setIsLoading(true);
-              
-              // Reload questions and stats for a fresh game
-              let currentRank = 'Miles';
-              let totalQuestions = 20; // Default
-              
-              if (!isGuestMode) {
-                const user = await getCurrentUser();
-                if (user) {
-                  const { data: stats } = await getOrCreateUserStats(user.id);
-                  if (stats) {
-                    setCumulativeScore(stats.score);
-                    setRank(stats.rank);
-                    currentRank = stats.rank;
-                  }
-                  
-                  // Get user settings for number of tossups
-                  const { data: settings } = await getOrCreateUserSettings(user.id, settingsScope);
-                  if (settings) {
-                    totalQuestions = settings.num_tossups;
-                  }
-                }
-              } else {
-                const { data: settings } = await getOrCreateUserSettings('guest', settingsScope);
-                if (settings) {
-                  totalQuestions = settings.num_tossups;
-                }
-              }
-              
-              // Get new questions based on current rank and settings
-              const distribution = getQuestionDistribution(currentRank, totalQuestions);
-              const allQuestions: Question[] = [];
-              const seenIds = new Set<string>(); // Prevent duplicates within this game
-              
-              try {
-                if (distribution.easy > 0) {
-                  const { data: easyQuestions } = await getRandomQuestions(undefined, 'easy', distribution.easy);
-                  if (easyQuestions) {
-                    easyQuestions.forEach(q => {
-                      if (!seenIds.has(q.id)) {
-                        allQuestions.push(q);
-                        seenIds.add(q.id);
-                      }
-                    });
-                  }
-                }
-                if (distribution.medium > 0) {
-                  const { data: mediumQuestions } = await getRandomQuestions(undefined, 'medium', distribution.medium);
-                  if (mediumQuestions) {
-                    mediumQuestions.forEach(q => {
-                      if (!seenIds.has(q.id)) {
-                        allQuestions.push(q);
-                        seenIds.add(q.id);
-                      }
-                    });
-                  }
-                }
-                if (distribution.hard > 0) {
-                  const { data: hardQuestions } = await getRandomQuestions(undefined, 'hard', distribution.hard);
-                  if (hardQuestions) {
-                    hardQuestions.forEach(q => {
-                      if (!seenIds.has(q.id)) {
-                        allQuestions.push(q);
-                        seenIds.add(q.id);
-                      }
-                    });
-                  }
-                }
-                
-                if (allQuestions.length > 0) {
-                  setQuestions(shuffleArray(allQuestions));
-                }
-              } catch (error) {
-                console.error('Error reloading questions:', error);
-              }
-              
-              setIsLoading(false);
-              setStatusText('Ready...');
-            }}
+            onPress={() => setReloadNonce((n) => n + 1)}
           >
             <Text style={styles.restartButtonText}>Try Again</Text>
           </TouchableOpacity>

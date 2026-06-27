@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Animated,
   Alert,
 } from 'react-native';
 import { getCurrentUser } from '../services/authService';
@@ -200,7 +199,7 @@ export function ChallengeModeScreen({
           const name = MASTERY_RANKS[idx];
           const s = rankStats.find((x) => x.rankIndex === idx);
           const inRank = s?.mastered ?? 0;
-          const total = s?.totalQuestions ?? 100;
+          const total = s?.totalQuestions ?? 0;
           const p = rankProgressFromStats(s);
           const isCurrentRank = idx === rankIdx;
           return (

@@ -9,7 +9,6 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { getCurrentUser } from '../services/authService';
 import { bumpUserStreak } from '../services/userStatsService';
 import {
@@ -21,6 +20,7 @@ import { recordPassedQuestion } from '../services/userPassedService';
 import type { Question } from '../services/questionService';
 import type { MainTabId } from './MainTabsScreen';
 import { FeedbackOverlay, type FeedbackOverlayHandle } from './RomanFeedback';
+import { StarIcon } from './StarIcon';
 const HOLD_TO_MASTER_MS = 1000;
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
@@ -47,55 +47,6 @@ interface QueueEntry {
   question: Question;
   options: ShuffledOption[];
 }
-
-function StarIcon({ filled, progress }: { filled: number; progress: Animated.Value }) {
-  // `filled` is the static fill before any animation; `progress` (0..1) drives the live overlay.
-  return (
-    <View style={starStyles.wrap}>
-      {/* Outline (always visible) */}
-      <Svg width={48} height={48} viewBox="0 0 24 24">
-        <Path
-          d="M12 17.27l5.18 3.04-1.37-5.91 4.59-3.97-6.06-.52L12 4l-2.34 5.91-6.06.52 4.59 3.97-1.37 5.91L12 17.27z"
-          fill={filled > 0 ? '#c9a961' : 'rgba(255,255,255,0.6)'}
-          stroke="#9d856b"
-          strokeWidth={1}
-        />
-      </Svg>
-      {/* Animated fill overlay using opacity */}
-      <Animated.View
-        pointerEvents="none"
-        style={[starStyles.overlay, { opacity: progress }]}
-      >
-        <Svg width={48} height={48} viewBox="0 0 24 24">
-          <Path
-            d="M12 17.27l5.18 3.04-1.37-5.91 4.59-3.97-6.06-.52L12 4l-2.34 5.91-6.06.52 4.59 3.97-1.37 5.91L12 17.27z"
-            fill="#c9a961"
-            stroke="#7d6543"
-            strokeWidth={1}
-          />
-        </Svg>
-      </Animated.View>
-    </View>
-  );
-}
-
-const starStyles = StyleSheet.create({
-  wrap: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
 
 function shuffleArray<T>(arr: T[]): T[] {
   const copy = arr.slice();

@@ -16,13 +16,6 @@ export interface CategoryStats {
 }
 
 /**
- * Get all available question categories
- */
-export const getCategories = (): string[] => {
-  return ['mythology', 'history', 'language', 'literature', 'culture-life', 'living-latin'];
-};
-
-/**
  * Get statistics for all categories (total questions and wrong questions per category)
  */
 export const getCategoryStats = async (userId: string): Promise<{ data: CategoryStats[] | null; error: any }> => {
@@ -40,33 +33,6 @@ export const getCategoryStats = async (userId: string): Promise<{ data: Category
     return { data, error: null };
   } catch (error: any) {
     console.error('Unexpected error fetching category stats:', error);
-    return { data: null, error };
-  }
-};
-
-/**
- * Get all questions in a specific category
- */
-export const getQuestionsByCategory = async (
-  category: string,
-  limit: number = 100,
-  offset: number = 0
-): Promise<{ data: Question[] | null; error: any }> => {
-  try {
-    const { data, error } = await supabase.rpc('get_questions_by_category', {
-      p_category: category,
-      p_limit: limit,
-      p_offset: offset
-    });
-
-    if (error) {
-      console.error('Error fetching questions by category:', error);
-      return { data: null, error };
-    }
-
-    return { data, error: null };
-  } catch (error: any) {
-    console.error('Unexpected error fetching questions by category:', error);
     return { data: null, error };
   }
 };
@@ -155,49 +121,6 @@ export const markQuestionAsWrong = async (
 };
 
 /**
- * Mark a question as correct (remove from user_wrong_answers)
- */
-export const markQuestionAsCorrect = async (
-  userId: string,
-  questionId: string
-): Promise<{ error: any }> => {
-  try {
-    const { error } = await supabase
-      .from('user_wrong_answers')
-      .delete()
-      .eq('user_id', userId)
-      .eq('question_id', questionId);
-
-    if (error) {
-      console.error('Error removing wrong answer:', error);
-      return { error };
-    }
-
-    return { error: null };
-  } catch (error: any) {
-    console.error('Unexpected error marking question as correct:', error);
-    return { error };
-  }
-};
-
-/**
- * Toggle wrong status of a question
- * If question is in wrong_answers, remove it. Otherwise, add it.
- */
-export const toggleWrongStatus = async (
-  userId: string,
-  questionId: string,
-  isCurrentlyWrong: boolean
-): Promise<{ error: any }> => {
-  if (isCurrentlyWrong) {
-    return markQuestionAsCorrect(userId, questionId);
-  } else {
-    const result = await markQuestionAsWrong(userId, questionId);
-    return { error: result.error };
-  }
-};
-
-/**
  * Check if a question is marked as wrong for a user
  */
 export const isQuestionWrong = async (
@@ -223,39 +146,5 @@ export const isQuestionWrong = async (
     return { data: true, error: null };
   } catch (error: any) {
     return { data: false, error };
-  }
-};
-
-/**
- * Search questions by text (across all categories or specific category)
- */
-export const searchQuestions = async (
-  searchTerm: string,
-  category?: string,
-  limit: number = 50
-): Promise<{ data: Question[] | null; error: any }> => {
-  try {
-    let query = supabase
-      .from('questions')
-      .select('*')
-      .ilike('question_text', `%${searchTerm}%`);
-
-    if (category) {
-      query = query.eq('category', category);
-    }
-
-    query = query.limit(limit);
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error searching questions:', error);
-      return { data: null, error };
-    }
-
-    return { data, error: null };
-  } catch (error: any) {
-    console.error('Unexpected error searching questions:', error);
-    return { data: null, error };
   }
 };
