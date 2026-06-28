@@ -66,6 +66,25 @@ export const getWrongQuestionsByCategory = async (
 };
 
 /**
+ * Exact count of a user's wrong questions, via a HEAD count query (no row cap).
+ * Returns `error` so callers can distinguish "0 wrong" from "failed to load".
+ */
+export const getWrongCount = async (
+  userId: string
+): Promise<{ data: number; error: any }> => {
+  const { count, error } = await supabase
+    .from('user_wrong_answers')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error counting wrong questions:', error);
+    return { data: 0, error };
+  }
+  return { data: count ?? 0, error: null };
+};
+
+/**
  * Get all wrong questions for a user (all categories)
  */
 export const getAllWrongQuestions = async (

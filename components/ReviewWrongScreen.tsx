@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { getCurrentUser } from '../services/authService';
-import { getAllWrongQuestions } from '../services/questionReviewService';
+import { getWrongCount } from '../services/questionReviewService';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
 
 /**
@@ -38,6 +38,7 @@ export function ReviewWrongScreen({
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [wrongCount, setWrongCount] = useState(0);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
     if (!isAuthenticated) {
@@ -45,13 +46,19 @@ export function ReviewWrongScreen({
       return;
     }
     setIsLoading(true);
+    setLoadError(false);
     const user = await getCurrentUser();
     if (!user) {
+      setLoadError(true);
       setIsLoading(false);
       return;
     }
-    const { data } = await getAllWrongQuestions(user.id, 1000);
-    setWrongCount(data?.length ?? 0);
+    const { data, error } = await getWrongCount(user.id);
+    if (error) {
+      setLoadError(true);
+    } else {
+      setWrongCount(data);
+    }
     setIsLoading(false);
   }, [isAuthenticated]);
 
@@ -79,6 +86,20 @@ export function ReviewWrongScreen({
     return (
       <View style={[styles.container, styles.centerWrap]}>
         <ActivityIndicator size="large" color="#c9a961" />
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={[styles.container, styles.centerWrap]}>
+        <Text style={styles.title}>Review Questions</Text>
+        <Text style={styles.subtitle}>
+          We couldn't load your wrong questions. Check your connection and try again.
+        </Text>
+        <TouchableOpacity style={styles.signInBtn} onPress={load} activeOpacity={0.85}>
+          <Text style={styles.signInBtnText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }

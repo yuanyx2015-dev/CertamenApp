@@ -22,7 +22,7 @@ import {
   getRankStats,
   getMasteredCount,
 } from '../services/userMasteredService';
-import { getAllWrongQuestions } from '../services/questionReviewService';
+import { getWrongCount } from '../services/questionReviewService';
 import {
   MASTERY_RANKS,
   currentRankFromStats,
@@ -130,6 +130,7 @@ export function InformationScreen({
   const [unmasteredCount, setUnmasteredCount] = useState<string | number>('—');
   const [wrongCount, setWrongCount] = useState<string | number>('—');
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -200,9 +201,11 @@ export function InformationScreen({
     }
 
     setIsLoading(true);
+    setLoadError(false);
     try {
       const user = await getCurrentUser();
       if (!user) {
+        setLoadError(true);
         setIsLoading(false);
         return;
       }
@@ -216,30 +219,60 @@ export function InformationScreen({
       }
       setUserName(displayName);
 
-      // Read streak, resetting to 0 if the user missed a day.
-      const { data: stats } = await getOrCreateUserStats(user.id);
-      const liveStats = stats ? await expireStreakIfMissed(user.id) : null;
-      applyStreakFromStats(liveStats ?? stats);
+      // Track whether any fetch failed so we can surface a retry instead of
+      // silently showing zeros/lowest rank as if the user had no progress.
+      let hadError = false;
 
-      const [{ data: rankData }, { data: mastered }, { data: wrongQuestions }] = await Promise.all([
+      // Read streak, resetting to 0 if the user missed a day.
+      const { data: stats, error: statsError } = await getOrCreateUserStats(user.id);
+      if (statsError) {
+        hadError = true;
+        setStreak('—');
+        setHighStreak('—');
+      } else {
+        const liveStats = stats ? await expireStreakIfMissed(user.id) : null;
+        applyStreakFromStats(liveStats ?? stats);
+      }
+
+      const [rankRes, masteredRes, wrongRes] = await Promise.all([
         getRankStats(user.id),
         getMasteredCount(user.id),
-        getAllWrongQuestions(user.id, 1000),
+        getWrongCount(user.id),
       ]);
 
-      const totalMastered = mastered ?? 0;
-      setMasteredCount(totalMastered);
-      setWrongCount(wrongQuestions?.length ?? 0);
+      if (masteredRes.error) {
+        hadError = true;
+        setMasteredCount('—');
+      } else {
+        setMasteredCount(masteredRes.data ?? 0);
+      }
 
-      const rankStats = rankData ?? [];
-      const rankIdx = currentRankFromStats(rankStats);
-      const cur = rankStats.find((s) => s.rankIndex === rankIdx);
+      if (wrongRes.error) {
+        hadError = true;
+        setWrongCount('—');
+      } else {
+        setWrongCount(wrongRes.data);
+      }
 
-      setRankName(MASTERY_RANKS[rankIdx]);
-      setProgress(rankProgressFromStats(cur));
-      setUnmasteredCount(cur?.unmastered ?? 0);
+      if (rankRes.error) {
+        hadError = true;
+        setRankName('—');
+        setProgress(0);
+        setUnmasteredCount('—');
+      } else {
+        const rankStats = rankRes.data ?? [];
+        const rankIdx = currentRankFromStats(rankStats);
+        const cur = rankStats.find((s) => s.rankIndex === rankIdx);
+
+        setRankName(MASTERY_RANKS[rankIdx]);
+        setProgress(rankProgressFromStats(cur));
+        setUnmasteredCount(cur?.unmastered ?? 0);
+      }
+
+      setLoadError(hadError);
     } catch (e) {
       console.error('[InformationScreen] loadData error:', e);
+      setLoadError(true);
     } finally {
       setIsLoading(false);
     }
@@ -295,6 +328,14 @@ export function InformationScreen({
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
+      {loadError && (
+        <TouchableOpacity style={styles.errorBanner} onPress={loadData} activeOpacity={0.85}>
+          <Text style={styles.errorBannerText}>
+            Couldn't load your latest stats. Tap to retry.
+          </Text>
+        </TouchableOpacity>
+      )}
+
       <View style={[styles.card, styles.userCard]}>
         <Text style={styles.userNameText}>{userName}</Text>
         <Text style={styles.userRankText}>
@@ -414,6 +455,21 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
     width: '100%',
+  },
+  errorBanner: {
+    backgroundColor: 'rgba(176, 58, 46, 0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(176, 58, 46, 0.45)',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  errorBannerText: {
+    color: '#8a2a22',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
   scrollContent: {
     paddingVertical: 4,
