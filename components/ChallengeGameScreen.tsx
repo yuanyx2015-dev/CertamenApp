@@ -21,7 +21,7 @@ import type { Question } from '../services/questionService';
 import type { MainTabId } from './MainTabsScreen';
 import { FeedbackOverlay, type FeedbackOverlayHandle } from './RomanFeedback';
 import { StarIcon } from './StarIcon';
-const HOLD_TO_MASTER_MS = 1000;
+const HOLD_TO_MASTER_MS = 500;
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
 /** After buzzing, the player has this many seconds to pick an answer. */
@@ -94,6 +94,10 @@ export function ChallengeGameScreen({
   const [masteredCount, setMasteredCount] = useState(0);
   const [passedCount, setPassedCount] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
+  /** Questions left behind (advanced past). Drives the "Q x/y" header so the
+   *  counter only moves when the user taps Next/Continue/masters, not the
+   *  instant an answer is scored. */
+  const [advancedCount, setAdvancedCount] = useState(0);
 
   /** Number of questions this set actually started with (<= setSize if the pool is small). */
   const [initialPoolSize, setInitialPoolSize] = useState(0);
@@ -119,7 +123,9 @@ export function ChallengeGameScreen({
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const answerTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const answerRemainingRef = useRef<number>(ANSWER_SECONDS);
   const preBuzzIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const preBuzzRemainingRef = useRef<number | null>(null);
   const fullTextRef = useRef('');
   const isBuzzedRef = useRef(false);
   const isAnsweredRef = useRef(false);
@@ -138,6 +144,7 @@ export function ChallengeGameScreen({
       setMasteredCount(0);
       setPassedCount(0);
       setWrongCount(0);
+      setAdvancedCount(0);
       setInitialPoolSize(0);
 
       const user = await getCurrentUser();
@@ -223,7 +230,6 @@ export function ChallengeGameScreen({
   }, [userId]);
 
   const current = queue[0];
-  const totalAnswered = masteredCount + passedCount + wrongCount;
 
   useEffect(() => {
     currentQuestionRef.current = current?.question ?? null;
@@ -264,6 +270,7 @@ export function ChallengeGameScreen({
         clearTimeout(holdTimerRef.current);
         holdTimerRef.current = null;
       }
+      setAdvancedCount((n) => n + 1);
       if (next.length === 0) {
         setIsFinished(true);
       }
@@ -323,17 +330,22 @@ export function ChallengeGameScreen({
 
   const startPreBuzzCountdown = () => {
     clearPreBuzzTimer();
+    preBuzzRemainingRef.current = PRE_BUZZ_SECONDS;
     setPreBuzzSecondsRemaining(PRE_BUZZ_SECONDS);
+    // Decrement and fire the timeout handler from the timer callback (not from
+    // inside a setState updater), so FeedbackOverlay's state isn't updated
+    // during this component's render.
     preBuzzIntervalRef.current = setInterval(() => {
-      setPreBuzzSecondsRemaining((prev) => {
-        if (prev === null || prev <= 0) return prev;
-        if (prev <= 1) {
-          clearPreBuzzTimer();
-          void handleNoBuzzInTime();
-          return null;
-        }
-        return prev - 1;
-      });
+      const next = (preBuzzRemainingRef.current ?? 0) - 1;
+      if (next <= 0) {
+        preBuzzRemainingRef.current = null;
+        clearPreBuzzTimer();
+        setPreBuzzSecondsRemaining(null);
+        void handleNoBuzzInTime();
+      } else {
+        preBuzzRemainingRef.current = next;
+        setPreBuzzSecondsRemaining(next);
+      }
     }, 1000);
   };
 
@@ -347,17 +359,23 @@ export function ChallengeGameScreen({
     setPreBuzzSecondsRemaining(null);
     setIsBuzzed(true);
     setStatusText('Buzzed! Select your answer...');
+    answerRemainingRef.current = ANSWER_SECONDS;
     setTimeRemaining(ANSWER_SECONDS);
 
+    // Decrement and fire the timeout handler from the timer callback (not from
+    // inside a setState updater), so FeedbackOverlay's state isn't updated
+    // during this component's render.
     answerTimerRef.current = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearAnswerTimer();
-          void handleAnswerTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
+      const next = answerRemainingRef.current - 1;
+      if (next <= 0) {
+        answerRemainingRef.current = 0;
+        clearAnswerTimer();
+        setTimeRemaining(0);
+        void handleAnswerTimeUp();
+      } else {
+        answerRemainingRef.current = next;
+        setTimeRemaining(next);
+      }
     }, 1000);
   };
 
@@ -496,10 +514,10 @@ export function ChallengeGameScreen({
   }, [config.setSize, initialPoolSize]);
 
   const headerLabel = useMemo(() => {
-    const current = Math.min(totalAnswered + 1, totalForHeader);
+    const current = Math.min(advancedCount + 1, totalForHeader);
     if (config.mode === 'review') return `${current} / ${totalForHeader}`;
     return `Q ${current}/${totalForHeader}`;
-  }, [config.mode, totalAnswered, totalForHeader]);
+  }, [config.mode, advancedCount, totalForHeader]);
 
   // ----- RENDER STATES -----
 
@@ -570,10 +588,7 @@ export function ChallengeGameScreen({
 
           <TouchableOpacity
             style={styles.secondaryBtn}
-            onPress={() => {
-              onTabChange?.('review');
-              onNavigate?.('main');
-            }}
+            onPress={() => onNavigate?.('review')}
             activeOpacity={0.85}
           >
             <Text style={styles.secondaryBtnText}>Review Questions</Text>

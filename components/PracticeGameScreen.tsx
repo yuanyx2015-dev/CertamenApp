@@ -31,7 +31,7 @@ import { StarIcon } from './StarIcon';
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
 /** Hold duration on the star to master a question. */
-const HOLD_TO_MASTER_MS = 1000;
+const HOLD_TO_MASTER_MS = 500;
 
 interface PracticeGameScreenProps {
   onNavigate?: (screen: string) => void;
@@ -80,7 +80,9 @@ export function PracticeGameScreen({
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const answerRemainingRef = useRef<number>(5);
   const preBuzzIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const preBuzzRemainingRef = useRef<number | null>(null);
   const fullTextRef = useRef('');
   const feedbackRef = useRef<FeedbackOverlayHandle>(null);
   const isBuzzedRef = useRef(false);
@@ -372,17 +374,22 @@ export function PracticeGameScreen({
 
   const startPreBuzzCountdown = () => {
     clearPreBuzzTimer();
+    preBuzzRemainingRef.current = PRE_BUZZ_SECONDS;
     setPreBuzzSecondsRemaining(PRE_BUZZ_SECONDS);
+    // Decrement and fire the timeout handler from the timer callback (not from
+    // inside a setState updater), so FeedbackOverlay's state isn't updated
+    // during this component's render.
     preBuzzIntervalRef.current = setInterval(() => {
-      setPreBuzzSecondsRemaining((prev) => {
-        if (prev === null || prev <= 0) return prev;
-        if (prev <= 1) {
-          clearPreBuzzTimer();
-          void handleNoBuzzInTime();
-          return null;
-        }
-        return prev - 1;
-      });
+      const next = (preBuzzRemainingRef.current ?? 0) - 1;
+      if (next <= 0) {
+        preBuzzRemainingRef.current = null;
+        clearPreBuzzTimer();
+        setPreBuzzSecondsRemaining(null);
+        void handleNoBuzzInTime();
+      } else {
+        preBuzzRemainingRef.current = next;
+        setPreBuzzSecondsRemaining(next);
+      }
     }, 1000);
   };
 
@@ -466,22 +473,27 @@ export function PracticeGameScreen({
 
     setIsBuzzed(true);
     setStatusText('Buzzed! Select your answer...');
+    answerRemainingRef.current = 5;
     setTimeRemaining(5);
 
-    // Start 5-second countdown timer
+    // Decrement and fire the timeout handler from the timer callback (not from
+    // inside a setState updater), so FeedbackOverlay's state isn't updated
+    // during this component's render.
     timerIntervalRef.current = setInterval(() => {
-      setTimeRemaining((prevTime) => {
-        if (prevTime <= 1) {
-          // Time's up! Auto-mark as wrong
-          if (timerIntervalRef.current) {
-            clearInterval(timerIntervalRef.current);
-          }
-          handleTimeUp();
-          return 0;
+      const next = answerRemainingRef.current - 1;
+      if (next <= 0) {
+        answerRemainingRef.current = 0;
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = null;
         }
-        return prevTime - 1;
-      });
-    }, 1000); // Decrease every second
+        setTimeRemaining(0);
+        void handleTimeUp();
+      } else {
+        answerRemainingRef.current = next;
+        setTimeRemaining(next);
+      }
+    }, 1000);
   };
 
   // Post-buzz answer window expired — no option selected
