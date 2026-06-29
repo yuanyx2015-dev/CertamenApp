@@ -8,23 +8,15 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
-  Modal,
 } from 'react-native';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
-import { getOrCreateUserStats, updateUserScore } from '../services/userStatsService';
 import {
   getOrCreateUserSettings,
-  type UserSettingsScope,
   type UserSettings,
 } from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
-import { masterQuestion, getMasteredCount } from '../services/userMasteredService';
-import {
-  shouldShowReviewPrompt,
-  markReviewPromptShown,
-  confirmReview,
-} from '../lib/appReview';
+import { masterQuestion } from '../services/userMasteredService';
 import { FeedbackOverlay } from './RomanFeedback';
 import type { FeedbackOverlayHandle } from './RomanFeedback';
 import { StarIcon } from './StarIcon';
@@ -37,11 +29,7 @@ interface PracticeGameScreenProps {
   onNavigate?: (screen: string) => void;
   previousScreen?: string;
   isGuestMode?: boolean;
-  /** When set, all tossups use this difficulty only (Rank-up / story Practice pickers). Rank-based mix when null. */
-  fixedDifficulty?: 'easy' | 'medium' | 'hard' | null;
-  /** Local tossup settings: rank-up vs practice (Story) buckets. */
-  settingsScope?: UserSettingsScope;
-  /** Story Practice: category slug from the six-tile picker. */
+  /** Practice tab: category slug from the six-tile picker. */
   storyPracticeCategory?: string | null;
 }
 
@@ -49,23 +37,20 @@ export function PracticeGameScreen({
   onNavigate,
   previousScreen,
   isGuestMode,
-  fixedDifficulty = null,
-  settingsScope = 'rank-up',
   storyPracticeCategory = null,
 }: PracticeGameScreenProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [sessionScore, setSessionScore] = useState(0); // Score for this game session only
-  const [cumulativeScore, setCumulativeScore] = useState(0); // Total user score from database
+  const [masteredThisSession, setMasteredThisSession] = useState(0); // # mastered in this set
+  const [wrongThisSession, setWrongThisSession] = useState(0); // # answered wrong in this set
   const [displayedText, setDisplayedText] = useState('');
   const [isBuzzed, setIsBuzzed] = useState(false);
   const [isAnswered, setIsAnswered] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [shuffledOptions, setShuffledOptions] = useState<Array<{text: string; isCorrect: boolean}>>([]);
   const [statusText, setStatusText] = useState('Loading questions...');
-  const [rank, setRank] = useState('Miles');
   const [timeRemaining, setTimeRemaining] = useState(5);
   /** Countdown after the full question is shown; null = not running (still streaming or already buzzed/resolved). */
   const [preBuzzSecondsRemaining, setPreBuzzSecondsRemaining] = useState<number | null>(null);
@@ -73,7 +58,6 @@ export function PracticeGameScreen({
   const [isPreviouslyWrong, setIsPreviouslyWrong] = useState(false); // Track if current question was previously answered wrong
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false); // Whether the current question was answered correctly
   const [justMastered, setJustMastered] = useState(false); // Current question has been marked mastered
-  const [showReviewModal, setShowReviewModal] = useState(false); // Custom "rate the app" popup
   /** Bumped by "Try Again" to re-run the loader with the SAME mode/settings. */
   const [reloadNonce, setReloadNonce] = useState(0);
 
@@ -92,16 +76,8 @@ export function PracticeGameScreen({
   const holdAnim = useRef(new Animated.Value(0)).current;
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  /**
-   * Practice Mode (settingsScope='practice') is intentionally read-only:
-   *   - no wrong-answer tracking
-   *   - no score updates
-   *   - no rank updates
-   * It's just difficulty + category gameplay.
-   */
-  const isPracticeMode = settingsScope === 'practice';
-  const skipProfileScoring = isGuestMode || isPracticeMode;
-  const skipWrongTracking = isWrongQuestionsMode || isGuestMode || isPracticeMode;
+  /** Practice never feeds the Review pool (Challenge / Review handle that). */
+  const skipWrongTracking = true;
 
   useEffect(() => {
     isBuzzedRef.current = isBuzzed;
@@ -123,11 +99,10 @@ export function PracticeGameScreen({
       setLoadError(null);
       // Always start a fresh set (covers the "Try Again" reload path too).
       setCurrentQuestionIndex(0);
-      setSessionScore(0);
-      
-      // Load user stats and settings first (skip for guest mode)
-      let currentRank = 'Miles';
-      let totalQuestions = 20; // Default
+      setMasteredThisSession(0);
+      setWrongThisSession(0);
+
+      let totalQuestions = 20;
       let wrongQuestionsOnly = false;
       let user = null;
       let settingsForScope: UserSettings | null = null;
@@ -135,14 +110,7 @@ export function PracticeGameScreen({
       if (!isGuestMode) {
         user = await getCurrentUser();
         if (user) {
-          const { data: stats } = await getOrCreateUserStats(user.id);
-          if (stats) {
-            setCumulativeScore(stats.score); // Store cumulative score
-            setRank(stats.rank);
-            currentRank = stats.rank;
-          }
-
-          const { data: settings } = await getOrCreateUserSettings(user.id, settingsScope);
+          const { data: settings } = await getOrCreateUserSettings(user.id);
           settingsForScope = settings ?? null;
           if (settings) {
             totalQuestions = settings.num_tossups;
@@ -151,7 +119,7 @@ export function PracticeGameScreen({
           }
         }
       } else {
-        const { data: settings } = await getOrCreateUserSettings('guest', settingsScope);
+        const { data: settings } = await getOrCreateUserSettings('guest');
         settingsForScope = settings ?? null;
         if (settings) {
           totalQuestions = settings.num_tossups;
@@ -159,17 +127,10 @@ export function PracticeGameScreen({
       }
 
       const practiceSessionDifficulty =
-        settingsScope === 'practice'
-          ? settingsForScope?.practice_session_difficulty ?? 'easy'
-          : null;
+        settingsForScope?.practice_session_difficulty ?? 'easy';
 
       const allQuestions: Question[] = [];
-      const seenIds = new Set<string>(); // Extra safeguard to prevent duplicates
-
-      const difficultyForFilters =
-        settingsScope === 'practice' && storyPracticeCategory
-          ? practiceSessionDifficulty
-          : fixedDifficulty;
+      const seenIds = new Set<string>();
 
       try {
         if (wrongQuestionsOnly && !isGuestMode && user) {
@@ -183,8 +144,8 @@ export function PracticeGameScreen({
           if (storyPracticeCategory) {
             pool = pool.filter((q) => q.category === storyPracticeCategory);
           }
-          if (difficultyForFilters) {
-            pool = pool.filter((q) => q.difficulty === difficultyForFilters);
+          if (practiceSessionDifficulty) {
+            pool = pool.filter((q) => q.difficulty === practiceSessionDifficulty);
           }
           const picked = shuffleArray(pool).slice(0, totalQuestions);
           if (picked.length > 0) {
@@ -194,22 +155,18 @@ export function PracticeGameScreen({
                 seenIds.add(q.id);
               }
             });
-          } else if (wrongQuestions && wrongQuestions.length > 0 && difficultyForFilters) {
+          } else if (wrongQuestions && wrongQuestions.length > 0 && practiceSessionDifficulty) {
             setLoadError(
               'It seems as if there are no wrong questions for this category in your selected difficulty. Change settings or practice more in this category!'
             );
             setIsLoading(false);
             return;
           } else {
-            setLoadError('You have no wrong questions to review! Try practicing normally first.');
+            setLoadError('You have no wrong questions to review! Try Challenge Mode first.');
             setIsLoading(false);
             return;
           }
-        } else if (
-          settingsScope === 'practice' &&
-          storyPracticeCategory &&
-          practiceSessionDifficulty
-        ) {
+        } else if (storyPracticeCategory) {
           const { data: catQuestions, error } = await getRandomQuestions(
             storyPracticeCategory,
             practiceSessionDifficulty,
@@ -224,45 +181,10 @@ export function PracticeGameScreen({
               }
             });
           }
-        } else if (fixedDifficulty) {
-          const { data: fixedQuestions, error } = await getRandomQuestions(
-            undefined,
-            fixedDifficulty,
-            totalQuestions
-          );
-          if (error) throw error;
-          if (fixedQuestions) {
-            fixedQuestions.forEach((q) => {
-              if (!seenIds.has(q.id)) {
-                allQuestions.push(q);
-                seenIds.add(q.id);
-              }
-            });
-          }
         } else {
-          // Rank-based mix across difficulties
-          const distribution = getQuestionDistribution(currentRank, totalQuestions);
-
-          const difficulties: Array<{ level: 'easy' | 'medium' | 'hard'; count: number }> = [
-            { level: 'easy', count: distribution.easy },
-            { level: 'medium', count: distribution.medium },
-            { level: 'hard', count: distribution.hard },
-          ];
-
-          for (const { level, count } of difficulties) {
-            if (count > 0) {
-              const { data: questions, error } = await getRandomQuestions(undefined, level, count);
-              if (error) throw error;
-              if (questions) {
-                questions.forEach((q) => {
-                  if (!seenIds.has(q.id)) {
-                    allQuestions.push(q);
-                    seenIds.add(q.id);
-                  }
-                });
-              }
-            }
-          }
+          setLoadError('Pick a category in Practice Mode to start.');
+          setIsLoading(false);
+          return;
         }
         
         if (allQuestions.length === 0) {
@@ -285,7 +207,7 @@ export function PracticeGameScreen({
     };
     
     loadQuestionsAndStats();
-  }, [isGuestMode, fixedDifficulty, settingsScope, storyPracticeCategory, reloadNonce]);
+  }, [isGuestMode, storyPracticeCategory, reloadNonce]);
 
   // Shuffle function
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -295,47 +217,6 @@ export function PracticeGameScreen({
       [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
     }
     return newArray;
-  };
-
-  const pointsForQuestionDifficulty = (d: Question['difficulty'] | undefined): number => {
-    if (d === 'medium') return 15;
-    if (d === 'hard') return 25;
-    return 10;
-  };
-
-  const maxPointsForQuestions = (qs: Question[]): number =>
-    qs.reduce((sum, q) => sum + pointsForQuestionDifficulty(q.difficulty), 0);
-
-  // Calculate rank based on cumulative score
-  const calculateRank = (totalScore: number): string => {
-    if (totalScore >= 10000) return 'Legatus Legionis';
-    if (totalScore >= 7000) return 'Praefectus Castrorum';
-    if (totalScore >= 5000) return 'Primus Pilus';
-    if (totalScore >= 3000) return 'Centurio';
-    if (totalScore >= 1500) return 'Optio';
-    if (totalScore >= 500) return 'Decanus';
-    return 'Miles';
-  };
-
-  // Get question difficulty distribution based on rank
-  const getQuestionDistribution = (rank: string, totalQuestions: number = 10) => {
-    const distributions: Record<string, { easy: number; medium: number; hard: number }> = {
-      'Miles': { easy: 0.8, medium: 0.2, hard: 0 },
-      'Decanus': { easy: 0.6, medium: 0.4, hard: 0 },
-      'Optio': { easy: 0.4, medium: 0.4, hard: 0.2 },
-      'Centurio': { easy: 0.2, medium: 0.4, hard: 0.4 },
-      'Primus Pilus': { easy: 0, medium: 0.4, hard: 0.6 },
-      'Praefectus Castrorum': { easy: 0, medium: 0.2, hard: 0.8 },
-      'Legatus Legionis': { easy: 0, medium: 0, hard: 1.0 }
-    };
-
-    const distribution = distributions[rank] || distributions['Miles'];
-    
-    return {
-      easy: Math.round(totalQuestions * distribution.easy),
-      medium: Math.round(totalQuestions * distribution.medium),
-      hard: Math.round(totalQuestions * distribution.hard)
-    };
   };
 
   const clearPreBuzzTimer = () => {
@@ -361,6 +242,7 @@ export function PracticeGameScreen({
     setDisplayedText(fullTextRef.current);
     setStatusText("Time's up! You didn't buzz in time.");
     triggerFeedbackAnimation(false);
+    setWrongThisSession((n) => n + 1);
 
     if (!skipWrongTracking) {
       const user = await getCurrentUser();
@@ -511,6 +393,7 @@ export function PracticeGameScreen({
     setDisplayedText(fullTextRef.current);
     setStatusText("Time's up! No answer selected.");
     triggerFeedbackAnimation(false);
+    setWrongThisSession((n) => n + 1);
 
     if (!skipWrongTracking) {
       const user = await getCurrentUser();
@@ -542,31 +425,10 @@ export function PracticeGameScreen({
     triggerFeedbackAnimation(option.isCorrect);
 
     if (option.isCorrect) {
-      if (skipProfileScoring) {
-        setStatusText('Correct!');
-      } else if (isWrongQuestionsMode) {
-        setStatusText('Correct!');
-      } else {
-        const pointsAwarded = pointsForQuestionDifficulty(
-          questions[currentQuestionIndex]?.difficulty
-        );
-        const newSessionScore = sessionScore + pointsAwarded;
-        setSessionScore(newSessionScore);
-        setStatusText(`Correct! +${pointsAwarded} points`);
-
-        const user = await getCurrentUser();
-        if (user) {
-          const newCumulativeScore = cumulativeScore + pointsAwarded;
-          const newRank = calculateRank(newCumulativeScore);
-          const { error } = await updateUserScore(user.id, newCumulativeScore, newRank);
-          if (!error) {
-            setCumulativeScore(newCumulativeScore);
-            setRank(newRank);
-          }
-        }
-      }
+      setStatusText('Correct!');
     } else {
       setStatusText('Wrong! Better luck next time.');
+      setWrongThisSession((n) => n + 1);
       if (!skipWrongTracking) {
         const user = await getCurrentUser();
         if (user && questions[currentQuestionIndex]) {
@@ -585,6 +447,7 @@ export function PracticeGameScreen({
   const fireMaster = async () => {
     if (justMastered) return;
     setJustMastered(true);
+    setMasteredThisSession((n) => n + 1);
     const user = await getCurrentUser();
     const q = questions[currentQuestionIndex];
     if (user && q) {
@@ -648,36 +511,6 @@ export function PracticeGameScreen({
   // Check if game is over
   const isGameOver = questions.length > 0 && currentQuestionIndex >= questions.length;
 
-  // At the end of a real (scored) set, decide whether to show the custom "rate the app" popup:
-  // first set ever, then again each time mastered questions reach 10/20/30..., until the user rates.
-  useEffect(() => {
-    if (!(isGameOver && !isGuestMode && !isPracticeMode && !isWrongQuestionsMode)) return;
-    let cancelled = false;
-    (async () => {
-      const user = await getCurrentUser();
-      if (!user) return;
-      const { data: masteredCount } = await getMasteredCount(user.id);
-      const count = masteredCount ?? 0;
-      const show = await shouldShowReviewPrompt(count);
-      if (show && !cancelled) {
-        await markReviewPromptShown(count);
-        setShowReviewModal(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isGameOver, isGuestMode, isPracticeMode, isWrongQuestionsMode]);
-
-  const handleRateApp = async () => {
-    setShowReviewModal(false);
-    await confirmReview();
-  };
-
-  const handleReviewNotNow = () => {
-    setShowReviewModal(false);
-  };
-
   // Loading state
   if (isLoading) {
     return (
@@ -720,18 +553,31 @@ export function PracticeGameScreen({
       <View style={styles.container}>
         <View style={styles.gameOverContainer}>
           <Text style={styles.gameOverTitle}>Practice Complete!</Text>
-          {!isWrongQuestionsMode && !skipProfileScoring && (
-            <Text style={styles.gameOverScore}>
-              Final Score: {sessionScore} / {maxPointsForQuestions(questions)}
-            </Text>
-          )}
-          {!isGuestMode && <Text style={styles.gameOverRank}>Rank: {rank}</Text>}
-          
+
+          <View style={styles.statsRow}>
+            <View style={[styles.statCard, styles.statCardMastered]}>
+              <View style={styles.statNumberBox}>
+                <Text style={[styles.statNumber, styles.statNumberMastered]}>
+                  {masteredThisSession}
+                </Text>
+              </View>
+              <Text style={styles.statLabel}>Mastered</Text>
+            </View>
+            <View style={[styles.statCard, styles.statCardWrong]}>
+              <View style={styles.statNumberBox}>
+                <Text style={[styles.statNumber, styles.statNumberWrong, styles.statNumberFraction]}>
+                  {wrongThisSession}/{questions.length}
+                </Text>
+              </View>
+              <Text style={styles.statLabel}>Wrong</Text>
+            </View>
+          </View>
+
           {/* Guest Sign-In Prompt */}
           {isGuestMode && (
             <View style={styles.guestPromptContainer}>
               <Text style={styles.guestPromptText}>
-                Sign in to save your score and track your rank!
+                Sign in to save your progress!
               </Text>
               <TouchableOpacity 
                 style={styles.signInPromptButton}
@@ -741,12 +587,12 @@ export function PracticeGameScreen({
               </TouchableOpacity>
             </View>
           )}
-          
+
           <TouchableOpacity 
-            style={styles.restartButton}
+            style={styles.primaryButton}
             onPress={() => setReloadNonce((n) => n + 1)}
           >
-            <Text style={styles.restartButtonText}>Try Again</Text>
+            <Text style={styles.primaryButtonText}>Try Again</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -756,48 +602,6 @@ export function PracticeGameScreen({
             <Text style={styles.backButtonText}>Back to Menu</Text>
           </TouchableOpacity>
         </View>
-
-        <Modal
-          visible={showReviewModal}
-          transparent
-          animationType="fade"
-          onRequestClose={handleReviewNotNow}
-        >
-          <View style={styles.reviewModalOverlay}>
-            <View style={styles.reviewModalContent}>
-              <TouchableOpacity
-                style={styles.reviewCloseButton}
-                onPress={handleReviewNotNow}
-                activeOpacity={0.7}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <Text style={styles.reviewCloseButtonText}>✕</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.reviewModalTitle}>Please rate CertamenPrep</Text>
-              <Text style={styles.reviewModalMessage}>
-                Enjoying the app? Please keep supporting our free app by leaving us a rating or a
-                review!
-              </Text>
-
-              <TouchableOpacity
-                style={styles.reviewRateButton}
-                onPress={handleRateApp}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.reviewRateButtonText}>Rate</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.reviewNotNowButton}
-                onPress={handleReviewNotNow}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.reviewNotNowButtonText}>Maybe later</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
       </View>
     );
   }
@@ -845,11 +649,7 @@ export function PracticeGameScreen({
               </Text>
             )}
         </View>
-        <View style={styles.headerColRight}>
-          {!isWrongQuestionsMode && !isGuestMode && (
-            <Text style={styles.headerText}>Score: {sessionScore}</Text>
-          )}
-        </View>
+        <View style={styles.headerColRight} />
       </View>
 
       {/* Game Area */}
@@ -945,7 +745,7 @@ export function PracticeGameScreen({
               <Text style={styles.nextBtnText}>Next Question →</Text>
             </TouchableOpacity>
 
-            {isPracticeMode && !isGuestMode && lastAnswerCorrect && (
+            {!isGuestMode && lastAnswerCorrect && (
               <View style={styles.starWrap}>
                 <TouchableOpacity
                   onPressIn={handleStarPressIn}
@@ -1226,20 +1026,87 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: '#3a3a3a',
-    marginBottom: 20,
+    marginBottom: 8,
     letterSpacing: 1,
     textAlign: 'center',
   },
-  gameOverScore: {
-    fontSize: 24,
-    color: '#3a3a3a',
-    marginBottom: 10,
+  statsRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 24,
+    marginBottom: 36,
   },
-  gameOverRank: {
-    fontSize: 20,
-    color: '#c9a961',
-    fontWeight: '600',
-    marginBottom: 40,
+  statCard: {
+    flex: 1,
+    minWidth: 132,
+    minHeight: 120,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  statCardMastered: {
+    backgroundColor: 'rgba(201, 169, 97, 0.14)',
+    borderColor: 'rgba(201, 169, 97, 0.55)',
+  },
+  statCardWrong: {
+    backgroundColor: 'rgba(176, 58, 46, 0.08)',
+    borderColor: 'rgba(176, 58, 46, 0.4)',
+  },
+  statNumberBox: {
+    minHeight: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 46,
+    fontWeight: '800',
+    lineHeight: 50,
+  },
+  statNumberMastered: {
+    color: '#a8842f',
+  },
+  statNumberWrong: {
+    color: '#9a3327',
+  },
+  statNumberFraction: {
+    fontSize: 36,
+    lineHeight: 40,
+  },
+  statLabel: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: '#6a6a6a',
+    textTransform: 'uppercase',
+  },
+  primaryButton: {
+    paddingHorizontal: 40,
+    paddingVertical: 15,
+    backgroundColor: '#c9a961',
+    borderRadius: 10,
+    marginBottom: 14,
+    minWidth: 220,
+    alignItems: 'center',
+    shadowColor: '#9d856b',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   restartButton: {
     paddingHorizontal: 40,
@@ -1269,8 +1136,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 2,
     borderColor: 'rgba(201, 169, 97, 0.3)',
-    borderRadius: 8,
-    minWidth: 200,
+    borderRadius: 10,
+    minWidth: 220,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

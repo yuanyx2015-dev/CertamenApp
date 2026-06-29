@@ -20,7 +20,6 @@ import {
   type ChallengeGameMode,
 } from './ChallengeGameScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
-import type { UserSettingsScope } from '../services/userSettingsService';
 
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
@@ -28,14 +27,7 @@ export function RomanBackground() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [practiceGameKey, setPracticeGameKey] = useState(0);
-  /** When set, practice-game loads only this difficulty; cleared when leaving that flow. */
-  const [practiceGameDifficultyLock, setPracticeGameDifficultyLock] = useState<
-    'easy' | 'medium' | 'hard' | null
-  >(null);
-  /** Which local settings bucket practice-game reads (story = practice; rank-up route = rank-up). */
-  const [practiceGameSettingsScope, setPracticeGameSettingsScope] =
-    useState<UserSettingsScope>('rank-up');
-  /** Story Practice Mode: question category slug for the current session. */
+  /** Practice tab: question category slug for the current session. */
   const [practiceGameStoryCategory, setPracticeGameStoryCategory] = useState<string | null>(null);
   const [mainTab, setMainTab] = useState<MainTabId>('profile');
   const mainTabBeforeSettingsRef = useRef<MainTabId>('profile');
@@ -104,17 +96,8 @@ export function RomanBackground() {
       resolvedScreen = 'main';
     }
 
-    if (practiceDifficulty !== undefined) {
-      setPracticeGameDifficultyLock(practiceDifficulty);
-    } else {
-      setPracticeGameDifficultyLock(null);
-    }
-
     if (resolvedScreen === 'practice-game') {
-      const fromPracticeTab = currentScreen === 'main' && mainTab === 'practice';
-      const legacyStory = currentScreen === 'story';
-      setPracticeGameSettingsScope(fromPracticeTab || legacyStory ? 'practice' : 'rank-up');
-      setPracticeGameStoryCategory(fromPracticeTab || legacyStory ? (category ?? null) : null);
+      setPracticeGameStoryCategory(category ?? null);
       setPracticeGameKey((prev) => prev + 1);
     }
 
@@ -128,9 +111,7 @@ export function RomanBackground() {
       if (explicitMainTab !== null) {
         setMainTab(explicitMainTab);
       } else if (currentScreen === 'practice-game') {
-        // Practice-game can be launched from either Challenge (rank-up flow) or
-        // the Practice tab (story flow); the settings scope tells us which.
-        setMainTab(practiceGameSettingsScope === 'practice' ? 'practice' : 'challenge');
+        setMainTab('practice');
       } else if (
         currentScreen === 'categoryQuestions' ||
         currentScreen === 'reviewCategories'
@@ -203,8 +184,6 @@ export function RomanBackground() {
             onNavigate={handleNavigate}
             previousScreen={previousScreen.current}
             isGuestMode={isGuestMode}
-            fixedDifficulty={practiceGameDifficultyLock}
-            settingsScope={practiceGameSettingsScope}
             storyPracticeCategory={practiceGameStoryCategory}
           />
         );
@@ -218,18 +197,9 @@ export function RomanBackground() {
           <SimulationMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />
         );
       case 'settings':
-        return (
-          <SettingsScreen
-            settingsScope="rank-up"
-            onNavigate={handleNavigate}
-            previousScreen={previousScreen.current}
-            isGuestMode={isGuestMode}
-          />
-        );
       case 'settings-practice':
         return (
           <SettingsScreen
-            settingsScope="practice"
             onNavigate={handleNavigate}
             previousScreen={previousScreen.current}
             isGuestMode={isGuestMode}

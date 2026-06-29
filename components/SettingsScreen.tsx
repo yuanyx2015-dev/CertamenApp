@@ -14,7 +14,6 @@ import { getCurrentUser } from '../services/authService';
 import {
   getOrCreateUserSettings,
   updateSetting,
-  type UserSettingsScope,
   type PracticeSessionDifficulty,
 } from '../services/userSettingsService';
 import { getAllWrongQuestions } from '../services/questionReviewService';
@@ -73,13 +72,10 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
 }
 
 export function SettingsScreen({
-  settingsScope,
   onNavigate,
   previousScreen,
   isGuestMode,
 }: {
-  /** Rank-up and practice use separate persisted settings. */
-  settingsScope: UserSettingsScope;
   onNavigate?: (screen: string) => void;
   previousScreen?: string;
   isGuestMode?: boolean;
@@ -104,13 +100,11 @@ export function SettingsScreen({
     
     if (userIdToUse) {
       setUserId(userIdToUse);
-      const { data: settings, error } = await getOrCreateUserSettings(userIdToUse, settingsScope);
+      const { data: settings, error } = await getOrCreateUserSettings(userIdToUse);
       if (settings && !error) {
         setWrongQuestionsOnly(settings.wrong_questions_only);
         setNumTossups(settings.num_tossups);
-        if (settingsScope === 'practice') {
-          setPracticeSessionDifficulty(settings.practice_session_difficulty ?? 'easy');
-        }
+        setPracticeSessionDifficulty(settings.practice_session_difficulty ?? 'easy');
       }
       
       // Fetch wrong question count (only for authenticated users)
@@ -122,7 +116,7 @@ export function SettingsScreen({
       }
     }
     setIsLoading(false);
-  }, [isGuestMode, settingsScope]);
+  }, [isGuestMode]);
 
   // Load on mount and whenever the user/scope changes. The screen remounts on
   // each navigation, so a single effect keyed on loadSettingsData covers both
@@ -145,7 +139,7 @@ export function SettingsScreen({
     setWrongQuestionsOnly(value);
     
     if (userId) {
-      await updateSetting(userId, 'wrong_questions_only', value, settingsScope);
+      await updateSetting(userId, 'wrong_questions_only', value);
     }
 
     // Auto-adjust number of questions when toggling
@@ -154,23 +148,23 @@ export function SettingsScreen({
       const newNumQuestions = Math.min(wrongQuestionCount, 50);
       setNumTossups(newNumQuestions);
       if (userId) {
-        await updateSetting(userId, 'num_tossups', newNumQuestions, settingsScope);
+        await updateSetting(userId, 'num_tossups', newNumQuestions);
       }
     } else if (!value && numTossups < 5) {
       // When toggling OFF: ensure minimum is 5
       setNumTossups(5);
       if (userId) {
-        await updateSetting(userId, 'num_tossups', 5, settingsScope);
+        await updateSetting(userId, 'num_tossups', 5);
       }
     }
   };
 
   // Handle number of tossups change
   const handlePracticeDifficultySelect = async (next: PracticeSessionDifficulty) => {
-    if (settingsScope !== 'practice' || !userId) return;
+    if (!userId) return;
     if (practiceSessionDifficulty === next) return;
     setPracticeSessionDifficulty(next);
-    await updateSetting(userId, 'practice_session_difficulty', next, 'practice');
+    await updateSetting(userId, 'practice_session_difficulty', next);
   };
 
   const handleNumTossupsChange = async (newValue: number) => {
@@ -183,7 +177,7 @@ export function SettingsScreen({
     setNumTossups(clampedValue);
     
     if (userId) {
-      await updateSetting(userId, 'num_tossups', clampedValue, settingsScope);
+      await updateSetting(userId, 'num_tossups', clampedValue);
     }
   };
 
@@ -245,8 +239,7 @@ export function SettingsScreen({
           )}
         </>
 
-        {settingsScope === 'practice' && (
-          <View style={styles.difficultySection}>
+        <View style={styles.difficultySection}>
             <Text style={styles.sectionTitle}>Difficulty</Text>
             <View style={styles.difficultyRow}>
               {(
@@ -273,36 +266,23 @@ export function SettingsScreen({
               ))}
             </View>
           </View>
-        )}
       </View>
     </>
   );
 
-  if (settingsScope === 'practice') {
-    return (
-      <View style={styles.containerPractice}>
-        <ScrollView
-          style={styles.scrollPractice}
-          contentContainerStyle={styles.scrollPracticeContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.contentContainer}>{settingsBody}</View>
-          <View style={styles.backInScroll}>
-            <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
-          </View>
-        </ScrollView>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <View style={styles.contentContainer}>{settingsBody}</View>
-
-      <View style={styles.bottomContainer}>
-        <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
-      </View>
+    <View style={styles.containerPractice}>
+      <ScrollView
+        style={styles.scrollPractice}
+        contentContainerStyle={styles.scrollPracticeContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.contentContainer}>{settingsBody}</View>
+        <View style={styles.backInScroll}>
+          <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
+        </View>
+      </ScrollView>
     </View>
   );
 }
