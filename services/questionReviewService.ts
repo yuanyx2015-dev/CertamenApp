@@ -66,22 +66,39 @@ export const getWrongQuestionsByCategory = async (
 };
 
 /**
- * Exact count of a user's wrong questions, via a HEAD count query (no row cap).
- * Returns `error` so callers can distinguish "0 wrong" from "failed to load".
+ * Exact count of wrong questions the user can actually review — only rows whose
+ * question still exists in `questions` (matches get_user_wrong_questions / the
+ * review game pool). Orphaned user_wrong_answers rows are excluded.
  */
 export const getWrongCount = async (
   userId: string
 ): Promise<{ data: number; error: any }> => {
-  const { count, error } = await supabase
-    .from('user_wrong_answers')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId);
+  try {
+    const { data, error } = await supabase.rpc('get_wrong_count', {
+      p_user_id: userId as any,
+    });
 
-  if (error) {
-    console.error('Error counting wrong questions:', error);
+    if (!error && data !== null && data !== undefined) {
+      return { data: Number(data) || 0, error: null };
+    }
+
+    // Fallback if migration not applied yet: count via the same RPC the game uses.
+    const { data: rows, error: listError } = await supabase.rpc('get_user_wrong_questions', {
+      p_user_id: userId as any,
+      p_category: null,
+      p_limit: 100000,
+    });
+
+    if (listError) {
+      console.error('Error counting wrong questions:', listError);
+      return { data: 0, error: listError };
+    }
+
+    return { data: (rows ?? []).length, error: null };
+  } catch (error: any) {
+    console.error('Unexpected error counting wrong questions:', error);
     return { data: 0, error };
   }
-  return { data: count ?? 0, error: null };
 };
 
 /**
