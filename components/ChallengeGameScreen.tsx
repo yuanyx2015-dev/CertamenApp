@@ -754,15 +754,28 @@ export function ChallengeGameScreen({
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity
-          onPress={() => {
-            onTabChange?.('profile');
-            onNavigate?.('main');
-          }}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.footerLink}>Done learning? Click me</Text>
-        </TouchableOpacity>
+        {config.mode === 'review' ? (
+          <TouchableOpacity
+            style={styles.footerFinishBtn}
+            onPress={() => {
+              onTabChange?.('review');
+              onNavigate?.('main');
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.footerFinishBtnText}>Finish reviewing? Click me</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={() => {
+              onTabChange?.('profile');
+              onNavigate?.('main');
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.footerLink}>Done learning? Click me</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <FeedbackOverlay ref={feedbackRef} />
@@ -1025,6 +1038,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8a6a3a',
     textDecorationLine: 'underline',
+  },
+  footerFinishBtn: {
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(201, 169, 97, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.28)',
+  },
+  footerFinishBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6a5530',
+    letterSpacing: 0.3,
+    textAlign: 'center',
   },
   // Summary
   summaryScroll: {
