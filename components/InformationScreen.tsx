@@ -79,16 +79,24 @@ function AnimatedCardButton({
 function StatBox({
   label,
   value,
+  scopeLabel,
+  footer,
   style,
 }: {
   label: string;
   value: string | number;
+  scopeLabel?: string;
+  footer?: React.ReactNode;
   style?: object;
 }) {
   return (
     <View style={[styles.card, styles.statBox, style]}>
-      <Text style={styles.statBoxLabel}>{label}</Text>
+      <View>
+        <Text style={styles.statBoxLabel}>{label}</Text>
+        {scopeLabel ? <Text style={styles.statScopeLabel}>{scopeLabel}</Text> : null}
+      </View>
       <Text style={styles.statValue}>{value}</Text>
+      {footer}
     </View>
   );
 }
@@ -347,8 +355,18 @@ export function InformationScreen({
       <View style={styles.gridSection}>
         <View style={styles.topGridRow}>
           <View style={styles.leftStatsColumn}>
-            <StatBox label="# of Mastered questions:" value={masteredCount} style={styles.topStatBox} />
-            <StatBox label="# of Unmastered questions:" value={unmasteredCount} style={styles.topStatBox} />
+            <StatBox
+              label="Mastered"
+              scopeLabel="all ranks"
+              value={masteredCount}
+              style={styles.topStatBox}
+            />
+            <StatBox
+              label="Remaining"
+              scopeLabel={rankName === '—' ? 'in this rank' : `in ${rankName}`}
+              value={unmasteredCount}
+              style={styles.topStatBox}
+            />
           </View>
           <AnimatedCardButton
             label="Start your Daily Challenge!"
@@ -358,14 +376,22 @@ export function InformationScreen({
         </View>
 
         <View style={styles.bottomGridRow}>
-          <StatBox label="# of Wrong questions:" value={wrongCount} style={styles.bottomStatBox} />
-          <View style={[styles.card, styles.statBox, styles.bottomStatBox]}>
-            <Text style={styles.statBoxLabel}>Streak Counter:</Text>
-            <Text style={styles.statValue}>{streak}</Text>
-            <Text style={styles.statSubLabel}>
-              High: <Text style={styles.statSubValue}>{highStreak}</Text>
-            </Text>
-          </View>
+          <StatBox
+            label="To review"
+            scopeLabel="missed questions"
+            value={wrongCount}
+            style={styles.bottomStatBox}
+          />
+          <StatBox
+            label="Streak"
+            value={streak}
+            style={styles.bottomStatBox}
+            footer={
+              <Text style={styles.statSubLabel}>
+                Best: <Text style={styles.statSubValue}>{highStreak}</Text>
+              </Text>
+            }
+          />
         </View>
       </View>
 
@@ -574,6 +600,14 @@ const styles = StyleSheet.create({
     color: '#3a3a3a',
     letterSpacing: 0.2,
     lineHeight: 15,
+    fontWeight: '600',
+  },
+  statScopeLabel: {
+    fontSize: 10,
+    color: '#8a8a8a',
+    fontStyle: 'italic',
+    marginTop: 2,
+    lineHeight: 13,
   },
   statValue: {
     fontSize: 15,

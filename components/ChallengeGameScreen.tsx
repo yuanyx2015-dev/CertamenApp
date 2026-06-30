@@ -755,16 +755,18 @@ export function ChallengeGameScreen({
 
       <View style={styles.footer}>
         {config.mode === 'review' ? (
-          <TouchableOpacity
-            style={styles.footerFinishBtn}
-            onPress={() => {
-              onTabChange?.('review');
-              onNavigate?.('main');
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.footerFinishBtnText}>Finish reviewing? Click me</Text>
-          </TouchableOpacity>
+          <View style={styles.footerReviewWrap}>
+            <TouchableOpacity
+              style={styles.footerFinishBtn}
+              onPress={() => onNavigate?.('review')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.footerFinishBtnText}>Finish reviewing? Click me</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerFinishHint}>
+              Review mode goes over all your wrong questions so if you want, you can finish at any point!
+            </Text>
+          </View>
         ) : (
           <TouchableOpacity
             onPress={() => {
@@ -1039,6 +1041,11 @@ const styles = StyleSheet.create({
     color: '#8a6a3a',
     textDecorationLine: 'underline',
   },
+  footerReviewWrap: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 6,
+  },
   footerFinishBtn: {
     paddingHorizontal: 22,
     paddingVertical: 12,
@@ -1046,6 +1053,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(201, 169, 97, 0.14)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.28)',
+  },
+  footerFinishHint: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: 'rgba(106, 85, 48, 0.55)',
+    textAlign: 'center',
+    maxWidth: 300,
   },
   footerFinishBtnText: {
     fontSize: 14,
