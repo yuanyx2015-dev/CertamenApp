@@ -402,7 +402,7 @@ export function InformationScreen({
       >
         <Text style={styles.wrongQuestionsBtnText}>Your Wrong Questions</Text>
         <Text style={styles.wrongQuestionsBtnSubtitle}>
-          All wrong questions can be seen here, including ones from Practice Mode.
+          Missed questions from Challenge Mode, organized by category.
         </Text>
         <Text style={styles.wrongQuestionsBtnHint}>
           Browse by category &middot; ask AI for an explanation
