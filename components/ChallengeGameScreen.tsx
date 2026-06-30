@@ -8,13 +8,20 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Modal,
 } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { bumpUserStreak } from '../services/userStatsService';
 import {
   getRankPoolQuestions,
+  getMasteredCount,
   masterQuestion,
 } from '../services/userMasteredService';
+import {
+  shouldShowReviewPrompt,
+  markReviewPromptShown,
+  confirmReview,
+} from '../lib/appReview';
 import { getAllWrongQuestions, markQuestionAsWrong } from '../services/questionReviewService';
 import { recordPassedQuestion } from '../services/userPassedService';
 import type { Question } from '../services/questionService';
@@ -103,6 +110,7 @@ export function ChallengeGameScreen({
   const [initialPoolSize, setInitialPoolSize] = useState(0);
 
   const [isFinished, setIsFinished] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   // ----- TYPEWRITER + BUZZ + TIMER (mirrors Practice mode) -----
   const [displayedText, setDisplayedText] = useState('');
@@ -505,6 +513,33 @@ export function ChallengeGameScreen({
     }).start();
   }, [holdAnim]);
 
+  // At end of a scored Challenge / Review set, maybe show the custom rate popup.
+  useEffect(() => {
+    if (!isFinished || !userId) return;
+    let cancelled = false;
+    (async () => {
+      const { data: totalMastered } = await getMasteredCount(userId);
+      const count = totalMastered ?? 0;
+      const show = await shouldShowReviewPrompt(count);
+      if (show && !cancelled) {
+        await markReviewPromptShown(count);
+        setShowReviewModal(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isFinished, userId]);
+
+  const handleRateApp = async () => {
+    setShowReviewModal(false);
+    await confirmReview();
+  };
+
+  const handleReviewNotNow = () => {
+    setShowReviewModal(false);
+  };
+
   // ----- DERIVED -----
   const totalForHeader = useMemo(() => {
     // Every answer (right or wrong) consumes exactly one question, so the set
@@ -605,6 +640,48 @@ export function ChallengeGameScreen({
             <Text style={styles.secondaryBtnText}>Return to Main</Text>
           </TouchableOpacity>
         </ScrollView>
+
+        <Modal
+          visible={showReviewModal}
+          transparent
+          animationType="fade"
+          onRequestClose={handleReviewNotNow}
+        >
+          <View style={styles.reviewModalOverlay}>
+            <View style={styles.reviewModalContent}>
+              <TouchableOpacity
+                style={styles.reviewCloseButton}
+                onPress={handleReviewNotNow}
+                activeOpacity={0.7}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Text style={styles.reviewCloseButtonText}>✕</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.reviewModalTitle}>Please rate CertamenPrep</Text>
+              <Text style={styles.reviewModalMessage}>
+                Enjoying the app? Please keep supporting our free app by leaving us a rating or a
+                review!
+              </Text>
+
+              <TouchableOpacity
+                style={styles.reviewRateButton}
+                onPress={handleRateApp}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.reviewRateButtonText}>Rate</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.reviewNotNowButton}
+                onPress={handleReviewNotNow}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.reviewNotNowButtonText}>Maybe later</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -1138,6 +1215,89 @@ const styles = StyleSheet.create({
   secondaryBtnText: {
     fontSize: 14,
     color: '#3a3a3a',
+    fontWeight: '600',
+    letterSpacing: 0.4,
+  },
+  reviewModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  reviewModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    paddingTop: 28,
+    width: '100%',
+    maxWidth: 400,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  reviewCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  reviewCloseButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#9a9a9a',
+    lineHeight: 20,
+  },
+  reviewModalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#3a3a3a',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  reviewModalMessage: {
+    fontSize: 15,
+    color: '#6a6a6a',
+    lineHeight: 22,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  reviewRateButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  reviewRateButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  reviewNotNowButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+  },
+  reviewNotNowButtonText: {
+    color: '#8a8a8a',
+    fontSize: 15,
     fontWeight: '600',
     letterSpacing: 0.4,
   },
