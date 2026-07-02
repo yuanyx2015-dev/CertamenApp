@@ -17,62 +17,57 @@ export interface Profile {
  */
 export const getOrCreateProfile = async (user: User): Promise<{ data: Profile | null; error: any }> => {
   try {
-    // First, try to get existing profile by email
     const { data: existingProfile, error: fetchError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('email', user.email)
-      .single();
+      .eq('id', user.id)
+      .maybeSingle();
 
     if (existingProfile) {
       console.log('Profile found:', existingProfile);
       return { data: existingProfile, error: null };
     }
 
-    // If no profile exists, create one
-    if (fetchError && fetchError.code === 'PGRST116') {
-      // Extract username from email or use metadata
-      const username = 
-        user.user_metadata?.full_name?.toLowerCase().replace(/\s+/g, '_') ||
-        user.email?.split('@')[0] ||
-        `user_${Date.now()}`;
+    if (fetchError) {
+      console.error('Error fetching profile:', fetchError);
+      return { data: null, error: fetchError };
+    }
 
-      const displayName = 
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email?.split('@')[0] ||
-        'User';
+    const username =
+      user.user_metadata?.full_name?.toLowerCase().replace(/\s+/g, '_') ||
+      user.email?.split('@')[0] ||
+      `user_${Date.now()}`;
 
-      const avatarUrl = 
-        user.user_metadata?.avatar_url ||
-        user.user_metadata?.picture ||
-        null;
+    const displayName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split('@')[0] ||
+      'User';
 
-      const newProfile: Partial<Profile> = {
+    const avatarUrl =
+      user.user_metadata?.avatar_url ||
+      user.user_metadata?.picture ||
+      null;
+
+    const { data: createdProfile, error: createError } = await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
         username,
         display_name: displayName,
         email: user.email || null,
         avatar_url: avatarUrl,
-      };
+      })
+      .select()
+      .single();
 
-      const { data: createdProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert(newProfile)
-        .select()
-        .single();
-
-      if (createError) {
-        console.error('Error creating profile:', createError);
-        return { data: null, error: createError };
-      }
-
-      console.log('Profile created:', createdProfile);
-      return { data: createdProfile, error: null };
+    if (createError) {
+      console.error('Error creating profile:', createError);
+      return { data: null, error: createError };
     }
 
-    // Some other error occurred
-    console.error('Error fetching profile:', fetchError);
-    return { data: null, error: fetchError };
+    console.log('Profile created:', createdProfile);
+    return { data: createdProfile, error: null };
   } catch (error: any) {
     console.error('Unexpected error in getOrCreateProfile:', error);
     return { data: null, error };
@@ -103,33 +98,13 @@ export const getProfileByEmail = async (email: string): Promise<{ data: Profile 
 };
 
 /**
- * Delete user account completely (profile data + auth user)
- * Uses a PostgreSQL RPC function with SECURITY DEFINER to handle:
- * 1. Deleting profile from database (cascades to stats and wrong_answers)
- * 2. Deleting user from auth.users table
+ * Delete user account completely (all server data + auth user).
+ * Device-local cleanup (settings, review flags) should run before calling this.
  */
 export const deleteAccount = async (): Promise<{ error: any }> => {
   try {
-    console.log('Cleaning Challenge-Mode tables before delete_user_account RPC...');
-
-    // The legacy delete_user_account RPC does not know about
-    // user_mastered_answers or user_passed_answers (added in the
-    // 20260521120000_mastered_and_streak migration). RLS limits these
-    // deletes to the caller's own rows, so this is safe.
-    const { data: authData } = await supabase.auth.getUser();
-    const userId = authData?.user?.id;
-    if (userId) {
-      const [{ error: masteredErr }, { error: passedErr }] = await Promise.all([
-        supabase.from('user_mastered_answers').delete().eq('user_id', userId),
-        supabase.from('user_passed_answers').delete().eq('user_id', userId),
-      ]);
-      if (masteredErr) console.warn('Could not clean user_mastered_answers:', masteredErr);
-      if (passedErr) console.warn('Could not clean user_passed_answers:', passedErr);
-    }
-
     console.log('Calling delete_user_account RPC function...');
 
-    // Call the database RPC function
     const { data, error } = await supabase.rpc('delete_user_account');
 
     console.log('RPC response data:', data);
@@ -140,7 +115,6 @@ export const deleteAccount = async (): Promise<{ error: any }> => {
       return { error };
     }
 
-    // Check if the function returned an error in the data
     if (data?.error) {
       console.error('Error from delete_user_account:', data.error);
       return { error: { message: data.error } };

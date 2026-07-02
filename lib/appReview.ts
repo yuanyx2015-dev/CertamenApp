@@ -31,6 +31,19 @@ function milestoneFor(masteredCount: number): number {
   return Math.floor(masteredCount / MASTERED_MILESTONE_STEP) * MASTERED_MILESTONE_STEP;
 }
 
+/** Remove all on-device review prompt state (e.g. account deletion). */
+export async function clearAppReviewState(): Promise<void> {
+  try {
+    await AsyncStorage.multiRemove([
+      REVIEWED_KEY,
+      FIRST_SET_PROMPTED_KEY,
+      LAST_MILESTONE_KEY,
+    ]);
+  } catch (e) {
+    console.warn('[appReview] clearAppReviewState failed:', e);
+  }
+}
+
 /** True once the user has tapped "Rate the app" — after which we never prompt again. */
 export async function hasReviewed(): Promise<boolean> {
   try {

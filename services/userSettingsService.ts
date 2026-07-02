@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearAppReviewState } from '../lib/appReview';
 
 export type PracticeSessionDifficulty = 'easy' | 'medium' | 'hard';
 
@@ -30,6 +31,11 @@ export async function clearAllLocalUserSettings(userId: string): Promise<void> {
     getUserStorageKey(userId),
     `${STORAGE_KEY}_${userId}`, // legacy rank-up key
   ]);
+}
+
+/** Wipe all device-local data tied to an account (settings + review prompt flags). */
+export async function clearAllLocalAccountData(userId: string): Promise<void> {
+  await Promise.all([clearAllLocalUserSettings(userId), clearAppReviewState()]);
 }
 
 const getDefaultSettings = (userId: string): UserSettings => ({

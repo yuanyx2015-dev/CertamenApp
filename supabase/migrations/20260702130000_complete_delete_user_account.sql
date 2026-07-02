@@ -1,8 +1,5 @@
--- ================================================
--- Function to delete user account completely
--- This should be run with SECURITY DEFINER so it has
--- permission to delete from auth.users
--- ================================================
+-- Wipe all per-user data on account deletion, including tables keyed by auth.users.id
+-- and any legacy profiles rows matched by email.
 
 CREATE OR REPLACE FUNCTION public.delete_user_account()
 RETURNS json
@@ -47,9 +44,3 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
-
--- ================================================
--- USAGE:
--- Call this function from your app:
--- const { data, error } = await supabase.rpc('delete_user_account')
--- ================================================

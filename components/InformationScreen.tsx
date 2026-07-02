@@ -17,7 +17,7 @@ import {
   type UserStats,
 } from '../services/userStatsService';
 import { getProfileByEmail, deleteAccount } from '../services/profileService';
-import { clearAllLocalUserSettings } from '../services/userSettingsService';
+import { clearAllLocalAccountData } from '../services/userSettingsService';
 import {
   getRankStats,
   getMasteredCount,
@@ -154,9 +154,9 @@ export function InformationScreen({
       }
 
       try {
-        await clearAllLocalUserSettings(user.id);
+        await clearAllLocalAccountData(user.id);
       } catch (storageError) {
-        console.warn('Error clearing local settings:', storageError);
+        console.warn('Error clearing local account data:', storageError);
       }
 
       const { error: deleteError } = await deleteAccount();

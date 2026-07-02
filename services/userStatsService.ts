@@ -260,19 +260,13 @@ export const getOrCreateUserStats = async (userId: string) => {
     const username = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
     const email = user?.email || null;
     
-    // Try to get profile_id by email
-    let profileId = null;
-    if (email) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .single();
-      
-      if (profile) {
-        profileId = profile.id;
-      }
-    }
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const profileId = profile?.id ?? null;
     
     return createUserStats(userId, username, profileId, email);
   }
