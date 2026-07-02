@@ -808,8 +808,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: 'rgba(245, 239, 227, 0.85)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(201, 169, 97, 0.3)',
@@ -832,8 +832,8 @@ const styles = StyleSheet.create({
   },
   headerColCenterActive: {
     flexShrink: 0,
-    minWidth: 88,
-    paddingHorizontal: 6,
+    minWidth: 104,
+    paddingHorizontal: 8,
   },
   headerColRight: {
     flex: 1,
@@ -842,12 +842,12 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   headerTimerText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: '#c9a961',
   },
   headerText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#3a3a3a',
   },
@@ -856,17 +856,19 @@ const styles = StyleSheet.create({
   },
   gameAreaContent: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingTop: 14,
     alignItems: 'center',
-    gap: 18,
-    paddingBottom: 24,
+    gap: 10,
+    paddingBottom: 8,
   },
   statusContainer: {
     alignItems: 'center',
-    minHeight: 20,
+    paddingTop: 4,
+    paddingBottom: 2,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 13,
+    lineHeight: 16,
     color: '#7a7a7a',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -881,8 +883,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
     borderRadius: 12,
-    padding: 16,
-    minHeight: 120,
+    padding: 18,
+    minHeight: 108,
     position: 'relative',
   },
   previouslyWrongIndicator: {
@@ -902,8 +904,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   questionText: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 25,
     color: '#3a3a3a',
   },
   cursor: {
@@ -912,9 +914,9 @@ const styles = StyleSheet.create({
     color: '#c9a961',
   },
   buzzerBtn: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
+    width: 136,
+    height: 136,
+    borderRadius: 68,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderWidth: 3,
     borderColor: '#c9a961',
@@ -925,11 +927,11 @@ const styles = StyleSheet.create({
     elevation: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 8,
+    marginVertical: 4,
   },
   buzzerText: {
     color: '#c9a961',
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     letterSpacing: 2,
   },
@@ -954,10 +956,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   optionText: {
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
     color: '#3a3a3a',
-    lineHeight: 19,
+    lineHeight: 20,
   },
   optionCorrect: {
     backgroundColor: 'rgba(72, 130, 88, 0.18)',
@@ -978,7 +980,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   actionRow: {
-    marginTop: 8,
+    marginTop: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

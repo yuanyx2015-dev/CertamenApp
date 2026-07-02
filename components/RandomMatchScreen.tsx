@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     width: '100%',
     alignItems: 'center',
-    gap: 40,
+    gap: 24,
   },
   playerCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 16,
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

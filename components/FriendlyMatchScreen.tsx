@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     width: '100%',
-    gap: 32,
+    gap: 16,
     alignItems: 'center',
   },
   button: {
@@ -95,8 +95,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 16,
-    paddingHorizontal: 48,
-    paddingVertical: 24,
+    paddingHorizontal: 40,
+    paddingVertical: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    minHeight: 80,
+    minHeight: 64,
   },
   buttonText: {
     color: '#3a3a3a',

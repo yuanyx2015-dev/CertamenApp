@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     width: '100%',
-    gap: 24,
+    gap: 16,
     alignItems: 'center',
   },
   titleText: {
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 12,
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

@@ -255,6 +255,16 @@ export function RomanBackground() {
     }
   };
 
+  const isMainTabScreen = currentScreen === 'main';
+  const useCompactContentInset =
+    currentScreen !== 'login' &&
+    !isMainTabScreen &&
+    currentScreen !== 'reviewCategories';
+  const isGameScreen =
+    currentScreen === 'practice-game' || currentScreen === 'challenge-game';
+  const isReviewGame =
+    currentScreen === 'challenge-game' && challengeConfig?.mode === 'review';
+
   return (
     <StreakConfettiProvider>
     <View style={styles.container}>
@@ -274,9 +284,24 @@ export function RomanBackground() {
         <LaurelBranches />
       </View>
 
-      <View style={styles.contentContainer}>{renderScreen()}</View>
+      <View
+        style={[
+          styles.contentContainer,
+          useCompactContentInset && styles.contentContainerCompact,
+          isGameScreen && styles.contentContainerGame,
+          isReviewGame && styles.contentContainerReviewGame,
+        ]}
+      >
+        {renderScreen()}
+      </View>
 
-      <View style={styles.footerContainer}>
+      <View
+        style={[
+          styles.footerContainer,
+          isGameScreen && styles.footerContainerGame,
+          isReviewGame && styles.footerContainerReviewGame,
+        ]}
+      >
         <MeanderBorder />
       </View>
     </View>
@@ -328,6 +353,17 @@ const styles = StyleSheet.create({
     zIndex: 5,
     overflow: 'visible',
   },
+  contentContainerCompact: {
+    paddingTop: 128,
+    paddingBottom: 80,
+    justifyContent: 'flex-start',
+  },
+  contentContainerGame: {
+    paddingBottom: 56,
+  },
+  contentContainerReviewGame: {
+    paddingBottom: 68,
+  },
   footerContainer: {
     position: 'absolute',
     bottom: 0,
@@ -337,5 +373,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     zIndex: 10,
+  },
+  footerContainerGame: {
+    height: 36,
+  },
+  footerContainerReviewGame: {
+    height: 42,
   },
 });

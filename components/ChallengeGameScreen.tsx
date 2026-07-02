@@ -847,7 +847,7 @@ export function ChallengeGameScreen({
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, config.mode === 'review' && styles.footerReview]}>
         {config.mode === 'review' ? (
           <View style={styles.footerReviewWrap}>
             <TouchableOpacity
@@ -914,8 +914,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: 'rgba(245, 239, 227, 0.85)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(201, 169, 97, 0.3)',
@@ -938,8 +938,8 @@ const styles = StyleSheet.create({
   },
   headerColCenterActive: {
     flexShrink: 0,
-    minWidth: 88,
-    paddingHorizontal: 6,
+    minWidth: 104,
+    paddingHorizontal: 8,
   },
   headerColRight: {
     flex: 1,
@@ -948,26 +948,28 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   headerTimerText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: '#c9a961',
   },
   headerText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#3a3a3a',
   },
   headerCount: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#6a6a6a',
     fontWeight: '500',
   },
   statusContainer: {
     alignItems: 'center',
-    minHeight: 20,
+    paddingTop: 4,
+    paddingBottom: 2,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 13,
+    lineHeight: 16,
     color: '#7a7a7a',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -983,9 +985,9 @@ const styles = StyleSheet.create({
   },
   buzzerBtn: {
     alignSelf: 'center',
-    width: 128,
-    height: 128,
-    borderRadius: 64,
+    width: 136,
+    height: 136,
+    borderRadius: 68,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderWidth: 3,
     borderColor: '#c9a961',
@@ -996,11 +998,11 @@ const styles = StyleSheet.create({
     elevation: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 8,
+    marginVertical: 4,
   },
   buzzerText: {
     color: '#c9a961',
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     letterSpacing: 2,
   },
@@ -1009,21 +1011,21 @@ const styles = StyleSheet.create({
   },
   gameAreaContent: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 18,
-    paddingBottom: 24,
+    paddingTop: 14,
+    paddingBottom: 8,
+    gap: 10,
   },
   questionBox: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
     borderRadius: 12,
-    padding: 16,
-    minHeight: 120,
+    padding: 18,
+    minHeight: 108,
   },
   questionText: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 25,
     color: '#3a3a3a',
   },
   optionsGrid: {
@@ -1044,10 +1046,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   optionText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#3a3a3a',
     textAlign: 'center',
-    lineHeight: 19,
+    lineHeight: 20,
   },
   optionCorrect: {
     backgroundColor: 'rgba(72, 130, 88, 0.18)',
@@ -1072,7 +1074,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
-    marginTop: 8,
+    marginTop: 6,
   },
   continueBtn: {
     backgroundColor: '#c9a961',
@@ -1124,25 +1126,31 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   footer: {
-    paddingVertical: 8,
+    paddingVertical: 4,
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: 'rgba(201, 169, 97, 0.25)',
     backgroundColor: 'rgba(245, 239, 227, 0.85)',
   },
+  footerReview: {
+    paddingTop: 10,
+    paddingBottom: 14,
+  },
   footerLink: {
     fontSize: 12,
     color: '#8a6a3a',
     textDecorationLine: 'underline',
+    paddingVertical: 2,
   },
   footerReviewWrap: {
     alignItems: 'center',
     paddingHorizontal: 16,
-    gap: 6,
+    gap: 8,
+    paddingBottom: 2,
   },
   footerFinishBtn: {
     paddingHorizontal: 22,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 10,
     backgroundColor: 'rgba(201, 169, 97, 0.14)',
     borderWidth: 1,
@@ -1150,10 +1158,11 @@ const styles = StyleSheet.create({
   },
   footerFinishHint: {
     fontSize: 11,
-    lineHeight: 15,
+    lineHeight: 16,
     color: 'rgba(106, 85, 48, 0.55)',
     textAlign: 'center',
     maxWidth: 300,
+    paddingHorizontal: 4,
   },
   footerFinishBtnText: {
     fontSize: 14,

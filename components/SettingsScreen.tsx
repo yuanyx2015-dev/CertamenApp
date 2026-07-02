@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     width: '100%',
-    gap: 32,
+    gap: 20,
   },
   titleText: {
     color: '#3a3a3a',
@@ -308,10 +308,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   settingsContainer: {
-    gap: 24,
+    gap: 16,
   },
   optionText: {
     color: '#3a3a3a',
@@ -414,13 +414,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scrollPracticeContent: {
-    paddingTop: 24,
-    paddingBottom: 32,
+    paddingTop: 4,
+    paddingBottom: 20,
   },
   backInScroll: {
-    marginTop: 28,
+    marginTop: 12,
     alignItems: 'center',
-    paddingBottom: 24,
+    paddingBottom: 16,
   },
   difficultySection: {
     gap: 8,
