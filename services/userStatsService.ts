@@ -23,6 +23,21 @@ export interface UserStats {
   updated_at: string;
 }
 
+/** YYYY-MM-DD in the device local timezone — streak "days" follow the user's calendar. */
+export const getLocalDateString = (date: Date = new Date()): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const localYesterdayString = (): string => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - 1);
+  return getLocalDateString(d);
+};
+
 // Get user stats by user_id
 export const getUserStats = async (userId: string) => {
   const { data, error } = await supabase
@@ -100,16 +115,8 @@ export const expireStreakIfMissed = async (userId: string): Promise<UserStats | 
   const lastDate = stats.last_activity_date;
 
   if (streak > 0 && lastDate) {
-    const todayMidnight = new Date();
-    todayMidnight.setHours(0, 0, 0, 0);
-
-    const yesterdayMidnight = new Date(todayMidnight);
-    yesterdayMidnight.setDate(yesterdayMidnight.getDate() - 1);
-
-    const lastActivity = new Date(lastDate);
-    lastActivity.setHours(0, 0, 0, 0);
-
-    if (lastActivity < yesterdayMidnight) {
+    // Compare ISO date strings (last_activity_date is stored as YYYY-MM-DD).
+    if (lastDate < localYesterdayString()) {
       await supabase
         .from('user_stats')
         .update({ current_streak: 0 })
@@ -130,6 +137,7 @@ export const expireStreakIfMissed = async (userId: string): Promise<UserStats | 
 export const bumpUserStreak = async (userId: string) => {
   const { data, error } = await supabase.rpc('bump_user_streak', {
     p_user_id: userId,
+    p_today: getLocalDateString(),
   });
 
   if (error) {
