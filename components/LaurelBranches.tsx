@@ -3,7 +3,7 @@ import Svg, { G, Path, Ellipse, Circle } from 'react-native-svg';
 
 export function LaurelBranches() {
   return (
-    <Svg width={280} height={100} viewBox="0 0 280 100" fill="none">
+    <Svg width={280} height={100} viewBox="0 0 280 100" fill="none" pointerEvents="none">
       {/* Left laurel branch */}
       <G opacity={0.85}>
         <Path

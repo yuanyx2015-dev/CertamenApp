@@ -259,7 +259,8 @@ export function RomanBackground() {
   const useCompactContentInset =
     currentScreen !== 'login' &&
     !isMainTabScreen &&
-    currentScreen !== 'reviewCategories';
+    currentScreen !== 'reviewCategories' &&
+    currentScreen !== 'categoryQuestions';
   const isGameScreen =
     currentScreen === 'practice-game' || currentScreen === 'challenge-game';
   const isReviewGame =
@@ -268,7 +269,7 @@ export function RomanBackground() {
   return (
     <StreakConfettiProvider>
     <View style={styles.container}>
-      <View style={styles.parchment} />
+      <View style={styles.parchment} pointerEvents="none" />
 
       {currentScreen !== 'login' && (
         <TouchableOpacity
@@ -280,7 +281,7 @@ export function RomanBackground() {
         </TouchableOpacity>
       )}
 
-      <View style={styles.headerContainer}>
+      <View style={styles.headerContainer} pointerEvents="box-none">
         <LaurelBranches />
       </View>
 
@@ -301,6 +302,7 @@ export function RomanBackground() {
           isGameScreen && styles.footerContainerGame,
           isReviewGame && styles.footerContainerReviewGame,
         ]}
+        pointerEvents="box-none"
       >
         <MeanderBorder />
       </View>

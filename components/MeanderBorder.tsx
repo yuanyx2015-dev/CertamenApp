@@ -8,7 +8,13 @@ export function MeanderBorder() {
   const meanderUnits = Math.ceil(width / 18) + 2;
   
   return (
-    <Svg width={width} height={48} viewBox="0 0 360 48" preserveAspectRatio="xMidYMid slice">
+    <Svg
+      width={width}
+      height={48}
+      viewBox="0 0 360 48"
+      preserveAspectRatio="xMidYMid slice"
+      pointerEvents="none"
+    >
       <G transform="translate(0, 18)" opacity={0.4}>
         {Array.from({ length: meanderUnits }).map((_, i) => (
           <G key={i} transform={`translate(${i * 18}, 0)`}>

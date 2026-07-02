@@ -152,7 +152,7 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>Your Wrong Questions</Text>
-        <Text style={styles.subtitle}>Choose a category to review</Text>
+        <Text style={styles.subtitle}>Choose a category to look at</Text>
         
         <View style={styles.categoriesGrid}>
           {categories.map((category) => (

@@ -217,6 +217,13 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
     'living-latin': 'Living Latin',
   };
 
+  const categoryLabel = categoryNames[category] ?? category;
+  const wrongCount = wrongQuestions.length;
+  const wrongCountLabel =
+    wrongCount === 1
+      ? 'You have 1 wrong question'
+      : `You have ${wrongCount} wrong questions`;
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -230,16 +237,20 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <TouchableOpacity
-        style={styles.topBackButton}
-        onPress={() => onNavigate?.('reviewCategories')}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.topBackButtonText}>‹ All categories</Text>
-      </TouchableOpacity>
-      <Text style={styles.title}>{categoryNames[category] ?? category} Review</Text>
-      <Text style={styles.subtitle}>{wrongQuestions.length} question{wrongQuestions.length !== 1 ? 's' : ''} to review</Text>
+      <View style={styles.headerSection} pointerEvents="box-none">
+        <TouchableOpacity
+          style={styles.topBackButton}
+          onPress={() => onNavigate?.('reviewCategories')}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={styles.topBackButtonText}>‹ All categories</Text>
+        </TouchableOpacity>
+        <View style={styles.headerBlock} pointerEvents="none">
+          <Text style={styles.title}>{categoryLabel}</Text>
+          <Text style={styles.subtitle}>{wrongCountLabel}</Text>
+        </View>
+      </View>
 
       {/* Search Bar */}
       {wrongQuestions.length > 0 && (
@@ -418,9 +429,10 @@ const styles = StyleSheet.create({
   },
   topBackButton: {
     alignSelf: 'flex-start',
-    paddingVertical: 0,
+    paddingVertical: 4,
     paddingHorizontal: 2,
-    marginBottom: 0,
+    marginBottom: 8,
+    zIndex: 2,
   },
   topBackButtonText: {
     fontSize: 14,
@@ -428,26 +440,34 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     fontWeight: '500',
   },
+  headerSection: {
+    zIndex: 2,
+  },
+  headerBlock: {
+    paddingTop: 4,
+    paddingBottom: 16,
+    marginBottom: 8,
+  },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     color: '#3a3a3a',
     letterSpacing: 0.8,
     textAlign: 'center',
-    marginBottom: 0,
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
     color: '#6a6a6a',
     letterSpacing: 0.4,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 0,
   },
   searchContainer: {
-    marginBottom: 4,
+    marginBottom: 12,
   },
   searchInput: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
