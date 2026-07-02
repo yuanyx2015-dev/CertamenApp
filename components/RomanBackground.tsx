@@ -20,6 +20,7 @@ import {
   type ChallengeGameMode,
 } from './ChallengeGameScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
+import { StreakConfettiProvider } from './StreakConfetti';
 
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
@@ -255,6 +256,7 @@ export function RomanBackground() {
   };
 
   return (
+    <StreakConfettiProvider>
     <View style={styles.container}>
       <View style={styles.parchment} />
 
@@ -278,6 +280,7 @@ export function RomanBackground() {
         <MeanderBorder />
       </View>
     </View>
+    </StreakConfettiProvider>
   );
 }
 

@@ -38,6 +38,93 @@ const localYesterdayString = (): string => {
   return getLocalDateString(d);
 };
 
+const STREAK_MILESTONES: Record<number, string> = {
+  7: 'One week under arms. Day 7 secured — well marched!',
+  10: 'Double digits, legionary. Day 10 held!',
+  25: '25 days. Your place in the ranks is earned.',
+  50: '50 days secured! The centurions have noticed.',
+  75: '75 days. A veteran\'s discipline.',
+  100: '100 days! You carry the standard now.',
+  150: '150 days. Few soldiers march this far.',
+  200: '200 days! The eagle rises with you.',
+  250: '250 days. Steel through and through.',
+  300: '300 days. A full campaign, nearly complete.',
+};
+
+const STREAK_GENERAL_POOL = [
+  'Day {n} secured. Well marched, soldier.',
+  'Another day answered. That\'s {n}.',
+  '{n} days held. The line stands.',
+  'Day {n} in the books. The legion advances.',
+  'Reported and done — day {n}.',
+  'Day {n} claimed. Steady on the march.',
+  '{n} days, never a muster missed.',
+  'Day {n} won. Rest, then onward.',
+];
+
+function pickGeneralStreakMessage(n: number): string {
+  const template =
+    STREAK_GENERAL_POOL[Math.floor(Math.random() * STREAK_GENERAL_POOL.length)];
+  return template.replace(/\{n\}/g, String(n));
+}
+
+function getYearStreakMessage(n: number): string {
+  switch (n) {
+    case 365:
+      return 'One full year in service — 365 days held. Rome salutes you!';
+    case 730:
+      return 'Two years under the eagle. A true veteran.';
+    case 1095:
+      return 'Three years. Legendary service.';
+    default: {
+      const years = n / 365;
+      return `${years} years — ${n} days in the ranks. Ave, commander!`;
+    }
+  }
+}
+
+/**
+ * Toast copy when the daily streak is credited in Challenge Mode (local calendar day).
+ * Selection order: comeback day 1 → year multiples → milestones → days 1–3 → general pool.
+ */
+export function getStreakCelebrateMessage(
+  lastActivityDate: string | null | undefined,
+  newStreak: number
+): string {
+  const n = newStreak;
+  const yesterday = localYesterdayString();
+  const hadPriorActivity = !!lastActivityDate;
+  const isComebackDay1 = n === 1 && hadPriorActivity && lastActivityDate !== yesterday;
+
+  // (1) Comeback — played before, missed at least one day, restarting at day 1
+  if (isComebackDay1) {
+    return 'The eagle rises again — day 1 of your new campaign, reclaimed.';
+  }
+
+  // (2) Full-year anniversaries (365, 730, 1095, …)
+  if (n >= 365 && n % 365 === 0) {
+    return getYearStreakMessage(n);
+  }
+
+  // (3) Milestone days
+  const milestone = STREAK_MILESTONES[n];
+  if (milestone) return milestone;
+
+  // (4) Early campaign days
+  if (n === 1) {
+    return 'The muster is answered — day 1 of your new campaign secured. Fall in!';
+  }
+  if (n === 2) {
+    return 'Day 2 secured. The march goes on.';
+  }
+  if (n === 3) {
+    return 'Day 3 done. Finding your footing in the ranks.';
+  }
+
+  // (5) General pool for day 4+
+  return pickGeneralStreakMessage(n);
+}
+
 // Get user stats by user_id
 export const getUserStats = async (userId: string) => {
   const { data, error } = await supabase

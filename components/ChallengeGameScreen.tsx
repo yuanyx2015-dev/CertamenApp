@@ -11,7 +11,12 @@ import {
   Modal,
 } from 'react-native';
 import { getCurrentUser } from '../services/authService';
-import { bumpUserStreak } from '../services/userStatsService';
+import {
+  bumpUserStreak,
+  getLocalDateString,
+  getStreakCelebrateMessage,
+  getUserStats,
+} from '../services/userStatsService';
 import {
   getRankPoolQuestions,
   getMasteredCount,
@@ -28,6 +33,7 @@ import type { Question } from '../services/questionService';
 import type { MainTabId } from './MainTabsScreen';
 import { FeedbackOverlay, type FeedbackOverlayHandle } from './RomanFeedback';
 import { StarIcon } from './StarIcon';
+import { useStreakConfetti } from './StreakConfetti';
 const HOLD_TO_MASTER_MS = 500;
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
@@ -127,6 +133,7 @@ export function ChallengeGameScreen({
   /** Bumped once per game session on the first answer (server-side same-day no-op). */
   const streakBumpedRef = useRef(false);
   const feedbackRef = useRef<FeedbackOverlayHandle>(null);
+  const { celebrate: celebrateStreak } = useStreakConfetti();
 
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -139,6 +146,25 @@ export function ChallengeGameScreen({
   const isAnsweredRef = useRef(false);
   const currentQuestionRef = useRef<Question | null>(null);
   const userIdRef = useRef<string | null>(null);
+
+  const bumpStreakIfNeeded = useCallback(
+    async (uid: string) => {
+      if (streakBumpedRef.current || config.mode !== 'challenge') return;
+      streakBumpedRef.current = true;
+
+      const today = getLocalDateString();
+      const { data: stats } = await getUserStats(uid);
+      const lastActivityDate = stats?.last_activity_date;
+      const creditsStreakToday = lastActivityDate !== today;
+
+      const { data: bumpData, error } = await bumpUserStreak(uid);
+      if (!error && creditsStreakToday) {
+        const newStreak = bumpData?.current_streak ?? 1;
+        celebrateStreak(getStreakCelebrateMessage(lastActivityDate, newStreak));
+      }
+    },
+    [celebrateStreak, config.mode]
+  );
 
   // ----- LOAD POOL -----
   useEffect(() => {
@@ -304,10 +330,7 @@ export function ChallengeGameScreen({
     setStatusText("Time's up! You didn't buzz in time.");
     feedbackRef.current?.show('wrong');
 
-    if (!streakBumpedRef.current) {
-      streakBumpedRef.current = true;
-      void bumpUserStreak(uid);
-    }
+    void bumpStreakIfNeeded(uid);
     await markQuestionAsWrong(uid, q.id);
     setWrongCount((n) => n + 1);
   };
@@ -328,10 +351,7 @@ export function ChallengeGameScreen({
     setStatusText("Time's up! No answer selected.");
     feedbackRef.current?.show('wrong');
 
-    if (!streakBumpedRef.current) {
-      streakBumpedRef.current = true;
-      void bumpUserStreak(uid);
-    }
+    void bumpStreakIfNeeded(uid);
     await markQuestionAsWrong(uid, q.id);
     setWrongCount((n) => n + 1);
   };
@@ -447,10 +467,7 @@ export function ChallengeGameScreen({
       // Streak: bump once per session on the first answer. The DB function
       // is idempotent within the same calendar day, so repeated sessions
       // on the same day won't double-count.
-      if (!streakBumpedRef.current) {
-        streakBumpedRef.current = true;
-        void bumpUserStreak(userId);
-      }
+      void bumpStreakIfNeeded(userId);
 
       if (!option.isCorrect) {
         // Mark wrong, fire-and-forget; UI advances on Next tap.
@@ -458,7 +475,7 @@ export function ChallengeGameScreen({
         setWrongCount((n) => n + 1);
       }
     },
-    [current, isAnswered, userId]
+    [bumpStreakIfNeeded, current, isAnswered, userId]
   );
 
   // ----- ADVANCE AFTER WRONG -----
