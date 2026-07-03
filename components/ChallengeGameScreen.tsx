@@ -850,16 +850,16 @@ export function ChallengeGameScreen({
       <View style={[styles.footer, config.mode === 'review' && styles.footerReview]}>
         {config.mode === 'review' ? (
           <View style={styles.footerReviewWrap}>
+            <Text style={styles.footerFinishHint}>
+              Review mode goes over all your wrong questions so if you want, you can finish at any point!
+            </Text>
             <TouchableOpacity
               style={styles.footerFinishBtn}
               onPress={() => onNavigate?.('review')}
               activeOpacity={0.85}
             >
-              <Text style={styles.footerFinishBtnText}>Finish reviewing? Click me</Text>
+              <Text style={styles.footerFinishBtnText}>Done reviewing? Click me!</Text>
             </TouchableOpacity>
-            <Text style={styles.footerFinishHint}>
-              Review mode goes over all your wrong questions so if you want, you can finish at any point!
-            </Text>
           </View>
         ) : (
           <TouchableOpacity
