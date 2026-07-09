@@ -6,8 +6,10 @@ import {
   StyleSheet,
   Animated,
   Alert,
+  Platform,
 } from 'react-native';
-import { Mail, Apple } from './Icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { Mail } from './Icons';
 import { signInWithGoogle, signInWithApple, type AuthResponse } from '../services/authService';
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
@@ -75,12 +77,21 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
             disabled={isLoading}
           />
 
-          <LoginButton
-            icon={<Apple />}
-            label={isLoading ? 'Signing in...' : 'Sign in with Apple'}
-            onPress={handleAppleLogin}
-            disabled={isLoading}
-          />
+          {/* iOS only: App Store requires SIWA when offering Google; use Apple's system button. */}
+          {Platform.OS === 'ios' && (
+            <View
+              style={[styles.appleButtonWrap, isLoading && styles.appleButtonDisabled]}
+              pointerEvents={isLoading ? 'none' : 'auto'}
+            >
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={8}
+                style={styles.appleButton}
+                onPress={handleAppleLogin}
+              />
+            </View>
+          )}
 
           {onGuestMode && (
             <TouchableOpacity
@@ -165,7 +176,6 @@ function LoginButton({
           <View style={styles.iconContainer}>{icon}</View>
           <Text style={styles.buttonText}>{label}</Text>
         </Animated.View>
-
       </TouchableOpacity>
     </Animated.View>
   );
@@ -231,6 +241,16 @@ const styles = StyleSheet.create({
   },
   buttonOuter: {
     width: '100%',
+  },
+  appleButtonWrap: {
+    width: '100%',
+  },
+  appleButtonDisabled: {
+    opacity: 0.6,
+  },
+  appleButton: {
+    width: '100%',
+    height: 48,
   },
   button: {
     flexDirection: 'row',

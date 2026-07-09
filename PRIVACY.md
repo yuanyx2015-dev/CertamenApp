@@ -26,4 +26,4 @@ You can delete your account and all associated data at any time from the Profile
 
 ## Contact
 
-For privacy questions, contact: certamenapp.reviewer@gmail.com
+For privacy questions, contact: alexyuany2017@gmail.com

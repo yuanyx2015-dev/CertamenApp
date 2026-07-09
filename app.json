@@ -30,7 +30,7 @@
     "primaryCategory": "EDUCATION",
     "plugins": ["expo-web-browser", "expo-apple-authentication"],
     "android": {
-      "package": "com.ziyou.certamenapp",
+      "package": "com.ziyouyuan.certamenapp",
       "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",

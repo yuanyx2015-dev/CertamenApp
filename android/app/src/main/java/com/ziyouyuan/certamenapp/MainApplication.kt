@@ -1,4 +1,4 @@
-package com.ziyou.certamenapp
+package com.ziyouyuan.certamenapp
 
 import android.app.Application
 import android.content.res.Configuration

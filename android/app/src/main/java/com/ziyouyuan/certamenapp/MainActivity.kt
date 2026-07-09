@@ -1,4 +1,4 @@
-package com.ziyou.certamenapp
+package com.ziyouyuan.certamenapp
 
 import android.os.Build
 import android.os.Bundle

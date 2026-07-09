@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.ziyou.certamenapp'
+    namespace 'com.ziyouyuan.certamenapp'
     defaultConfig {
-        applicationId 'com.ziyou.certamenapp'
+        applicationId 'com.ziyouyuan.certamenapp'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -121,7 +121,7 @@ npm install
 ```json
 {
   "ios": { "bundleIdentifier": "com.ziyouyuan.certamenapp" },
-  "android": { "package": "com.ziyou.certamenapp" }
+  "android": { "package": "com.ziyouyuan.certamenapp" }
 }
 ```
 

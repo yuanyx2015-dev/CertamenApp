@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const APP_STORE_ID = '6761233176';
 
 /** Android package name (from app.json → expo.android.package). */
-const ANDROID_PACKAGE = 'com.ziyou.certamenapp';
+const ANDROID_PACKAGE = 'com.ziyouyuan.certamenapp';
 
 const REVIEWED_KEY = 'appReview.reviewed';
 const FIRST_SET_PROMPTED_KEY = 'appReview.firstSetPrompted';
