@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Modal,
+  Platform,
 } from 'react-native';
 import { getCurrentUser, signOut } from '../services/authService';
 import {
@@ -514,11 +515,25 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: -1, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 2,
-    elevation: 2,
+    // iOS keeps soft shadows. Android elevation + border looks like a thick outline,
+    // so Android uses the 1px border only (same look as Log Out).
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: -1, height: 1 },
+        shadowOpacity: 0.12,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 0,
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: -1, height: 1 },
+        shadowOpacity: 0.12,
+        shadowRadius: 2,
+      },
+    }),
   },
   userCard: {
     gap: 8,
@@ -652,11 +667,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: -1, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: -1, height: 1 },
+        shadowOpacity: 0.12,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 0,
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: -1, height: 1 },
+        shadowOpacity: 0.12,
+        shadowRadius: 2,
+      },
+    }),
   },
   wrongQuestionsBtnText: {
     fontSize: 15,

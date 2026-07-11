@@ -36,7 +36,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#7a1f1f"
       },
-      "versionCode": 3
+      "versionCode": 4
     },
     "extra": {
       "eas": {
