@@ -302,22 +302,14 @@ export function InformationScreen({
   }, [loadData]);
 
   const handleDailyChallenge = () => {
-    if (!isAuthenticated || isGuestMode) {
-      Alert.alert('Sign In Required', 'Sign in to start your daily challenge.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign In', onPress: () => onNavigate?.('login') },
-      ]);
-      return;
-    }
+    // Guests land on Challenge's inline sign-in screen (same as the Challenge tab).
     onTabChange?.('challenge');
   };
 
   const handleWrongQuestions = () => {
     if (!isAuthenticated || isGuestMode) {
-      Alert.alert('Sign In Required', 'Sign in to browse the questions you got wrong.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign In', onPress: () => onNavigate?.('login') },
-      ]);
+      // Guests land on Review's inline sign-in screen (same as the Review tab).
+      onTabChange?.('review');
       return;
     }
     onNavigate?.('reviewCategories');
@@ -351,6 +343,17 @@ export function InformationScreen({
           Rank: <Text style={styles.userMetaValue}>{rankName}</Text>
         </Text>
         <ProgressBar progress={progress} label="Progress through this rank" />
+        {isGuestMode && (
+          <TouchableOpacity
+            style={styles.guestSignInBtn}
+            onPress={() => onNavigate?.('login')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.guestSignInBtnText}>
+              Sign in to track mastery, streaks, and review
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.gridSection}>
@@ -537,6 +540,23 @@ const styles = StyleSheet.create({
   },
   userCard: {
     gap: 8,
+  },
+  guestSignInBtn: {
+    marginTop: 8,
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.55)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  guestSignInBtnText: {
+    color: '#3a3a3a',
+    fontWeight: '600',
+    fontSize: 13,
+    letterSpacing: 0.3,
+    textAlign: 'center',
   },
   userNameText: {
     fontSize: 16,

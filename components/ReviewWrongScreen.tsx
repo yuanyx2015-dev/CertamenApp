@@ -25,10 +25,12 @@ function formatWrongCount(n: number): string {
 
 export function ReviewWrongScreen({
   isAuthenticated,
+  isGuestMode,
   onNavigate,
   onStartChallengeGame,
 }: {
   isAuthenticated?: boolean;
+  isGuestMode?: boolean;
   onNavigate?: (screen: string) => void;
   onStartChallengeGame?: (
     mode: ChallengeGameMode,
@@ -41,7 +43,7 @@ export function ReviewWrongScreen({
   const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || isGuestMode) {
       setIsLoading(false);
       return;
     }
@@ -60,17 +62,19 @@ export function ReviewWrongScreen({
       setWrongCount(data);
     }
     setIsLoading(false);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isGuestMode]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || isGuestMode) {
     return (
       <View style={[styles.container, styles.centerWrap]}>
         <Text style={styles.title}>Review Questions</Text>
-        <Text style={styles.subtitle}>Sign in to review the questions you got wrong.</Text>
+        <Text style={styles.subtitle}>
+          Sign in to save missed questions and review them here.
+        </Text>
         <TouchableOpacity
           style={styles.signInBtn}
           onPress={() => onNavigate?.('login')}

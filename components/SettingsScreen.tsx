@@ -235,7 +235,9 @@ export function SettingsScreen({
             />
           </View>
           {isGuestMode && (
-            <Text style={styles.guestHelperText}>Sign in to track wrong questions</Text>
+            <Text style={styles.guestHelperText}>
+              Sign in to save missed questions and use Wrong questions only
+            </Text>
           )}
         </>
 

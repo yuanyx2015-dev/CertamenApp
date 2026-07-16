@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, PanResponder } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, PanResponder } from 'react-native';
 import { InformationScreen } from './InformationScreen';
 import { ChallengeModeScreen } from './ChallengeModeScreen';
 import { ReviewWrongScreen } from './ReviewWrongScreen';
@@ -46,19 +46,11 @@ export function MainTabsScreen({
   onLogout?: () => void;
 }) {
   const handleTabPress = (tab: MainTabId) => {
-    if (tab === 'review' && (isGuestMode || !isAuthenticated)) {
-      Alert.alert('Sign In Required', 'Sign in to review your questions.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign In', onPress: () => onNavigate?.('login') },
-      ]);
-      return;
-    }
     onTabChange(tab);
   };
 
-  // Move to the adjacent tab. Routed through handleTabPress so the Review
-  // tab's sign-in gating behaves the same as tapping the tab bar.
-  // Kept in a ref so the (once-created) PanResponder always sees fresh props.
+  // Move to the adjacent tab. Kept in a ref so the (once-created)
+  // PanResponder always sees fresh props.
   const swipeToAdjacentTabRef = useRef<(direction: 1 | -1) => void>(() => {});
   swipeToAdjacentTabRef.current = (direction) => {
     const currentIndex = TABS.findIndex((t) => t.id === activeTab);
@@ -113,6 +105,7 @@ export function MainTabsScreen({
         return (
           <ReviewWrongScreen
             isAuthenticated={isAuthenticated}
+            isGuestMode={isGuestMode}
             onNavigate={onNavigate}
             onStartChallengeGame={onStartChallengeGame}
           />

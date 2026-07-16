@@ -67,7 +67,9 @@ export function ChallengeModeScreen({
     return (
       <View style={[styles.container, styles.centerWrap]}>
         <Text style={styles.title}>Challenge Mode</Text>
-        <Text style={styles.subtitle}>Sign in to start a challenge.</Text>
+        <Text style={styles.subtitle}>
+          Sign in to track mastery ranks and save your Challenge progress.
+        </Text>
         <TouchableOpacity
           style={styles.signInBtn}
           onPress={() => onNavigate?.('login')}

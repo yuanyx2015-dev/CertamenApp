@@ -577,7 +577,7 @@ export function PracticeGameScreen({
           {isGuestMode && (
             <View style={styles.guestPromptContainer}>
               <Text style={styles.guestPromptText}>
-                Sign in to save your progress!
+                Sign in to unlock Challenge Mode and keep a wrong-question list.
               </Text>
               <TouchableOpacity 
                 style={styles.signInPromptButton}
@@ -611,7 +611,9 @@ export function PracticeGameScreen({
       {/* Guest Mode Banner */}
       {isGuestMode && (
         <View style={styles.guestBanner}>
-          <Text style={styles.guestBannerText}>Playing as Guest - Sign in to save progress</Text>
+          <Text style={styles.guestBannerText}>
+            Guest mode — sign in to unlock Challenge & Review
+          </Text>
           <TouchableOpacity 
             style={styles.guestSignInButton}
             onPress={() => onNavigate?.('login')}

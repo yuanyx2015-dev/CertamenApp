@@ -94,14 +94,19 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
           )}
 
           {onGuestMode && (
-            <TouchableOpacity
-              style={styles.guestButton}
-              onPress={onGuestMode}
-              disabled={isLoading}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.guestButtonText}>Continue as Guest</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.guestButton}
+                onPress={onGuestMode}
+                disabled={isLoading}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.guestButtonText}>Continue as Guest</Text>
+              </TouchableOpacity>
+              <Text style={styles.guestHint}>
+                Practice freely — sign in later for Challenge, Review, and saved progress.
+              </Text>
+            </>
           )}
         </View>
       </View>
@@ -293,5 +298,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     textDecorationLine: 'underline',
+  },
+  guestHint: {
+    marginTop: 4,
+    paddingHorizontal: 24,
+    color: '#8a8a8a',
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
 });
