@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { Mail } from './Icons';
+import { Google } from './Icons';
 import { signInWithGoogle, signInWithApple, type AuthResponse } from '../services/authService';
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
@@ -71,7 +71,7 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
 
         <View style={styles.buttonsContainer}>
           <LoginButton
-            icon={<Mail />}
+            icon={<Google />}
             label={isLoading ? 'Signing in...' : 'Sign in with Google'}
             onPress={handleGoogleLogin}
             disabled={isLoading}
@@ -153,9 +153,11 @@ function LoginButton({
     ]).start();
   };
 
+  // White container so the multicolor Google "G" stays fully saturated
+  // (the previous gold wash muted the brand colors).
   const backgroundColor = bgColorAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(201, 169, 97, 0.12)', 'rgba(201, 169, 97, 0.25)'],
+    outputRange: ['#ffffff', '#f2f2f2'],
   });
 
   return (
@@ -260,7 +262,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: 'rgba(201, 169, 97, 0.3)',
+    borderColor: 'rgba(60, 60, 60, 0.2)',
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -275,9 +277,10 @@ const styles = StyleSheet.create({
     height: 20,
   },
   buttonText: {
-    color: '#4a4a4a',
-    letterSpacing: 1,
+    color: '#3c4043',
+    letterSpacing: 0.25,
     fontSize: 16,
+    fontWeight: '500',
   },
   guestButton: {
     paddingHorizontal: 24,
