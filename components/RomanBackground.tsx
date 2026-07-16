@@ -2,13 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { LaurelBranches } from './LaurelBranches';
 import { MeanderBorder } from './MeanderBorder';
-import { MatchSelectionScreen } from './MatchSelectionScreen';
-import { FriendlyMatchScreen } from './FriendlyMatchScreen';
-import { RandomMatchScreen } from './RandomMatchScreen';
 import { LoginScreen } from './LoginScreen';
-import { VisitorMatchScreen } from './VisitorMatchScreen';
-import { HomeMatchScreen } from './HomeMatchScreen';
-import { SimulationMatchScreen } from './SimulationMatchScreen';
 import { MainTabsScreen, type MainTabId } from './MainTabsScreen';
 import { PracticeGameScreen } from './PracticeGameScreen';
 import { SettingsScreen } from './SettingsScreen';
@@ -188,15 +182,6 @@ export function RomanBackground() {
             storyPracticeCategory={practiceGameStoryCategory}
           />
         );
-      case 'pvp':
-        return (
-          <MatchSelectionScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />
-        );
-      case 'offline':
-      case 'simulation':
-        return (
-          <SimulationMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />
-        );
       case 'settings':
       case 'settings-practice':
         return (
@@ -212,14 +197,6 @@ export function RomanBackground() {
         );
       case 'reviewCategories':
         return <ReviewCategoryScreen onNavigate={handleNavigate} />;
-      case 'random':
-        return <RandomMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
-      case 'friendly':
-        return <FriendlyMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
-      case 'visitor':
-        return <VisitorMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
-      case 'home':
-        return <HomeMatchScreen onNavigate={handleNavigate} previousScreen={previousScreen.current} />;
       case 'login':
         return (
           <LoginScreen onLoginSuccess={handleLoginSuccess} onGuestMode={handleGuestMode} />
