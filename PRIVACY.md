@@ -22,8 +22,8 @@ Your data is securely stored using Supabase. We do not sell your data to third p
 
 ## Account Deletion
 
-You can delete your account and all associated data at any time from the Profile section of the app.
+You can delete your account and all associated data at any time from the Profile section of the app. If you no longer have the app installed, email support@certamenprep.org to request deletion, and we will permanently delete your account and all associated data within 30 days.
 
 ## Contact
 
-For privacy questions, contact: alexyuany2017@gmail.com
+For privacy questions, contact: support@certamenprep.org

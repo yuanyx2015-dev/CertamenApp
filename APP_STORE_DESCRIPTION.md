@@ -1,84 +1,96 @@
 # CertamenPrep — App Store promotional text (iOS)
 
-## Promotional Text (170 characters max - appears at top)
+Draft listing copy for App Store Connect. Paste into the store listing; the app does not load this file at runtime. Keep this aligned with the live product when features change.
 
-Master Latin and Roman knowledge with adaptive quizzes. Track your progress through 7 ranks from Miles to Legatus Legionis. Perfect for Certamen competitors!
+**Current app version (see `app.json`):** 1.1.0
+
+---
+
+## Promotional Text (170 characters max — appears at top)
+
+Practice Certamen-style toss-ups. Master questions, climb 11 Roman ranks from Miles to Legatus Legionis, and review what you miss.
+
+*(Character count: 128)*
+
+---
 
 ## App Store Description (Full)
 
-### Main Description
+**CertamenPrep** helps middle and high school Certamen competitors practice with real toss-up pacing. Questions stream letter by letter. Buzz in, answer under a short timer, and build lasting knowledge by mastering what you get right.
 
-**CertamenPrep** brings the excitement of Latin Certamen competition right to your fingertips. Whether you're preparing for your next tournament or simply passionate about ancient Rome, our comprehensive quiz platform helps you master mythology, history, language, literature, culture and life, and living Latin.
+Study six areas of Certamen content: Mythology, History, Language, Literature, Culture & Life, and Living Latin.
 
-**RANK-UP MODE**
-Test your knowledge with adaptive difficulty that grows with your skill. Questions stream character-by-character just like real Certamen. Buzz in within 15 seconds and choose from multiple-choice answers. Earn points based on difficulty: 10 for easy, 15 for medium, 25 for hard challenges.
+**CHALLENGE MODE**
+Your main progression path. Play sets of 10 to 50 questions from your current rank pool. Hold the star on a correct answer to mark it mastered. Misses go to Review. Play at least one Challenge question each day to keep your streak.
 
-**RANK PROGRESSION**
-Rise through seven prestigious Roman military ranks:
-• Miles (Soldier) - 0-499 points
-• Decanus (Squad Leader) - 500-1,499 points
-• Optio (Assistant) - 1,500-2,999 points
-• Centurio (Centurion) - 3,000-4,999 points
-• Primus Pilus (First Spear) - 5,000-6,999 points
-• Praefectus Castrorum (Camp Prefect) - 7,000-9,999 points
-• Legatus Legionis (Legion Commander) - 10,000+ points
+**ELEVEN ROMAN RANKS**
+Progress by mastering questions, not by racking up points. Climb from Miles to Legatus Legionis:
+
+• Miles
+• Cornicen
+• Signifer
+• Optio
+• Centurio
+• Aquilifer
+• Primus Pilus
+• Praefectus Castrorum
+• Tribunus Angusticlavius
+• Tribunus Laticlavius
+• Legatus Legionis
 
 **REVIEW MODE**
-Never make the same mistake twice. Review questions organized by six categories: Mythology, History, Language, Literature, Culture & Life, and Living Latin. Focus on questions you've answered incorrectly to strengthen your weak spots.
+Work through questions you missed in Challenge. Master them here to clear them from your wrong list and count them toward your progress. Browse wrongs by category, and use Explain with AI when you want a clear walkthrough. Follow-up questions with the AI Tutor are limited to keep help focused.
 
-**TRACK YOUR PROGRESS**
-• Comprehensive statistics tracking
-• Practice session history
-• Category-specific performance metrics
-• Visual rank progression badges
-• Cumulative score and achievement system
+**PRACTICE MODE**
+Warm up in any category without filling your Review list. Choose Easy, Medium, or Hard and set how many questions you want. Practice does not advance your daily streak.
 
-**CUSTOMIZE YOUR EXPERIENCE**
-• Adjustable session length (5-50 questions)
-• "Wrong Questions Only" mode for targeted practice
-• Personalized difficulty adaptation
-• Clean, Roman-themed interface with authentic design elements
+**HOME**
+See your current rank, progress, mastered count, questions left to review, and streak at a glance. Jump into your Daily Challenge when you are ready.
 
-**SECURE & PRIVATE**
-Sign in quickly with Google, and your progress is automatically saved to the cloud. Complete control over your data with secure account management.
+**SIGN IN**
+Sign in with Google or Apple (iOS) to save progress in the cloud, or continue as a guest to try Practice first. Delete your account anytime from Home. Privacy questions: support@certamenprep.org
 
-Perfect for Latin students preparing for Certamen competitions, educators looking for practice tools, or anyone fascinated by ancient Roman culture and history.
+Free to use. No ads. No in-app purchases.
 
 ---
 
 ## Keywords (100 characters max)
 
-Latin, Certamen, Roman, quiz, mythology, history, language, study, competition, education, ancient
+Latin,Certamen,quiz,Roman,mythology,history,language,literature,study,competition,education
 
-## What's New Section (for updates)
-
-Version 1.0 - Initial Release
-• Complete Rank-up Mode with adaptive difficulty
-• Seven-rank progression system
-• Comprehensive review mode by category
-• Profile and statistics tracking
-• Account deletion with user control
-• Beautiful Roman-themed design
+*(Character count: 95 — Apple uses commas; avoid spaces after commas if you need room)*
 
 ---
 
-## Promotional Screenshots Captions (30 characters each)
+## What's New (paste when shipping an update)
 
-1. "Practice Latin & Roman History"
-2. "Track Your Progress & Rank"
-3. "Rise Through 7 Military Ranks"
-4. "Review Questions by Category"
-5. "Adaptive Difficulty System"
+Version 1.1.0
+• Eleven mastery ranks from Miles to Legatus Legionis
+• Challenge Mode with Certamen-style streaming and buzz timing
+• Review Mode for missed questions, plus AI explanations
+• Practice Mode by category that does not fill your Review list
+• Daily Challenge streak on Home
+• Sign in with Google or Apple, or continue as a guest
+
+---
+
+## Promotional Screenshot Captions (30 characters each)
+
+1. "Buzz in like real Certamen"
+2. "Climb 11 Roman ranks"
+3. "Master what you miss"
+4. "Six Certamen categories"
+5. "Track streak and progress"
 
 ---
 
 ## Short Tagline Options (choose one)
 
-1. "Where Latin Knowledge Meets Glory"
-2. "Master Certamen, One Question at a Time"
-3. "Your Path from Miles to Legatus"
-4. "Certamen Competition in Your Pocket"
-5. "Latin Quiz Excellence, Ranked"
+1. "Certamen practice, letter by letter"
+2. "From Miles to Legatus Legionis"
+3. "Master the toss-up"
+4. "Study Certamen with purpose"
+5. "Buzz. Answer. Master. Rise."
 
 ---
 
@@ -88,7 +100,7 @@ Version 1.0 - Initial Release
 - Educational content only
 - No violence, profanity, or mature themes
 - Safe for all ages
-- Historical and mythological content presented in educational context
+- Historical and mythological content presented in an educational context
 
 ---
 
@@ -96,14 +108,22 @@ Version 1.0 - Initial Release
 
 https://github.com/yuanyx2015-dev/CertamenApp
 
+*(Update this if you publish a dedicated support or privacy page.)*
+
+**Support email:** support@certamenprep.org
+
+---
+
 ## Privacy Policy Summary
 
 CertamenPrep collects minimal user data:
-- Authentication via Google OAuth
-- Quiz performance and progress statistics
+- Name and email via Google or Apple Sign-In
+- Quiz performance, mastery, and streak statistics
 - No data is sold to third parties
-- Users can delete their account and all data at any time
-- All data is securely stored with Supabase
+- Users can delete their account and all data from Home, or email support@certamenprep.org
+- Data is stored with Supabase
+
+Full policy: see `PRIVACY.md` (host a public URL for App Store Connect).
 
 ---
 
@@ -116,8 +136,9 @@ CertamenPrep collects minimal user data:
 
 ## Notes for Submission
 
-- The app requires internet connection for authentication and question database
-- All content is family-friendly and educational
-- Complies with App Store Review Guidelines
-- No in-app purchases or subscriptions (free app)
-- No ads or tracking beyond essential analytics
+- Internet connection required for authentication, questions, progress, and AI features
+- Content is family-friendly and educational
+- Free app: no in-app purchases or subscriptions
+- No ads
+- Guest Mode allows Practice without an account; Challenge, Review, and cloud progress require sign-in
+- Apple Sign-In is offered on iOS alongside Google
