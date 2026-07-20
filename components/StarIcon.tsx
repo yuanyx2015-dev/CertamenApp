@@ -1,17 +1,46 @@
 import React from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { StyleSheet, Animated } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 const STAR_PATH =
   'M12 17.27l5.18 3.04-1.37-5.91 4.59-3.97-6.06-.52L12 4l-2.34 5.91-6.06.52 4.59 3.97-1.37 5.91L12 17.27z';
 
+/** How long the mastered border stays visible before advancing. */
+export const MASTERED_CONFIRM_MS = 400;
+
 /**
  * Hold-to-master star used by both game screens.
  * `filled` is the static fill before any animation; `progress` (0..1) drives the live overlay.
+ * At full progress the star expands and a gold ring border locks in so mastery is obvious.
  */
 export function StarIcon({ filled, progress }: { filled: number; progress: Animated.Value }) {
+  const scale = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.18],
+  });
+
+  // Ring only appears as the hold finishes — clear "you mastered it" signal.
+  const ringOpacity = progress.interpolate({
+    inputRange: [0, 0.82, 1],
+    outputRange: [0, 0, 1],
+  });
+  const ringScale = progress.interpolate({
+    inputRange: [0, 0.82, 1],
+    outputRange: [0.9, 0.9, 1],
+  });
+
   return (
-    <View style={styles.wrap}>
+    <Animated.View style={[styles.wrap, { transform: [{ scale }] }]}>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.masteredRing,
+          {
+            opacity: ringOpacity,
+            transform: [{ scale: ringScale }],
+          },
+        ]}
+      />
       {/* Outline (always visible) */}
       <Svg width={48} height={48} viewBox="0 0 24 24">
         <Path
@@ -24,19 +53,28 @@ export function StarIcon({ filled, progress }: { filled: number; progress: Anima
       {/* Animated fill overlay using opacity */}
       <Animated.View pointerEvents="none" style={[styles.overlay, { opacity: progress }]}>
         <Svg width={48} height={48} viewBox="0 0 24 24">
-          <Path d={STAR_PATH} fill="#c9a961" stroke="#7d6543" strokeWidth={1} />
+          <Path d={STAR_PATH} fill="#c9a961" stroke="#5c4a2e" strokeWidth={1.5} />
         </Svg>
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    width: 48,
-    height: 48,
+    width: 56,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  masteredRing: {
+    position: 'absolute',
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 2.5,
+    borderColor: '#c9a961',
+    backgroundColor: 'rgba(201, 169, 97, 0.12)',
   },
   overlay: {
     position: 'absolute',

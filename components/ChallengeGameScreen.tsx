@@ -32,7 +32,7 @@ import { recordPassedQuestion } from '../services/userPassedService';
 import type { Question } from '../services/questionService';
 import type { MainTabId } from './MainTabsScreen';
 import { FeedbackOverlay, type FeedbackOverlayHandle } from './RomanFeedback';
-import { StarIcon } from './StarIcon';
+import { StarIcon, MASTERED_CONFIRM_MS } from './StarIcon';
 import { useStreakConfetti } from './StreakConfetti';
 const HOLD_TO_MASTER_MS = 500;
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
@@ -130,6 +130,9 @@ export function ChallengeGameScreen({
 
   const holdAnim = useRef(new Animated.Value(0)).current;
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  /** Once the hold completes, keep the mastered border visible until we advance. */
+  const [starMastered, setStarMastered] = useState(false);
+  const starMasteredRef = useRef(false);
   /** Bumped once per game session on the first answer (server-side same-day no-op). */
   const streakBumpedRef = useRef(false);
   const feedbackRef = useRef<FeedbackOverlayHandle>(null);
@@ -300,6 +303,8 @@ export function ChallengeGameScreen({
       setIsAnswered(false);
       setIsCorrect(false);
       holdAnim.setValue(0);
+      starMasteredRef.current = false;
+      setStarMastered(false);
       if (holdTimerRef.current) {
         clearTimeout(holdTimerRef.current);
         holdTimerRef.current = null;
@@ -505,7 +510,7 @@ export function ChallengeGameScreen({
   }, [advanceToNext, current, queue, userId]);
 
   const handleStarPressIn = useCallback(() => {
-    if (!isCorrect) return;
+    if (!isCorrect || starMasteredRef.current) return;
     holdAnim.setValue(0);
     Animated.timing(holdAnim, {
       toValue: 1,
@@ -514,11 +519,17 @@ export function ChallengeGameScreen({
       useNativeDriver: false,
     }).start();
     holdTimerRef.current = setTimeout(() => {
-      void fireMaster();
+      starMasteredRef.current = true;
+      setStarMastered(true);
+      holdTimerRef.current = setTimeout(() => {
+        void fireMaster();
+      }, MASTERED_CONFIRM_MS);
     }, HOLD_TO_MASTER_MS);
   }, [fireMaster, holdAnim, isCorrect]);
 
   const handleStarPressOut = useCallback(() => {
+    // Hold finished — keep the expanded star + border until we advance.
+    if (starMasteredRef.current) return;
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
@@ -831,7 +842,9 @@ export function ChallengeGameScreen({
                   >
                     <StarIcon filled={0} progress={holdAnim} />
                   </TouchableOpacity>
-                  <Text style={styles.starHint}>Hold to master</Text>
+                  <Text style={styles.starHint}>
+                    {starMastered ? 'Mastered!' : 'Hold to master'}
+                  </Text>
                 </View>
               </>
             ) : (

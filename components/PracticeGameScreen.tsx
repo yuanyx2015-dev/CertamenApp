@@ -19,7 +19,7 @@ import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../s
 import { masterQuestion } from '../services/userMasteredService';
 import { FeedbackOverlay } from './RomanFeedback';
 import type { FeedbackOverlayHandle } from './RomanFeedback';
-import { StarIcon } from './StarIcon';
+import { StarIcon, MASTERED_CONFIRM_MS } from './StarIcon';
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
 /** Hold duration on the star to master a question. */
@@ -75,6 +75,7 @@ export function PracticeGameScreen({
   const currentQuestionIndexRef = useRef(0);
   const holdAnim = useRef(new Animated.Value(0)).current;
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const justMasteredRef = useRef(false);
 
   /** Practice never feeds the Review pool (Challenge / Review handle that). */
   const skipWrongTracking = true;
@@ -297,6 +298,7 @@ export function PracticeGameScreen({
     setIsPreviouslyWrong(false); // Reset indicator
     setLastAnswerCorrect(false);
     setJustMastered(false);
+    justMasteredRef.current = false;
     holdAnim.setValue(0);
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
@@ -445,8 +447,6 @@ export function PracticeGameScreen({
 
   // Mark the current (correctly answered) question as mastered, then advance.
   const fireMaster = async () => {
-    if (justMastered) return;
-    setJustMastered(true);
     setMasteredThisSession((n) => n + 1);
     const user = await getCurrentUser();
     const q = questions[currentQuestionIndex];
@@ -457,7 +457,7 @@ export function PracticeGameScreen({
   };
 
   const handleStarPressIn = () => {
-    if (!lastAnswerCorrect || justMastered) return;
+    if (!lastAnswerCorrect || justMasteredRef.current) return;
     holdAnim.setValue(0);
     Animated.timing(holdAnim, {
       toValue: 1,
@@ -466,11 +466,17 @@ export function PracticeGameScreen({
       useNativeDriver: false,
     }).start();
     holdTimerRef.current = setTimeout(() => {
-      void fireMaster();
+      justMasteredRef.current = true;
+      setJustMastered(true);
+      holdTimerRef.current = setTimeout(() => {
+        void fireMaster();
+      }, MASTERED_CONFIRM_MS);
     }, HOLD_TO_MASTER_MS);
   };
 
   const handleStarPressOut = () => {
+    // Hold finished — keep the expanded star + border until we advance.
+    if (justMasteredRef.current) return;
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
@@ -757,7 +763,9 @@ export function PracticeGameScreen({
                 >
                   <StarIcon filled={0} progress={holdAnim} />
                 </TouchableOpacity>
-                <Text style={styles.starHint}>Hold to master</Text>
+                <Text style={styles.starHint}>
+                  {justMastered ? 'Mastered!' : 'Hold to master'}
+                </Text>
               </View>
             )}
           </View>
