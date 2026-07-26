@@ -92,6 +92,23 @@ export async function markReviewPromptShown(masteredCount: number): Promise<void
 }
 
 /**
+ * Pretend the first-set prompt and the current mastery milestone already happened,
+ * so the rate popup is skipped until mastered crosses the next multiple of 10.
+ */
+export async function suppressReviewPromptsThrough(masteredCount: number): Promise<void> {
+  try {
+    await AsyncStorage.setItem(FIRST_SET_PROMPTED_KEY, '1');
+    const milestone = milestoneFor(Math.max(masteredCount, MASTERED_MILESTONE_STEP));
+    const lastMilestone = Number(await AsyncStorage.getItem(LAST_MILESTONE_KEY)) || 0;
+    if (milestone > lastMilestone) {
+      await AsyncStorage.setItem(LAST_MILESTONE_KEY, String(milestone));
+    }
+  } catch (e) {
+    console.warn('[appReview] suppressReviewPromptsThrough failed:', e);
+  }
+}
+
+/**
  * User chose to rate: open the store review page and mark as reviewed so we never ask again.
  * Used by the popup's blue "Rate" button.
  */

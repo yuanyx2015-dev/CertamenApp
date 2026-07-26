@@ -26,6 +26,7 @@ import {
   shouldShowReviewPrompt,
   markReviewPromptShown,
   confirmReview,
+  suppressReviewPromptsThrough,
 } from '../lib/appReview';
 import { getAllWrongQuestions, markQuestionAsWrong } from '../services/questionReviewService';
 import { recordPassedQuestion } from '../services/userPassedService';
@@ -548,6 +549,11 @@ export function ChallengeGameScreen({
     (async () => {
       const { data: totalMastered } = await getMasteredCount(userId);
       const count = totalMastered ?? 0;
+      // Demo account: skip rate popup (treat first-set + current milestone as already done).
+      const user = await getCurrentUser();
+      if (user?.email?.toLowerCase() === 'certamenprep@gmail.com') {
+        await suppressReviewPromptsThrough(count);
+      }
       const show = await shouldShowReviewPrompt(count);
       if (show && !cancelled) {
         await markReviewPromptShown(count);
