@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getCategoryStats } from '../services/questionReviewService';
+import { useIPadScaledStyles } from '../lib/layout';
 // Simple reusable animated button component
 function AnimatedCategoryButton({ 
   label, 
@@ -14,6 +15,7 @@ function AnimatedCategoryButton({
   isEnabled: boolean;
   onPress: () => void;
 }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -93,6 +95,7 @@ const REVIEW_CATEGORIES: { key: string; label: string }[] = [
 const UNLOCKED_REVIEW_CATEGORIES = new Set(REVIEW_CATEGORIES.map((c) => c.key));
 
 export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: string, category?: string) => void }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const [wrongByCategory, setWrongByCategory] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -135,7 +138,7 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#c9a961" />
           <Text style={styles.loadingText}>Loading categories...</Text>
@@ -145,7 +148,7 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container]}>
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -179,7 +182,7 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     maxWidth: 448,

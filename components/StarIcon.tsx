@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Animated } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useIPadScale, useIPadScaledStyles } from '../lib/layout';
 
 const STAR_PATH =
   'M12 17.27l5.18 3.04-1.37-5.91 4.59-3.97-6.06-.52L12 4l-2.34 5.91-6.06.52 4.59 3.97-1.37 5.91L12 17.27z';
@@ -14,6 +15,10 @@ export const MASTERED_CONFIRM_MS = 400;
  * At full progress the star expands and a gold ring border locks in so mastery is obvious.
  */
 export function StarIcon({ filled, progress }: { filled: number; progress: Animated.Value }) {
+  const iPadScale = useIPadScale();
+  const styles = useIPadScaledStyles(baseStyles);
+  const svgSize = 48 * iPadScale;
+
   const scale = progress.interpolate({
     inputRange: [0, 1],
     outputRange: [1, 1.18],
@@ -42,7 +47,7 @@ export function StarIcon({ filled, progress }: { filled: number; progress: Anima
         ]}
       />
       {/* Outline (always visible) */}
-      <Svg width={48} height={48} viewBox="0 0 24 24">
+      <Svg width={svgSize} height={svgSize} viewBox="0 0 24 24">
         <Path
           d={STAR_PATH}
           fill={filled > 0 ? '#c9a961' : 'rgba(255,255,255,0.6)'}
@@ -52,7 +57,7 @@ export function StarIcon({ filled, progress }: { filled: number; progress: Anima
       </Svg>
       {/* Animated fill overlay using opacity */}
       <Animated.View pointerEvents="none" style={[styles.overlay, { opacity: progress }]}>
-        <Svg width={48} height={48} viewBox="0 0 24 24">
+        <Svg width={svgSize} height={svgSize} viewBox="0 0 24 24">
           <Path d={STAR_PATH} fill="#c9a961" stroke="#5c4a2e" strokeWidth={1.5} />
         </Svg>
       </Animated.View>
@@ -60,7 +65,7 @@ export function StarIcon({ filled, progress }: { filled: number; progress: Anima
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   wrap: {
     width: 56,
     height: 56,

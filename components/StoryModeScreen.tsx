@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { PracticeCategorySessionPicker } from './PracticeCategorySessionPicker';
+import { useIPadScaledStyles } from '../lib/layout';
 
 /**
  * Practice Mode (story route): pick a category, then timed session using difficulty from Practice settings.
@@ -16,10 +17,11 @@ export function StoryModeScreen({
   ) => void;
   showBackToMenu?: boolean;
 }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const embedded = !showBackToMenu;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container]}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[
@@ -59,7 +61,7 @@ export function StoryModeScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     maxWidth: 400,

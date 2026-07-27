@@ -15,6 +15,8 @@ import {
 } from './ChallengeGameScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
 import { StreakConfettiProvider } from './StreakConfetti';
+import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
+import { isIPad } from '../lib/layout';
 
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
@@ -107,6 +109,8 @@ export function RomanBackground() {
         setMainTab(explicitMainTab);
       } else if (currentScreen === 'practice-game') {
         setMainTab('practice');
+      } else if (currentScreen === 'challenge-game') {
+        setMainTab(challengeConfig?.mode === 'review' ? 'review' : 'challenge');
       } else if (
         currentScreen === 'categoryQuestions' ||
         currentScreen === 'reviewCategories'
@@ -180,6 +184,7 @@ export function RomanBackground() {
             previousScreen={previousScreen.current}
             isGuestMode={isGuestMode}
             storyPracticeCategory={practiceGameStoryCategory}
+            onTabChange={setMainTab}
           />
         );
       case 'settings':
@@ -250,15 +255,18 @@ export function RomanBackground() {
 
       {currentScreen !== 'login' && (
         <TouchableOpacity
-          style={styles.titleContainer}
+          style={[styles.titleContainer, isIPad && styles.titleContainerIPad]}
           onPress={() => handleNavigate('main')}
           activeOpacity={0.6}
         >
-          <Text style={styles.titleText}>CertamenPrep</Text>
+          <Text style={[styles.titleText, isIPad && styles.titleTextIPad]}>CertamenPrep</Text>
         </TouchableOpacity>
       )}
 
-      <View style={styles.headerContainer} pointerEvents="box-none">
+      <View
+        style={[styles.headerContainer, isIPad && styles.headerContainerIPad]}
+        pointerEvents="box-none"
+      >
         <LaurelBranches />
       </View>
 
@@ -268,9 +276,19 @@ export function RomanBackground() {
           useCompactContentInset && styles.contentContainerCompact,
           isGameScreen && styles.contentContainerGame,
           isReviewGame && styles.contentContainerReviewGame,
+          isIPad && isMainTabScreen && styles.contentContainerMainIPad,
         ]}
       >
-        {renderScreen()}
+        {/* Main tabs / games manage their own iPad scale so footers & tabs stay visible. */}
+        {isMainTabScreen || isGameScreen ? (
+          renderScreen()
+        ) : (
+          <IPadScaledPhoneColumn
+            extraShrink={currentScreen === 'reviewCategories' ? 1.15 : 1}
+          >
+            {renderScreen()}
+          </IPadScaledPhoneColumn>
+        )}
       </View>
 
       <View
@@ -307,11 +325,19 @@ const styles = StyleSheet.create({
     zIndex: 20,
     paddingVertical: 8,
   },
+  titleContainerIPad: {
+    top: 36,
+    paddingVertical: 10,
+  },
   titleText: {
     fontSize: 22,
     fontWeight: '600',
     color: '#c9a569',
     letterSpacing: 1.2,
+  },
+  titleTextIPad: {
+    fontSize: 36,
+    letterSpacing: 1.8,
   },
   headerContainer: {
     position: 'absolute',
@@ -323,6 +349,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 10,
   },
+  headerContainerIPad: {
+    top: 56,
+    height: 160,
+    transform: [{ scale: 1.35 }],
+  },
   contentContainer: {
     flex: 1,
     paddingTop: 170,
@@ -332,16 +363,21 @@ const styles = StyleSheet.create({
     zIndex: 5,
     overflow: 'visible',
   },
+  contentContainerMainIPad: {
+    paddingTop: 200,
+    paddingBottom: 56,
+    justifyContent: 'flex-start',
+  },
   contentContainerCompact: {
     paddingTop: 128,
     paddingBottom: 80,
     justifyContent: 'flex-start',
   },
   contentContainerGame: {
-    paddingBottom: 56,
+    paddingBottom: 64,
   },
   contentContainerReviewGame: {
-    paddingBottom: 68,
+    paddingBottom: 72,
   },
   footerContainer: {
     position: 'absolute',

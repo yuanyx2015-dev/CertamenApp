@@ -20,6 +20,8 @@ import { masterQuestion } from '../services/userMasteredService';
 import { FeedbackOverlay } from './RomanFeedback';
 import type { FeedbackOverlayHandle } from './RomanFeedback';
 import { StarIcon, MASTERED_CONFIRM_MS } from './StarIcon';
+import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
+import { isIPad, useIPadColumnScale, useIPadScaledStyles } from '../lib/layout';
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
 /** Hold duration on the star to master a question. */
@@ -31,6 +33,7 @@ interface PracticeGameScreenProps {
   isGuestMode?: boolean;
   /** Practice tab: category slug from the six-tile picker. */
   storyPracticeCategory?: string | null;
+  onTabChange?: (tab: 'profile' | 'challenge' | 'review' | 'practice') => void;
 }
 
 export function PracticeGameScreen({
@@ -38,7 +41,10 @@ export function PracticeGameScreen({
   previousScreen,
   isGuestMode,
   storyPracticeCategory = null,
+  onTabChange,
 }: PracticeGameScreenProps) {
+  const columnScale = useIPadColumnScale(1.265);
+  const styles = useIPadScaledStyles(baseStyles, columnScale);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -520,7 +526,7 @@ export function PracticeGameScreen({
   // Loading state
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#c9a961" />
           <Text style={styles.loadingText}>Loading questions from database...</Text>
@@ -538,7 +544,7 @@ export function PracticeGameScreen({
         : 'Error';
     
     return (
-      <View style={styles.container}>
+      <View style={[styles.container]}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>{errorTitle}</Text>
           <Text style={styles.errorText}>{loadError}</Text>
@@ -556,7 +562,7 @@ export function PracticeGameScreen({
   // Game over state
   if (isGameOver) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container]}>
         <View style={styles.gameOverContainer}>
           <Text style={styles.gameOverTitle}>Practice Complete!</Text>
 
@@ -612,15 +618,15 @@ export function PracticeGameScreen({
     );
   }
 
-  return (
-    <View style={styles.container}>
+  const gameBody = (
+    <>
       {/* Guest Mode Banner */}
       {isGuestMode && (
         <View style={styles.guestBanner}>
           <Text style={styles.guestBannerText}>
             Guest mode — sign in to unlock Challenge & Review
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.guestSignInButton}
             onPress={() => onNavigate?.('login')}
             activeOpacity={0.7}
@@ -629,7 +635,7 @@ export function PracticeGameScreen({
           </TouchableOpacity>
         </View>
       )}
-      
+
       {/* Header (pre-buzz + answer timers stay visible while scrolling) */}
       <View style={styles.header}>
         <View style={styles.headerColLeft}>
@@ -661,17 +667,16 @@ export function PracticeGameScreen({
       </View>
 
       {/* Game Area */}
-      <ScrollView 
+      <ScrollView
         style={styles.gameArea}
         contentContainerStyle={styles.gameAreaContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Status Text */}
         <View style={styles.statusContainer}>
-          <Text style={[
-            styles.statusText,
-            isBuzzed && styles.statusTextBuzzed
-          ]}>
+          <Text
+            style={[styles.statusText, isBuzzed && styles.statusTextBuzzed]}
+          >
             {statusText}
           </Text>
         </View>
@@ -685,15 +690,17 @@ export function PracticeGameScreen({
           )}
           <Text style={styles.questionText}>
             {displayedText}
-            {!isBuzzed && !isAnswered && charIndexRef.current < fullTextRef.current.length && (
-              <Text style={styles.cursor}>|</Text>
-            )}
+            {!isBuzzed &&
+              !isAnswered &&
+              charIndexRef.current < fullTextRef.current.length && (
+                <Text style={styles.cursor}>|</Text>
+              )}
           </Text>
         </View>
 
         {/* Buzz Button */}
         {!isBuzzed && !isAnswered && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.buzzerBtn}
             onPress={handleBuzz}
             activeOpacity={0.8}
@@ -727,15 +734,23 @@ export function PracticeGameScreen({
                 style={[
                   styles.optionCard,
                   option.isCorrect && styles.optionCorrect,
-                  option.text === selectedAnswer && !option.isCorrect && styles.optionWrong,
-                  !selectedAnswer && option.isCorrect && styles.optionCorrect // Highlight correct answer when time runs out
+                  option.text === selectedAnswer &&
+                    !option.isCorrect &&
+                    styles.optionWrong,
+                  !selectedAnswer &&
+                    option.isCorrect &&
+                    styles.optionCorrect, // Highlight correct answer when time runs out
                 ]}
               >
-                <Text style={[
-                  styles.optionText,
-                  option.isCorrect && styles.optionTextCorrect,
-                  option.text === selectedAnswer && !option.isCorrect && styles.optionTextWrong
-                ]}>
+                <Text
+                  style={[
+                    styles.optionText,
+                    option.isCorrect && styles.optionTextCorrect,
+                    option.text === selectedAnswer &&
+                      !option.isCorrect &&
+                      styles.optionTextWrong,
+                  ]}
+                >
                   {option.text}
                 </Text>
               </View>
@@ -746,10 +761,7 @@ export function PracticeGameScreen({
         {/* Action Buttons */}
         {isAnswered && (
           <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={styles.nextBtn}
-              onPress={nextQuestion}
-            >
+            <TouchableOpacity style={styles.nextBtn} onPress={nextQuestion}>
               <Text style={styles.nextBtnText}>Next Question →</Text>
             </TouchableOpacity>
 
@@ -771,18 +783,63 @@ export function PracticeGameScreen({
           </View>
         )}
       </ScrollView>
+    </>
+  );
 
-      <FeedbackOverlay ref={feedbackRef} />
+  const exitFooter = (
+    <View style={styles.footer}>
+      <View style={styles.footerWrap}>
+        <TouchableOpacity
+          style={styles.footerFinishBtn}
+          onPress={() => {
+            onTabChange?.('practice');
+            onNavigate?.('main');
+          }}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.footerFinishBtnText}>Done learning? Click me</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={[styles.container, isIPad && styles.containerIPad]}>
+      {isIPad ? (
+        <IPadScaledPhoneColumn extraShrink={1.265}>
+          <View style={styles.scaledGameBody}>
+            {gameBody}
+            <FeedbackOverlay ref={feedbackRef} />
+          </View>
+          {exitFooter}
+        </IPadScaledPhoneColumn>
+      ) : (
+        <>
+          <View style={styles.scaledGameBody}>
+            {gameBody}
+            <FeedbackOverlay ref={feedbackRef} />
+          </View>
+          {exitFooter}
+        </>
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
     maxWidth: 448,
     alignSelf: 'center',
+  },
+  containerIPad: {
+    maxWidth: '100%',
+  },
+  scaledGameBody: {
+    flex: 1,
+    minHeight: 0,
+    position: 'relative',
   },
   loadingContainer: {
     flex: 1,
@@ -914,8 +971,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   questionText: {
-    fontSize: 17,
-    lineHeight: 25,
+    fontSize: 14,
+    lineHeight: 20,
     color: '#3a3a3a',
   },
   cursor: {
@@ -1010,6 +1067,34 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#6a6a6a',
     letterSpacing: 0.3,
+  },
+  footer: {
+    paddingTop: 10,
+    paddingBottom: 12,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(201, 169, 97, 0.25)',
+    backgroundColor: 'rgba(245, 239, 227, 0.85)',
+  },
+  footerWrap: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 2,
+  },
+  footerFinishBtn: {
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(201, 169, 97, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.28)',
+  },
+  footerFinishBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6a5530',
+    letterSpacing: 0.3,
+    textAlign: 'center',
   },
   nextBtn: {
     paddingHorizontal: 40,

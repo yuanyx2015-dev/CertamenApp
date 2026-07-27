@@ -11,6 +11,7 @@ import {
 import { getCurrentUser } from '../services/authService';
 import { getWrongCount } from '../services/questionReviewService';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
+import { useIPadScaledStyles } from '../lib/layout';
 
 /**
  * Format a wrong-question count: < 1000 stays as a plain integer;
@@ -38,6 +39,7 @@ export function ReviewWrongScreen({
     rankIndex?: number
   ) => void;
 }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const [isLoading, setIsLoading] = useState(true);
   const [wrongCount, setWrongCount] = useState(0);
   const [loadError, setLoadError] = useState(false);
@@ -156,7 +158,7 @@ export function ReviewWrongScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     maxWidth: 448,

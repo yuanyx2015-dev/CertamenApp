@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { useIPadScaledStyles } from '../lib/layout';
 const PRACTICE_CATEGORIES: { key: string; label: string }[] = [
   { key: 'mythology', label: 'Mythology' },
   { key: 'history', label: 'History' },
@@ -10,6 +11,7 @@ const PRACTICE_CATEGORIES: { key: string; label: string }[] = [
 ];
 
 function CategoryBox({ label, onPress }: { label: string; onPress: () => void }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -55,6 +57,7 @@ type NavigateFn = (
 ) => void;
 
 export function PracticeCategorySessionPicker({ onNavigate }: { onNavigate?: NavigateFn }) {
+  const styles = useIPadScaledStyles(baseStyles);
   return (
     <View style={styles.grid}>
       {PRACTICE_CATEGORIES.map(({ key, label }) => (
@@ -68,7 +71,7 @@ export function PracticeCategorySessionPicker({ onNavigate }: { onNavigate?: Nav
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

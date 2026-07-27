@@ -35,6 +35,8 @@ import type { MainTabId } from './MainTabsScreen';
 import { FeedbackOverlay, type FeedbackOverlayHandle } from './RomanFeedback';
 import { StarIcon, MASTERED_CONFIRM_MS } from './StarIcon';
 import { useStreakConfetti } from './StreakConfetti';
+import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
+import { isIPad, useIPadColumnScale, useIPadScaledStyles } from '../lib/layout';
 const HOLD_TO_MASTER_MS = 500;
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
@@ -93,6 +95,8 @@ export function ChallengeGameScreen({
   /** Restart with a brand-new pool (used by "Another Set" button). */
   onStartGame?: (mode: ChallengeGameMode, setSize: number, rankIndex?: number) => void;
 }) {
+  const columnScale = useIPadColumnScale(1.15);
+  const styles = useIPadScaledStyles(baseStyles, columnScale);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -592,7 +596,7 @@ export function ChallengeGameScreen({
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container]}>
         <View style={styles.centerWrap}>
           <ActivityIndicator size="large" color="#c9a961" />
           <Text style={styles.loadingText}>Loading questions...</Text>
@@ -603,7 +607,7 @@ export function ChallengeGameScreen({
 
   if (loadError) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container]}>
         <View style={styles.centerWrap}>
           <Text style={styles.errorTitle}>Heads up</Text>
           <Text style={styles.errorText}>{loadError}</Text>
@@ -623,7 +627,7 @@ export function ChallengeGameScreen({
     const totalAttempted = masteredCount + passedCount + wrongCount;
     const correct = masteredCount + passedCount;
     return (
-      <View style={styles.container}>
+      <View style={[styles.container]}>
         <ScrollView contentContainerStyle={styles.summaryScroll}>
           <Text style={styles.summaryTitle}>Set Complete</Text>
           <Text style={styles.summaryScore}>
@@ -721,8 +725,8 @@ export function ChallengeGameScreen({
   }
 
   // ----- ACTIVE QUESTION -----
-  return (
-    <View style={styles.container}>
+  const gameBody = (
+    <>
       <View style={styles.header}>
         <View style={styles.headerColLeft}>
           <Text style={styles.headerText}>{headerLabel}</Text>
@@ -865,45 +869,82 @@ export function ChallengeGameScreen({
           </View>
         )}
       </ScrollView>
+    </>
+  );
 
-      <View style={[styles.footer, config.mode === 'review' && styles.footerReview]}>
-        {config.mode === 'review' ? (
-          <View style={styles.footerReviewWrap}>
-            <Text style={styles.footerFinishHint}>
-              Review mode goes over all your wrong questions so if you want, you can finish at any point!
-            </Text>
-            <TouchableOpacity
-              style={styles.footerFinishBtn}
-              onPress={() => onNavigate?.('review')}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.footerFinishBtnText}>Done reviewing? Click me!</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
+  const exitFooter = (
+    <View
+      style={[styles.footer, config.mode === 'review' && styles.footerReview]}
+    >
+      {config.mode === 'review' ? (
+        <View style={styles.footerReviewWrap}>
+          <Text style={styles.footerFinishHint}>
+            Review mode goes over all your wrong questions so if you want, you can finish at any
+            point!
+          </Text>
           <TouchableOpacity
+            style={styles.footerFinishBtn}
+            onPress={() => onNavigate?.('review')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.footerFinishBtnText}>Done reviewing? Click me!</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.footerChallengeWrap}>
+          <TouchableOpacity
+            style={styles.footerFinishBtn}
             onPress={() => {
-              onTabChange?.('profile');
+              onTabChange?.('challenge');
               onNavigate?.('main');
             }}
-            activeOpacity={0.7}
+            activeOpacity={0.85}
           >
-            <Text style={styles.footerLink}>Done learning? Click me</Text>
+            <Text style={styles.footerFinishBtnText}>Done learning? Click me</Text>
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
+    </View>
+  );
 
-      <FeedbackOverlay ref={feedbackRef} />
+  return (
+    <View style={[styles.container, isIPad && styles.containerIPad]}>
+      {isIPad ? (
+        <IPadScaledPhoneColumn extraShrink={1.15}>
+          <View style={styles.scaledGameBody}>
+            {gameBody}
+            <FeedbackOverlay ref={feedbackRef} />
+          </View>
+          {exitFooter}
+        </IPadScaledPhoneColumn>
+      ) : (
+        <>
+          <View style={styles.scaledGameBody}>
+            {gameBody}
+            <FeedbackOverlay ref={feedbackRef} />
+          </View>
+          {exitFooter}
+        </>
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
     maxWidth: 448,
     alignSelf: 'center',
+  },
+  containerIPad: {
+    maxWidth: '100%',
+  },
+  scaledGameBody: {
+    flex: 1,
+    minHeight: 0,
+    position: 'relative',
   },
   centerWrap: {
     flex: 1,
@@ -1043,8 +1084,8 @@ const styles = StyleSheet.create({
     minHeight: 108,
   },
   questionText: {
-    fontSize: 17,
-    lineHeight: 25,
+    fontSize: 14,
+    lineHeight: 20,
     color: '#3a3a3a',
   },
   optionsGrid: {
@@ -1145,7 +1186,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   footer: {
-    paddingVertical: 4,
+    paddingTop: 10,
+    paddingBottom: 12,
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: 'rgba(201, 169, 97, 0.25)',
@@ -1155,11 +1197,10 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 14,
   },
-  footerLink: {
-    fontSize: 12,
-    color: '#8a6a3a',
-    textDecorationLine: 'underline',
-    paddingVertical: 2,
+  footerChallengeWrap: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 2,
   },
   footerReviewWrap: {
     alignItems: 'center',

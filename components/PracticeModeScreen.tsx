@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import { useIPadScaledStyles } from '../lib/layout';
 
 function AnimatedButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -65,6 +67,7 @@ const BUTTON_NUDGE_DOWN = 20;
 const BACK_BUTTON_EXTRA_GAP = 7;
 
 export function PracticeModeScreen({ onNavigate, showBackToMenu = true }: PracticeModeScreenProps) {
+  const styles = useIPadScaledStyles(baseStyles);
   const { height: windowHeight } = useWindowDimensions();
   const mainColumnRef = React.useRef<View>(null);
   const [mainColumnY, setMainColumnY] = React.useState<number | null>(null);
@@ -101,7 +104,7 @@ export function PracticeModeScreen({ onNavigate, showBackToMenu = true }: Practi
   }, [mainColumnY, mainColumnH, windowHeight, rowH, titleH, effectiveBackH, showBackToMenu]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container]}>
       <View style={styles.settingsContainer}>
         <TouchableOpacity style={styles.settingsButton} onPress={() => onNavigate?.('settings')}>
           <Text style={styles.settingsButtonText}>Settings</Text>
@@ -152,7 +155,7 @@ export function PracticeModeScreen({ onNavigate, showBackToMenu = true }: Practi
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     maxWidth: 400,

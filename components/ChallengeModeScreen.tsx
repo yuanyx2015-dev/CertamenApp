@@ -20,6 +20,7 @@ import {
 } from '../lib/masteryRanks';
 import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
+import { useIPadScaledStyles } from '../lib/layout';
 const SET_SIZES = [10, 20, 30, 40, 50] as const;
 
 export function ChallengeModeScreen({
@@ -39,6 +40,7 @@ export function ChallengeModeScreen({
     rankIndex?: number
   ) => void;
 }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const [isLoading, setIsLoading] = useState(true);
   const [rankStats, setRankStats] = useState<RankStats[]>([]);
   const [setSize, setSetSize] = useState<number>(10);
@@ -225,7 +227,7 @@ export function ChallengeModeScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     maxWidth: 448,

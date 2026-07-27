@@ -1,11 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useIPadScale } from '../lib/layout';
+
+const CHECK_SIZE = 340;
 
 /** Big green Roman-style checkmark, used as an answer-correct overlay. */
 export function RomanCheckmark() {
+  const scale = useIPadScale();
+  const size = CHECK_SIZE * scale;
   return (
-    <Svg width="250" height="250" viewBox="0 0 250 250">
+    <Svg width={size} height={size} viewBox="0 0 250 250">
       <Path
         d="M 60 130 L 100 180 L 200 60"
         stroke="#7B8866"
@@ -29,8 +34,10 @@ export function RomanCheckmark() {
 
 /** Big red Roman-style X, used as an answer-wrong overlay. */
 export function RomanCross() {
+  const scale = useIPadScale();
+  const size = CHECK_SIZE * scale;
   return (
-    <Svg width="250" height="250" viewBox="0 0 250 250">
+    <Svg width={size} height={size} viewBox="0 0 250 250">
       <Path
         d="M 50 50 L 200 200"
         stroke="#8B4C4C"

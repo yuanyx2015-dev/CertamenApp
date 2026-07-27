@@ -30,6 +30,7 @@ import {
   rankProgressFromStats,
 } from '../lib/masteryRanks';
 import type { MainTabId } from './MainTabsScreen';
+import { useIPadScaledStyles } from '../lib/layout';
 
 function AnimatedCardButton({
   label,
@@ -44,6 +45,7 @@ function AnimatedCardButton({
   innerStyle?: object;
   textStyle?: object;
 }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -90,6 +92,7 @@ function StatBox({
   footer?: React.ReactNode;
   style?: object;
 }) {
+  const styles = useIPadScaledStyles(baseStyles);
   return (
     <View style={[styles.card, styles.statBox, style]}>
       <View>
@@ -103,6 +106,7 @@ function StatBox({
 }
 
 function ProgressBar({ progress, label }: { progress: number; label: string }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const pct = Math.round(progress * 100);
   return (
     <View style={styles.progressWrap}>
@@ -130,6 +134,7 @@ export function InformationScreen({
   isAuthenticated?: boolean;
   onLogout?: () => void;
 }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const [userName, setUserName] = useState('—');
   const [rankName, setRankName] = useState('—');
   const [progress, setProgress] = useState(0);
@@ -475,7 +480,7 @@ export function InformationScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     maxWidth: 448,

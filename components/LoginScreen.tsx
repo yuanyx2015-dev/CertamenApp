@@ -14,6 +14,7 @@ import { signInWithGoogle, signInWithApple, type AuthResponse } from '../service
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
 import { getOrCreateProfile } from '../services/profileService';
+import { useIPadScaledStyles } from '../lib/layout';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -21,6 +22,7 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
+  const styles = useIPadScaledStyles(baseStyles);
   const [isLoading, setLoading] = useState(false);
 
   // Shared flow for both providers: sign in, then bootstrap profile/stats/settings.
@@ -53,7 +55,7 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
   const handleAppleLogin = () => runLogin('Apple', signInWithApple);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container]}>
       <View style={styles.welcomeSection}>
         <Text style={styles.welcomeText}>Welcome</Text>
 
@@ -125,6 +127,7 @@ function LoginButton({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -188,7 +191,7 @@ function LoginButton({
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     maxWidth: 448,

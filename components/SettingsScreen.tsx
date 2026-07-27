@@ -17,8 +17,10 @@ import {
   type PracticeSessionDifficulty,
 } from '../services/userSettingsService';
 import { getAllWrongQuestions } from '../services/questionReviewService';
+import { useIPadScaledStyles } from '../lib/layout';
 
 function AnimatedButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -80,6 +82,7 @@ export function SettingsScreen({
   previousScreen?: string;
   isGuestMode?: boolean;
 }) {
+  const styles = useIPadScaledStyles(baseStyles);
   const [wrongQuestionsOnly, setWrongQuestionsOnly] = React.useState(false);
   const [numTossups, setNumTossups] = React.useState(20);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -183,7 +186,7 @@ export function SettingsScreen({
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container]}>
         <ActivityIndicator size="large" color="#c9a961" />
       </View>
     );
@@ -273,7 +276,7 @@ export function SettingsScreen({
   );
 
   return (
-    <View style={styles.containerPractice}>
+    <View style={[styles.containerPractice]}>
       <ScrollView
         style={styles.scrollPractice}
         contentContainerStyle={styles.scrollPracticeContent}
@@ -289,7 +292,7 @@ export function SettingsScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     maxWidth: 400,

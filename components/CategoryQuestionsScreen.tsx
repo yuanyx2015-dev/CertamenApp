@@ -23,6 +23,7 @@ import {
 } from '../constants/aiTutor';
 import { getQuestionExplanation } from '../services/aiExplanationService';
 import { askAITutor, getAITutorUsage } from '../services/aiTutorService';
+import { useIPadScaledStyles } from '../lib/layout';
 
 interface CategoryQuestionsScreenProps {
   onNavigate?: (screen: string) => void;
@@ -30,6 +31,7 @@ interface CategoryQuestionsScreenProps {
 }
 
 export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuestionsScreenProps) {
+  const styles = useIPadScaledStyles(baseStyles);
   const [wrongQuestions, setWrongQuestions] = useState<QuestionWithStats[]>([]);
   const [displayedQuestions, setDisplayedQuestions] = useState<QuestionWithStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -408,7 +410,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     maxWidth: 600,

@@ -5,6 +5,8 @@ import { ChallengeModeScreen } from './ChallengeModeScreen';
 import { ReviewWrongScreen } from './ReviewWrongScreen';
 import { StoryModeScreen } from './StoryModeScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
+import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
+import { isIPad } from '../lib/layout';
 
 export type MainTabId = 'profile' | 'challenge' | 'review' | 'practice';
 
@@ -117,22 +119,40 @@ export function MainTabsScreen({
     }
   })();
 
+  const panelBody = (
+    <View style={styles.panel} {...panResponder.panHandlers}>
+      {panel}
+    </View>
+  );
+
   return (
-    <View style={styles.root}>
-      <View style={styles.panel} {...panResponder.panHandlers}>
-        {panel}
-      </View>
-      <View style={styles.tabBar}>
+    <View style={[styles.root, isIPad && styles.rootIPad]}>
+      {/* iPad: scale only the page content — keep the tab bar visible and tappable. */}
+      {isIPad ? (
+        <IPadScaledPhoneColumn extraShrink={activeTab === 'practice' ? 1.15 : 1}>
+          {panelBody}
+        </IPadScaledPhoneColumn>
+      ) : (
+        panelBody
+      )}
+      <View style={[styles.tabBar, isIPad && styles.tabBarIPad]}>
         {TABS.map((tab) => {
           const selected = activeTab === tab.id;
           return (
             <TouchableOpacity
               key={tab.id}
-              style={[styles.tabItem, selected && styles.tabItemSelected]}
+              style={[styles.tabItem, selected && styles.tabItemSelected, isIPad && styles.tabItemIPad]}
               onPress={() => handleTabPress(tab.id)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.tabLabel, selected && styles.tabLabelSelected]} numberOfLines={1}>
+              <Text
+                style={[
+                  styles.tabLabel,
+                  selected && styles.tabLabelSelected,
+                  isIPad && styles.tabLabelIPad,
+                ]}
+                numberOfLines={1}
+              >
                 {tab.label}
               </Text>
             </TouchableOpacity>
@@ -150,6 +170,9 @@ const styles = StyleSheet.create({
     maxWidth: 448,
     alignSelf: 'center',
   },
+  rootIPad: {
+    maxWidth: '100%',
+  },
   panel: {
     flex: 1,
     minHeight: 0,
@@ -164,6 +187,13 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 4,
   },
+  tabBarIPad: {
+    paddingBottom: 10,
+    paddingTop: 16,
+    paddingHorizontal: 12,
+    gap: 8,
+    zIndex: 30,
+  },
   tabItem: {
     flex: 1,
     alignItems: 'center',
@@ -174,19 +204,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
+  tabItemIPad: {
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
   tabItemSelected: {
     backgroundColor: 'rgba(201, 169, 97, 0.28)',
     borderColor: 'rgba(201, 169, 97, 0.45)',
   },
   tabLabel: {
-    fontSize: 11,
-    color: '#6a6a6a',
-    fontWeight: '500',
-    letterSpacing: 0.2,
-    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6b5b45',
+    letterSpacing: 0.3,
+  },
+  tabLabelIPad: {
+    fontSize: 16,
   },
   tabLabelSelected: {
-    color: '#3a3a3a',
-    fontWeight: '700',
+    color: '#4a3728',
   },
 });
