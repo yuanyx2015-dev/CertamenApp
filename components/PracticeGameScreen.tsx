@@ -13,6 +13,7 @@ import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import {
   getOrCreateUserSettings,
+  normalizePracticeDifficulties,
   type UserSettings,
 } from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
@@ -151,8 +152,13 @@ export function PracticeGameScreen({
       }
 
       const storageUserId = practiceScopeIdRef.current;
-      const practiceSessionDifficulty =
-        settingsForScope?.practice_session_difficulty ?? 'easy';
+      const practiceDifficulties = normalizePracticeDifficulties(
+        settingsForScope?.practice_session_difficulty
+      );
+      const difficultySet = new Set(practiceDifficulties);
+      // RPC takes a single difficulty; null = all, then we filter to the selection.
+      const rpcDifficulty =
+        practiceDifficulties.length === 1 ? practiceDifficulties[0] : null;
 
       const clearedIds = await getPracticeClearedIds(storageUserId);
       // Tip: first N category entries into Practice (not Try Again reloads).
@@ -178,14 +184,12 @@ export function PracticeGameScreen({
           if (storyPracticeCategory) {
             pool = pool.filter((q) => q.category === storyPracticeCategory);
           }
-          if (practiceSessionDifficulty) {
-            pool = pool.filter((q) => q.difficulty === practiceSessionDifficulty);
-          }
+          pool = pool.filter((q) => difficultySet.has(q.difficulty));
           loadedQuestions = shuffleArray(pool).slice(0, totalQuestions);
           if (loadedQuestions.length === 0) {
-            if (wrongQuestions && wrongQuestions.length > 0 && practiceSessionDifficulty) {
+            if (wrongQuestions && wrongQuestions.length > 0) {
               setLoadError(
-                'It seems as if there are no wrong questions for this category in your selected difficulty. Change settings or practice more in this category!'
+                'It seems as if there are no wrong questions for this category in your selected difficulties. Change settings or practice more in this category!'
               );
             } else {
               setLoadError('You have no wrong questions to review! Try Challenge Mode first.');
@@ -201,12 +205,14 @@ export function PracticeGameScreen({
           );
           const { data: catQuestions, error } = await getRandomQuestions(
             storyPracticeCategory,
-            practiceSessionDifficulty,
+            rpcDifficulty ?? undefined,
             fetchLimit
           );
           if (error) throw error;
           loadedQuestions = shuffleArray(
-            (catQuestions ?? []).filter((q) => !clearedIds.has(q.id))
+            (catQuestions ?? []).filter(
+              (q) => !clearedIds.has(q.id) && difficultySet.has(q.difficulty)
+            )
           ).slice(0, totalQuestions);
         } else {
           setLoadError('Pick a category in Practice Mode to start.');

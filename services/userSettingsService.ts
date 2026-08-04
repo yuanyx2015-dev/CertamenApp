@@ -4,17 +4,41 @@ import { clearPracticeLocalData } from './practiceClearedService';
 
 export type PracticeSessionDifficulty = 'easy' | 'medium' | 'hard';
 
+/** Canonical order for Practice difficulty multi-select. */
+export const PRACTICE_DIFFICULTY_OPTIONS: PracticeSessionDifficulty[] = [
+  'easy',
+  'medium',
+  'hard',
+];
+
 export interface UserSettings {
   user_id: string;
   num_tossups: number;
   wrong_questions_only: boolean;
-  practice_session_difficulty?: PracticeSessionDifficulty;
+  /** One or more difficulties (never empty after normalize). Legacy single string is migrated. */
+  practice_session_difficulty?: PracticeSessionDifficulty | PracticeSessionDifficulty[];
   sound_enabled: boolean;
   notifications_enabled: boolean;
   theme: 'light' | 'dark' | 'auto';
   language: string;
   created_at?: string;
   updated_at?: string;
+}
+
+/** Normalize stored difficulty to a non-empty unique list in easy → hard order. */
+export function normalizePracticeDifficulties(
+  value: UserSettings['practice_session_difficulty']
+): PracticeSessionDifficulty[] {
+  const raw = Array.isArray(value) ? value : value ? [value] : [];
+  const allowed = new Set<PracticeSessionDifficulty>(PRACTICE_DIFFICULTY_OPTIONS);
+  const picked = new Set<PracticeSessionDifficulty>();
+  for (const d of raw) {
+    if (allowed.has(d as PracticeSessionDifficulty)) {
+      picked.add(d as PracticeSessionDifficulty);
+    }
+  }
+  const ordered = PRACTICE_DIFFICULTY_OPTIONS.filter((d) => picked.has(d));
+  return ordered.length > 0 ? ordered : ['easy'];
 }
 
 /** @deprecated Rank-up settings removed; only practice settings remain. */
@@ -47,7 +71,7 @@ const getDefaultSettings = (userId: string): UserSettings => ({
   user_id: userId,
   num_tossups: 20,
   wrong_questions_only: false,
-  practice_session_difficulty: 'easy',
+  practice_session_difficulty: ['easy'],
   sound_enabled: true,
   notifications_enabled: true,
   theme: 'light',
@@ -57,9 +81,12 @@ const getDefaultSettings = (userId: string): UserSettings => ({
 });
 
 function normalizeParsedSettings(data: UserSettings): UserSettings {
-  const d = data.practice_session_difficulty;
-  const ok = d === 'easy' || d === 'medium' || d === 'hard';
-  return { ...data, practice_session_difficulty: ok ? d : 'easy' };
+  return {
+    ...data,
+    practice_session_difficulty: normalizePracticeDifficulties(
+      data.practice_session_difficulty
+    ),
+  };
 }
 
 export const getOrCreateUserSettings = async (userId: string) => {

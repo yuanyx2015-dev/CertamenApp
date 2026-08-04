@@ -15,6 +15,8 @@ import {
   getOrCreateUserSettings,
   updateSetting,
   type PracticeSessionDifficulty,
+  normalizePracticeDifficulties,
+  PRACTICE_DIFFICULTY_OPTIONS,
 } from '../services/userSettingsService';
 import { getAllWrongQuestions } from '../services/questionReviewService';
 import { useIPadScaledStyles } from '../lib/layout';
@@ -88,8 +90,8 @@ export function SettingsScreen({
   const [isLoading, setIsLoading] = React.useState(true);
   const [userId, setUserId] = React.useState<string | null>(null);
   const [wrongQuestionCount, setWrongQuestionCount] = React.useState(0);
-  const [practiceSessionDifficulty, setPracticeSessionDifficulty] =
-    React.useState<PracticeSessionDifficulty>('easy');
+  const [practiceSessionDifficulties, setPracticeSessionDifficulties] =
+    React.useState<PracticeSessionDifficulty[]>(['easy']);
 
   // Extract loading logic into reusable function
   const loadSettingsData = React.useCallback(async () => {
@@ -107,7 +109,9 @@ export function SettingsScreen({
       if (settings && !error) {
         setWrongQuestionsOnly(settings.wrong_questions_only);
         setNumTossups(settings.num_tossups);
-        setPracticeSessionDifficulty(settings.practice_session_difficulty ?? 'easy');
+        setPracticeSessionDifficulties(
+          normalizePracticeDifficulties(settings.practice_session_difficulty)
+        );
       }
       
       // Fetch wrong question count (only for authenticated users)
@@ -162,11 +166,18 @@ export function SettingsScreen({
     }
   };
 
-  // Handle number of tossups change
-  const handlePracticeDifficultySelect = async (next: PracticeSessionDifficulty) => {
+  // Multi-select difficulties; never allow zero checked.
+  const handlePracticeDifficultyToggle = async (id: PracticeSessionDifficulty) => {
     if (!userId) return;
-    if (practiceSessionDifficulty === next) return;
-    setPracticeSessionDifficulty(next);
+    const selected = new Set(practiceSessionDifficulties);
+    if (selected.has(id)) {
+      if (selected.size <= 1) return;
+      selected.delete(id);
+    } else {
+      selected.add(id);
+    }
+    const next = PRACTICE_DIFFICULTY_OPTIONS.filter((d) => selected.has(d));
+    setPracticeSessionDifficulties(next);
     await updateSetting(userId, 'practice_session_difficulty', next);
   };
 
@@ -246,6 +257,7 @@ export function SettingsScreen({
 
         <View style={styles.difficultySection}>
             <Text style={styles.sectionTitle}>Difficulty</Text>
+            <Text style={styles.difficultyHint}>Select one or more</Text>
             <View style={styles.difficultyRow}>
               {(
                 [
@@ -253,22 +265,29 @@ export function SettingsScreen({
                   { id: 'medium' as const, label: 'Medium' },
                   { id: 'hard' as const, label: 'Hard' },
                 ] as const
-              ).map(({ id, label }) => (
-                <TouchableOpacity
-                  key={id}
-                  style={styles.difficultyTap}
-                  onPress={() => handlePracticeDifficultySelect(id)}
-                  activeOpacity={0.75}
-                >
-                  <View
-                    style={[
-                      styles.difficultyCircle,
-                      practiceSessionDifficulty === id && styles.difficultyCircleSelected,
-                    ]}
-                  />
-                  <Text style={styles.difficultyLabel}>{label}</Text>
-                </TouchableOpacity>
-              ))}
+              ).map(({ id, label }) => {
+                const checked = practiceSessionDifficulties.includes(id);
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    style={styles.difficultyTap}
+                    onPress={() => handlePracticeDifficultyToggle(id)}
+                    activeOpacity={0.75}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked }}
+                  >
+                    <View
+                      style={[
+                        styles.difficultyCheckbox,
+                        checked && styles.difficultyCheckboxSelected,
+                      ]}
+                    >
+                      {checked && <Text style={styles.difficultyCheckMark}>✓</Text>}
+                    </View>
+                    <Text style={styles.difficultyLabel}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
       </View>
@@ -437,6 +456,11 @@ const baseStyles = StyleSheet.create({
     color: '#3a3a3a',
     letterSpacing: 0.3,
   },
+  difficultyHint: {
+    fontSize: 12,
+    color: '#8a6a3a',
+    letterSpacing: 0.2,
+  },
   difficultyRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -448,17 +472,25 @@ const baseStyles = StyleSheet.create({
     gap: 8,
     minWidth: 76,
   },
-  difficultyCircle: {
+  difficultyCheckbox: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 6,
     borderWidth: 2,
     borderColor: 'rgba(120, 120, 120, 0.45)',
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  difficultyCircleSelected: {
+  difficultyCheckboxSelected: {
     borderColor: '#b8954a',
     backgroundColor: 'rgba(201, 169, 97, 0.35)',
+  },
+  difficultyCheckMark: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#8a6a3a',
+    lineHeight: 18,
   },
   difficultyLabel: {
     fontSize: 14,
