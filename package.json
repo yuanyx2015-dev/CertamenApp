@@ -1,6 +1,6 @@
 {
   "name": "certamenapp",
-  "version": "1.0.1",
+  "version": "1.1.1",
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",

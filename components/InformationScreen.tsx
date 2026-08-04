@@ -7,7 +7,8 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
-  Platform
+  Platform,
+  Linking,
 } from 'react-native';
 import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
@@ -31,6 +32,7 @@ import {
 } from '../lib/masteryRanks';
 import type { MainTabId } from './MainTabsScreen';
 import { useIPadScaledStyles } from '../lib/layout';
+import { PRIVACY_POLICY_URL } from '../constants/urls';
 
 function AnimatedCardButton({
   label,
@@ -446,6 +448,16 @@ export function InformationScreen({
         </View>
       )}
 
+      <TouchableOpacity
+        style={styles.privacyLinkWrap}
+        onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+        activeOpacity={0.7}
+        accessibilityRole="link"
+        accessibilityLabel="Privacy Policy"
+      >
+        <Text style={styles.privacyLink}>Privacy Policy</Text>
+      </TouchableOpacity>
+
       <Modal
         visible={showDeleteModal}
         transparent
@@ -773,6 +785,18 @@ const baseStyles = StyleSheet.create({
     fontWeight: '600',
     color: '#a01f4f',
     letterSpacing: 0.2,
+  },
+  privacyLinkWrap: {
+    marginTop: 14,
+    marginBottom: 8,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  privacyLink: {
+    fontSize: 13,
+    color: '#6a6a6a',
+    textDecorationLine: 'underline',
+    letterSpacing: 0.1,
   },
   modalOverlay: {
     flex: 1,

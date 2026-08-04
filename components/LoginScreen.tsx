@@ -5,7 +5,8 @@ import {
   StyleSheet,
   Animated,
   Alert,
-  Platform
+  Platform,
+  Linking,
 } from 'react-native';
 import { Text } from '../lib/AppText';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -15,6 +16,7 @@ import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
 import { getOrCreateProfile } from '../services/profileService';
 import { useIPadScaledStyles } from '../lib/layout';
+import { PRIVACY_POLICY_URL } from '../constants/urls';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -113,6 +115,16 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
               </Text>
             </>
           )}
+
+          <TouchableOpacity
+            onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+            disabled={isLoading}
+            activeOpacity={0.7}
+            accessibilityRole="link"
+            accessibilityLabel="Privacy Policy"
+          >
+            <Text style={styles.privacyLink}>Privacy Policy</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -321,6 +333,14 @@ const baseStyles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
+    letterSpacing: 0.1,
+  },
+  privacyLink: {
+    marginTop: 16,
+    color: '#6a6a6a',
+    fontSize: 13,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
     letterSpacing: 0.1,
   },
 });
