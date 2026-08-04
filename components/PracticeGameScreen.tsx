@@ -16,7 +16,13 @@ import {
   type UserSettings,
 } from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
-import { masterQuestion } from '../services/userMasteredService';
+import {
+  addPracticeClearedId,
+  getPracticeCategoryEntryCount,
+  getPracticeClearedIds,
+  PRACTICE_CLEAR_TIP_ENTRY_LIMIT,
+  recordPracticeCategoryEntry,
+} from '../services/practiceClearedService';
 import { FeedbackOverlay } from './RomanFeedback';
 import type { FeedbackOverlayHandle } from './RomanFeedback';
 import { StarIcon, MASTERED_CONFIRM_MS } from './StarIcon';
@@ -24,8 +30,8 @@ import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
 import { isIPad, useIPadColumnScale, useIPadScaledStyles } from '../lib/layout';
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
-/** Hold duration on the star to master a question. */
-const HOLD_TO_MASTER_MS = 500;
+/** Same hold duration as Challenge / Review mastery star. */
+const HOLD_TO_CLEAR_MS = 500;
 
 interface PracticeGameScreenProps {
   onNavigate?: (screen: string) => void;
@@ -49,8 +55,11 @@ export function PracticeGameScreen({
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [masteredThisSession, setMasteredThisSession] = useState(0); // # mastered in this set
+  /** Held-to-clear count this set (also permanently excluded from future Practice). */
+  const [clearedThisSession, setClearedThisSession] = useState(0);
   const [wrongThisSession, setWrongThisSession] = useState(0); // # answered wrong in this set
+  /** Original set size for end-of-set stats (pool shrinks when cleared). */
+  const [startedSetSize, setStartedSetSize] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
   const [isBuzzed, setIsBuzzed] = useState(false);
   const [isAnswered, setIsAnswered] = useState(false);
@@ -63,7 +72,9 @@ export function PracticeGameScreen({
   const [isWrongQuestionsMode, setIsWrongQuestionsMode] = useState(false); // Track if using wrong questions mode
   const [isPreviouslyWrong, setIsPreviouslyWrong] = useState(false); // Track if current question was previously answered wrong
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false); // Whether the current question was answered correctly
-  const [justMastered, setJustMastered] = useState(false); // Current question has been marked mastered
+  const [starCleared, setStarCleared] = useState(false);
+  /** Tip under the star for the first few Practice category entries. */
+  const [showClearTip, setShowClearTip] = useState(false);
   /** Bumped by "Try Again" to re-run the loader with the SAME mode/settings. */
   const [reloadNonce, setReloadNonce] = useState(0);
 
@@ -81,7 +92,8 @@ export function PracticeGameScreen({
   const currentQuestionIndexRef = useRef(0);
   const holdAnim = useRef(new Animated.Value(0)).current;
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const justMasteredRef = useRef(false);
+  const starClearedRef = useRef(false);
+  const practiceScopeIdRef = useRef('guest');
 
   /** Practice never feeds the Review pool (Challenge / Review handle that). */
   const skipWrongTracking = true;
@@ -106,8 +118,9 @@ export function PracticeGameScreen({
       setLoadError(null);
       // Always start a fresh set (covers the "Try Again" reload path too).
       setCurrentQuestionIndex(0);
-      setMasteredThisSession(0);
+      setClearedThisSession(0);
       setWrongThisSession(0);
+      setStartedSetSize(0);
 
       let totalQuestions = 20;
       let wrongQuestionsOnly = false;
@@ -117,6 +130,7 @@ export function PracticeGameScreen({
       if (!isGuestMode) {
         user = await getCurrentUser();
         if (user) {
+          practiceScopeIdRef.current = user.id;
           const { data: settings } = await getOrCreateUserSettings(user.id);
           settingsForScope = settings ?? null;
           if (settings) {
@@ -124,8 +138,11 @@ export function PracticeGameScreen({
             wrongQuestionsOnly = settings.wrong_questions_only;
             setIsWrongQuestionsMode(wrongQuestionsOnly);
           }
+        } else {
+          practiceScopeIdRef.current = 'guest';
         }
       } else {
+        practiceScopeIdRef.current = 'guest';
         const { data: settings } = await getOrCreateUserSettings('guest');
         settingsForScope = settings ?? null;
         if (settings) {
@@ -133,11 +150,21 @@ export function PracticeGameScreen({
         }
       }
 
+      const storageUserId = practiceScopeIdRef.current;
       const practiceSessionDifficulty =
         settingsForScope?.practice_session_difficulty ?? 'easy';
 
-      const allQuestions: Question[] = [];
-      const seenIds = new Set<string>();
+      const clearedIds = await getPracticeClearedIds(storageUserId);
+      // Tip: first N category entries into Practice (not Try Again reloads).
+      if (reloadNonce === 0) {
+        const entryCount = await recordPracticeCategoryEntry(storageUserId);
+        setShowClearTip(entryCount <= PRACTICE_CLEAR_TIP_ENTRY_LIMIT);
+      } else {
+        const entryCount = await getPracticeCategoryEntryCount(storageUserId);
+        setShowClearTip(entryCount <= PRACTICE_CLEAR_TIP_ENTRY_LIMIT);
+      }
+
+      let loadedQuestions: Question[] = [];
 
       try {
         if (wrongQuestionsOnly && !isGuestMode && user) {
@@ -147,72 +174,67 @@ export function PracticeGameScreen({
             fetchCap
           );
           if (wrongError) throw wrongError;
-          let pool = wrongQuestions ?? [];
+          let pool = (wrongQuestions ?? []).filter((q) => !clearedIds.has(q.id));
           if (storyPracticeCategory) {
             pool = pool.filter((q) => q.category === storyPracticeCategory);
           }
           if (practiceSessionDifficulty) {
             pool = pool.filter((q) => q.difficulty === practiceSessionDifficulty);
           }
-          const picked = shuffleArray(pool).slice(0, totalQuestions);
-          if (picked.length > 0) {
-            picked.forEach((q) => {
-              if (!seenIds.has(q.id)) {
-                allQuestions.push(q);
-                seenIds.add(q.id);
-              }
-            });
-          } else if (wrongQuestions && wrongQuestions.length > 0 && practiceSessionDifficulty) {
-            setLoadError(
-              'It seems as if there are no wrong questions for this category in your selected difficulty. Change settings or practice more in this category!'
-            );
-            setIsLoading(false);
-            return;
-          } else {
-            setLoadError('You have no wrong questions to review! Try Challenge Mode first.');
+          loadedQuestions = shuffleArray(pool).slice(0, totalQuestions);
+          if (loadedQuestions.length === 0) {
+            if (wrongQuestions && wrongQuestions.length > 0 && practiceSessionDifficulty) {
+              setLoadError(
+                'It seems as if there are no wrong questions for this category in your selected difficulty. Change settings or practice more in this category!'
+              );
+            } else {
+              setLoadError('You have no wrong questions to review! Try Challenge Mode first.');
+            }
             setIsLoading(false);
             return;
           }
         } else if (storyPracticeCategory) {
+          // Over-fetch so permanently cleared Practice questions can be filtered out.
+          const fetchLimit = Math.min(
+            Math.max(totalQuestions + clearedIds.size + 15, totalQuestions * 2),
+            120
+          );
           const { data: catQuestions, error } = await getRandomQuestions(
             storyPracticeCategory,
             practiceSessionDifficulty,
-            totalQuestions
+            fetchLimit
           );
           if (error) throw error;
-          if (catQuestions) {
-            catQuestions.forEach((q) => {
-              if (!seenIds.has(q.id)) {
-                allQuestions.push(q);
-                seenIds.add(q.id);
-              }
-            });
-          }
+          loadedQuestions = shuffleArray(
+            (catQuestions ?? []).filter((q) => !clearedIds.has(q.id))
+          ).slice(0, totalQuestions);
         } else {
           setLoadError('Pick a category in Practice Mode to start.');
           setIsLoading(false);
           return;
         }
-        
-        if (allQuestions.length === 0) {
-          setLoadError('No questions found in database');
+
+        if (loadedQuestions.length === 0) {
+          setLoadError(
+            clearedIds.size > 0
+              ? 'No Practice questions left in this category for your settings. Cleared questions stay out of Practice permanently.'
+              : 'No questions found in database'
+          );
           setIsLoading(false);
           return;
         }
-        
-        // Shuffle all questions together
-        const shuffledQuestions = shuffleArray(allQuestions);
-        setQuestions(shuffledQuestions);
+
+        setQuestions(loadedQuestions);
+        setStartedSetSize(loadedQuestions.length);
         setIsLoading(false);
         setStatusText('Ready...');
-        
       } catch (error) {
         console.error('Error loading questions:', error);
         setLoadError('Failed to load questions from database');
         setIsLoading(false);
       }
     };
-    
+
     loadQuestionsAndStats();
   }, [isGuestMode, storyPracticeCategory, reloadNonce]);
 
@@ -303,8 +325,8 @@ export function PracticeGameScreen({
     setStatusText('Reading question...');
     setIsPreviouslyWrong(false); // Reset indicator
     setLastAnswerCorrect(false);
-    setJustMastered(false);
-    justMasteredRef.current = false;
+    setStarCleared(false);
+    starClearedRef.current = false;
     holdAnim.setValue(0);
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
@@ -446,43 +468,50 @@ export function PracticeGameScreen({
     }
   };
 
-  // Next question
+  // Next question (leave it in the session list behind you; no server writes).
   const nextQuestion = () => {
     setCurrentQuestionIndex(currentQuestionIndex + 1);
   };
 
-  // Mark the current (correctly answered) question as mastered, then advance.
-  const fireMaster = async () => {
-    setMasteredThisSession((n) => n + 1);
-    const user = await getCurrentUser();
+  /**
+   * Hold-to-clear: permanently exclude from future Practice pools (device-local),
+   * remove from this set, advance. Never mastery / Review / ranks.
+   */
+  const fireClearFromPractice = async () => {
     const q = questions[currentQuestionIndex];
-    if (user && q) {
-      await masterQuestion(user.id, q.id);
+    if (q) {
+      await addPracticeClearedId(practiceScopeIdRef.current, q.id);
     }
-    nextQuestion();
+    setClearedThisSession((n) => n + 1);
+    setQuestions((prev) => {
+      const next = [...prev];
+      if (currentQuestionIndex >= 0 && currentQuestionIndex < next.length) {
+        next.splice(currentQuestionIndex, 1);
+      }
+      return next;
+    });
   };
 
   const handleStarPressIn = () => {
-    if (!lastAnswerCorrect || justMasteredRef.current) return;
+    if (!lastAnswerCorrect || starClearedRef.current) return;
     holdAnim.setValue(0);
     Animated.timing(holdAnim, {
       toValue: 1,
-      duration: HOLD_TO_MASTER_MS,
+      duration: HOLD_TO_CLEAR_MS,
       easing: Easing.linear,
       useNativeDriver: false,
     }).start();
     holdTimerRef.current = setTimeout(() => {
-      justMasteredRef.current = true;
-      setJustMastered(true);
+      starClearedRef.current = true;
+      setStarCleared(true);
       holdTimerRef.current = setTimeout(() => {
-        void fireMaster();
+        void fireClearFromPractice();
       }, MASTERED_CONFIRM_MS);
-    }, HOLD_TO_MASTER_MS);
+    }, HOLD_TO_CLEAR_MS);
   };
 
   const handleStarPressOut = () => {
-    // Hold finished — keep the filled star until we advance.
-    if (justMasteredRef.current) return;
+    if (starClearedRef.current) return;
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
@@ -514,14 +543,15 @@ export function PracticeGameScreen({
         clearTimeout(holdTimerRef.current);
         holdTimerRef.current = null;
       }
-      
-      // Reset game state for fresh start on next entry
-      // This ensures a new game starts when user returns
     };
   }, [currentQuestionIndex, isLoading, questions]);
 
-  // Check if game is over
-  const isGameOver = questions.length > 0 && currentQuestionIndex >= questions.length;
+  // Check if game is over (empty pool after clears, or index past the end via Next).
+  const isGameOver =
+    !isLoading &&
+    !loadError &&
+    startedSetSize > 0 &&
+    (questions.length === 0 || currentQuestionIndex >= questions.length);
 
   // Loading state
   if (isLoading) {
@@ -570,15 +600,15 @@ export function PracticeGameScreen({
             <View style={[styles.statCard, styles.statCardMastered]}>
               <View style={styles.statNumberBox}>
                 <Text style={[styles.statNumber, styles.statNumberMastered]}>
-                  {masteredThisSession}
+                  {clearedThisSession}
                 </Text>
               </View>
-              <Text style={styles.statLabel}>Mastered</Text>
+              <Text style={styles.statLabel}>Cleared</Text>
             </View>
             <View style={[styles.statCard, styles.statCardWrong]}>
               <View style={styles.statNumberBox}>
                 <Text style={[styles.statNumber, styles.statNumberWrong, styles.statNumberFraction]}>
-                  {wrongThisSession}/{questions.length}
+                  {wrongThisSession}/{startedSetSize}
                 </Text>
               </View>
               <Text style={styles.statLabel}>Wrong</Text>
@@ -765,19 +795,26 @@ export function PracticeGameScreen({
               <Text style={styles.nextBtnText}>Next Question →</Text>
             </TouchableOpacity>
 
-            {!isGuestMode && lastAnswerCorrect && (
+            {lastAnswerCorrect && (
               <View style={styles.starWrap}>
                 <TouchableOpacity
                   onPressIn={handleStarPressIn}
                   onPressOut={handleStarPressOut}
                   activeOpacity={1}
                   style={styles.starPress}
+                  accessibilityRole="button"
+                  accessibilityLabel="Hold to clear this question from Practice permanently"
                 >
                   <StarIcon filled={0} progress={holdAnim} />
                 </TouchableOpacity>
                 <Text style={styles.starHint}>
-                  {justMastered ? 'Mastered!' : 'Hold to master'}
+                  {starCleared ? 'Cleared!' : 'Hold to Clear from Practice'}
                 </Text>
+                {showClearTip && (
+                  <Text style={styles.starTip}>
+                    Questions cleared from Practice are cleared permanently.
+                  </Text>
+                )}
               </View>
             )}
           </View>
@@ -1066,7 +1103,18 @@ const baseStyles = StyleSheet.create({
   starHint: {
     fontSize: 10,
     color: '#6a6a6a',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    maxWidth: 120,
+  },
+  starTip: {
+    marginTop: 2,
+    fontSize: 9,
+    lineHeight: 12,
+    color: '#8a6a3a',
+    letterSpacing: 0.15,
+    textAlign: 'center',
+    maxWidth: 140,
   },
   footer: {
     paddingTop: 10,
