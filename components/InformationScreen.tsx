@@ -368,25 +368,20 @@ export function InformationScreen({
       </View>
 
       <View style={styles.gridSection}>
-        <View style={styles.mainGridRow}>
+        {/* Mastered + Remaining | Daily Challenge (same height as those two) */}
+        <View style={styles.topGridRow}>
           <View style={styles.leftStatsColumn}>
             <StatBox
               label="Mastered"
               scopeLabel="all ranks"
               value={masteredCount}
-              style={styles.sideStatBox}
+              style={styles.topStatBox}
             />
             <StatBox
               label="Remaining"
               scopeLabel={rankName === '—' ? 'in this rank' : `in ${rankName}`}
               value={unmasteredCount}
-              style={styles.sideStatBox}
-            />
-            <StatBox
-              label="To review"
-              scopeLabel="missed questions"
-              value={wrongCount}
-              style={styles.sideStatBox}
+              style={styles.topStatBox}
             />
           </View>
           <AnimatedCardButton
@@ -396,16 +391,25 @@ export function InformationScreen({
           />
         </View>
 
-        <StatBox
-          label="Streak"
-          value={streak}
-          style={styles.streakBox}
-          footer={
-            <Text style={styles.statSubLabel}>
-              Best: <Text style={styles.statSubValue}>{highStreak}</Text>
-            </Text>
-          }
-        />
+        {/* To review | Streak */}
+        <View style={styles.bottomGridRow}>
+          <StatBox
+            label="To review"
+            scopeLabel="missed questions"
+            value={wrongCount}
+            style={styles.bottomStatBox}
+          />
+          <StatBox
+            label="Streak"
+            value={streak}
+            style={styles.bottomStatBox}
+            footer={
+              <Text style={styles.statSubLabel}>
+                Best: <Text style={styles.statSubValue}>{highStreak}</Text>
+              </Text>
+            }
+          />
+        </View>
       </View>
 
       <TouchableOpacity
@@ -613,22 +617,30 @@ const baseStyles = StyleSheet.create({
   gridSection: {
     gap: 10,
   },
-  /** Left: Mastered / Remaining / To review. Right: tall Daily Challenge. */
-  mainGridRow: {
+  /** Left: Mastered / Remaining. Right: Daily Challenge (same height). */
+  topGridRow: {
     flexDirection: 'row',
     gap: 10,
     alignItems: 'stretch',
+    minHeight: 168,
   },
   leftStatsColumn: {
     flex: 1,
     gap: 10,
   },
-  sideStatBox: {
+  topStatBox: {
     flex: 1,
-    minHeight: 72,
+    minHeight: 79,
   },
-  streakBox: {
-    minHeight: 72,
+  /** Left: To review. Right: Streak. */
+  bottomGridRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'stretch',
+  },
+  bottomStatBox: {
+    flex: 1,
+    minHeight: 76,
   },
   statBox: {
     justifyContent: 'space-between',
@@ -670,9 +682,8 @@ const baseStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // Stretch with the three left cards (Mastered + Remaining + To review).
-    minHeight: 236,
-    paddingHorizontal: 12,
+    minHeight: 168,
+    paddingHorizontal: 10,
   },
   dailyChallengeText: {
     fontSize: 16,

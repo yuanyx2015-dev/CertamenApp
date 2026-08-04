@@ -8,6 +8,7 @@ import {
   Modal,
   Pressable
 } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
@@ -26,6 +27,21 @@ import type { ChallengeGameMode } from './ChallengeGameScreen';
 import { useIPadScaledStyles } from '../lib/layout';
 
 const SET_SIZES = [10, 20, 30, 40, 50] as const;
+
+/** Drawn mark — avoids Spectral “i” metrics looking like a mis-centered 1. */
+function RankInfoIcon() {
+  return (
+    <Svg width={9} height={11} viewBox="0 0 9 11">
+      <Circle cx={4.5} cy={1.6} r={1.15} fill="#8a6a3a" />
+      <Path
+        d="M4.5 4.2 V9.4"
+        stroke="#8a6a3a"
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
 
 /**
  * Trial polish for the All-ranks list (current emphasized; done/locked quieter).
@@ -254,7 +270,7 @@ export function ChallengeModeScreen({
                     accessibilityLabel={`About ${name}`}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.rankInfoBtnText}>i</Text>
+                    <RankInfoIcon />
                   </TouchableOpacity>
                   {hierarchy && isCurrentRank && (
                     <Text style={styles.rankRowBadge}>Current</Text>
@@ -585,19 +601,6 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.55)',
-    overflow: 'hidden',
-  },
-  rankInfoBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    // Italic Spectral "i" sits high in its em-box; keep upright for true center.
-    fontStyle: 'normal',
-    color: '#8a6a3a',
-    lineHeight: 11,
-    textAlign: 'center',
-    includeFontPadding: false,
-    // Tiny optical nudge so the glyph's visual center matches the circle.
-    transform: [{ translateY: 0.5 }],
   },
   rankRowCaption: {
     fontSize: 12,
