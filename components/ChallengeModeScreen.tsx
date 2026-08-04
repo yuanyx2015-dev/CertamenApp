@@ -7,11 +7,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getRankStats } from '../services/userMasteredService';
 import {
   MASTERY_RANKS,
+  MASTERY_RANK_BLURBS,
   MASTERY_RANK_COUNT,
   allRanksComplete,
   currentRankFromStats,
@@ -21,7 +24,14 @@ import {
 import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
 import { useIPadScaledStyles } from '../lib/layout';
+
 const SET_SIZES = [10, 20, 30, 40, 50] as const;
+
+/**
+ * Trial polish for the All-ranks list (current emphasized; done/locked quieter).
+ * Set to false to restore the previous flat list with zero other changes.
+ */
+const USE_RANK_HIERARCHY_UI = true;
 
 export function ChallengeModeScreen({
   isAuthenticated,
@@ -44,6 +54,8 @@ export function ChallengeModeScreen({
   const [isLoading, setIsLoading] = useState(true);
   const [rankStats, setRankStats] = useState<RankStats[]>([]);
   const [setSize, setSetSize] = useState<number>(10);
+  /** Index of rank whose info popover is open; null when closed. */
+  const [infoRankIdx, setInfoRankIdx] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     if (!isAuthenticated || isGuestMode) {
@@ -126,7 +138,10 @@ export function ChallengeModeScreen({
     onStartChallengeGame?.('challenge', effectiveSetSize, rankIdx);
   };
 
+  const infoName = infoRankIdx !== null ? MASTERY_RANKS[infoRankIdx] : null;
+
   return (
+    <>
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.scrollContent}
@@ -146,6 +161,17 @@ export function ChallengeModeScreen({
           <Text style={styles.statsRowText}>Unmastered: {cur?.unmastered ?? 0}</Text>
           <Text style={styles.statsRowText}>Wrong: {cur?.wrong ?? 0}</Text>
         </View>
+        <Text style={styles.rankNote}>
+          To complete this rank, review and master all wrong questions in{' '}
+          <Text
+            style={styles.rankNoteLink}
+            onPress={() => onTabChange?.('review')}
+            accessibilityRole="link"
+          >
+            Review
+          </Text>
+          .
+        </Text>
       </View>
 
       <View style={[styles.card, styles.pickerCard]}>
@@ -197,17 +223,61 @@ export function ChallengeModeScreen({
           const total = s?.totalQuestions ?? 0;
           const p = rankProgressFromStats(s);
           const isCurrentRank = idx === rankIdx;
+          const isCompletedRank = idx < rankIdx;
+          const hierarchy = USE_RANK_HIERARCHY_UI;
+
           return (
-            <View key={name} style={styles.rankRow}>
+            <View
+              key={name}
+              style={[
+                styles.rankRow,
+                hierarchy && isCurrentRank && styles.rankRowCurrent,
+              ]}
+            >
               <View style={styles.rankRowHead}>
-                <Text style={[styles.rankRowName, isCurrentRank && styles.rankRowNameCurrent]}>
-                  {name}
-                </Text>
-                <Text style={styles.rankRowCaption}>
+                <View style={styles.rankRowNameWrap}>
+                  <Text
+                    style={[
+                      styles.rankRowName,
+                      isCurrentRank && styles.rankRowNameCurrent,
+                      hierarchy && isCurrentRank && styles.rankRowNameCurrentHero,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {name}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.rankInfoBtn}
+                    onPress={() => setInfoRankIdx(idx)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`About ${name}`}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.rankInfoBtnText}>i</Text>
+                  </TouchableOpacity>
+                  {hierarchy && isCurrentRank && (
+                    <Text style={styles.rankRowBadge}>Current</Text>
+                  )}
+                  {hierarchy && isCompletedRank && (
+                    <Text style={styles.rankRowBadgeCompleted}>Completed</Text>
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.rankRowCaption,
+                    hierarchy && isCurrentRank && styles.rankRowCaptionCurrent,
+                  ]}
+                >
                   {s ? `${inRank}/${total}` : '—'}
                 </Text>
               </View>
-              <View style={styles.progressTrackSmall}>
+              <View
+                style={[
+                  styles.progressTrackSmall,
+                  hierarchy && isCurrentRank && styles.progressTrackCurrent,
+                ]}
+              >
                 <View style={[styles.progressFill, { width: `${Math.round(p * 100)}%` }]} />
               </View>
             </View>
@@ -215,6 +285,34 @@ export function ChallengeModeScreen({
         })}
       </View>
     </ScrollView>
+
+    <Modal
+      visible={infoRankIdx !== null}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setInfoRankIdx(null)}
+    >
+      <Pressable
+        style={styles.infoBackdrop}
+        onPress={() => setInfoRankIdx(null)}
+        accessibilityLabel="Dismiss rank info"
+      >
+        <Pressable
+          style={styles.infoCard}
+          onPress={() => {
+            /* swallow presses so the backdrop dismiss does not fire */
+          }}
+        >
+          {infoName !== null && (
+            <>
+              <Text style={styles.infoTitle}>{infoName}</Text>
+              <Text style={styles.infoBody}>{MASTERY_RANK_BLURBS[infoName]}</Text>
+            </>
+          )}
+        </Pressable>
+      </Pressable>
+    </Modal>
+    </>
   );
 }
 
@@ -336,6 +434,20 @@ const baseStyles = StyleSheet.create({
     color: '#6a6a6a',
     letterSpacing: 0.2,
   },
+  rankNote: {
+    marginTop: 8,
+    alignSelf: 'flex-end',
+    maxWidth: '78%',
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#8a6a3a',
+    letterSpacing: 0.15,
+    textAlign: 'right',
+  },
+  rankNoteLink: {
+    fontWeight: '700',
+    color: '#8a6a3a',
+  },
   pickerCard: {
     gap: 10,
   },
@@ -406,9 +518,27 @@ const baseStyles = StyleSheet.create({
   rankRow: {
     gap: 2,
   },
+  // Hierarchy trial styles — unused when USE_RANK_HIERARCHY_UI is false.
+  rankRowCurrent: {
+    marginVertical: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.65)',
+    backgroundColor: 'rgba(201, 169, 97, 0.16)',
+    gap: 4,
+  },
   rankRowHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rankRowNameWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
   },
   rankRowName: {
     fontSize: 12,
@@ -419,9 +549,95 @@ const baseStyles = StyleSheet.create({
     fontWeight: '700',
     color: '#8a6a3a',
   },
+  rankRowNameCurrentHero: {
+    fontSize: 15,
+    letterSpacing: 0.3,
+    color: '#4a3728',
+  },
+  rankRowBadge: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: '#8a6a3a',
+    backgroundColor: 'rgba(201, 169, 97, 0.28)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  rankRowBadgeCompleted: {
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    color: '#7a6a55',
+  },
+  rankInfoBtn: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(138, 106, 58, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+  },
+  rankInfoBtnText: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontStyle: 'italic',
+    color: '#8a6a3a',
+    lineHeight: 11,
+  },
   rankRowCaption: {
     fontSize: 11,
     color: '#6a6a6a',
     fontWeight: '500',
+  },
+  rankRowCaptionCurrent: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8a6a3a',
+  },
+  progressTrackCurrent: {
+    height: 8,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  infoBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 28,
+    // Very light so the list stays readable — not a heavy dim sheet.
+    backgroundColor: 'rgba(58, 45, 28, 0.12)',
+  },
+  infoCard: {
+    width: '100%',
+    maxWidth: 280,
+    backgroundColor: '#fbf7ef',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.55)',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 6,
+    shadowColor: '#3a2a1a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4a3728',
+    letterSpacing: 0.3,
+  },
+  infoBody: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#5a5a5a',
   },
 });

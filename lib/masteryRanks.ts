@@ -20,6 +20,32 @@ export const MASTERY_RANKS = [
 
 export type MasteryRankName = (typeof MASTERY_RANKS)[number];
 
+/** Short historical blurbs for the All-ranks info popovers (same order as MASTERY_RANKS). */
+export const MASTERY_RANK_BLURBS: Record<MasteryRankName, string> = {
+  Miles:
+    'The common legionary soldier, the basic rank and backbone of every Roman legion.',
+  Cornicen:
+    'Horn player who signaled commands and troop movements on the battlefield using the cornu, a curved horn.',
+  Signifer:
+    "Standard-bearer who carried the century's signum and also managed the soldiers' savings and burial fund.",
+  Optio:
+    "The centurion's second-in-command, handling training, discipline, and day-to-day administration of the century.",
+  Centurio:
+    'Commander of a century (roughly 80 men), the backbone of Roman command, usually promoted up from the ranks.',
+  Aquilifer:
+    "Elite standard-bearer entrusted with the legion's eagle (aquila), its most sacred symbol; one of the highest honors and greatest risks in the legion.",
+  'Primus Pilus':
+    '"First spear," the senior centurion of the legion, commanding the first century of the first cohort.',
+  'Praefectus Castrorum':
+    'Camp prefect, third-in-command of the legion, responsible for logistics, engineering, and camp administration; usually a former Primus Pilus.',
+  'Tribunus Angusticlavius':
+    '"Narrow-stripe tribune," one of five equestrian-rank officers per legion, handling administrative and staff duties.',
+  'Tribunus Laticlavius':
+    '"Broad-stripe tribune," the senior tribune, of senatorial rank, second-in-command of the legion, typically a young aristocrat gaining military experience.',
+  'Legatus Legionis':
+    "The legion's overall commander, a senator appointed by the emperor to lead roughly 5,000 men.",
+};
+
 /** Questions needed per rank tier. */
 export const MASTERY_RANK_THRESHOLD = 100;
 
