@@ -338,6 +338,12 @@ export function RomanBackground() {
           isIPad && isMainTabScreen && styles.contentContainerMainIPad,
           // iPhone only: pull main tabs closer to the bottom (leave Android / iPad alone).
           isIPhone && isMainTabScreen && styles.contentContainerMainIPhone,
+          // Practice hub only: sit closer under the laurel (other tabs keep default inset).
+          isMainTabScreen &&
+            mainTab === 'practice' &&
+            (isIPad
+              ? styles.contentContainerMainPracticeIPad
+              : styles.contentContainerMainPractice),
         ]}
       >
         {/* Main tabs / games manage their own iPad scale so footers & tabs stay visible. */}
@@ -440,6 +446,12 @@ const styles = StyleSheet.create({
   },
   contentContainerMainIPhone: {
     paddingBottom: 50,
+  },
+  contentContainerMainPractice: {
+    paddingTop: 128,
+  },
+  contentContainerMainPracticeIPad: {
+    paddingTop: 155,
   },
   contentContainerCompact: {
     paddingTop: 128,

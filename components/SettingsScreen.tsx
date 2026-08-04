@@ -324,7 +324,7 @@ const baseStyles = StyleSheet.create({
   },
   contentContainer: {
     width: '100%',
-    gap: 20,
+    gap: 28,
   },
   titleText: {
     color: '#3a3a3a',
@@ -332,10 +332,10 @@ const baseStyles = StyleSheet.create({
     letterSpacing: 0.5,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   settingsContainer: {
-    gap: 16,
+    gap: 22,
   },
   optionText: {
     color: '#3a3a3a',
@@ -345,18 +345,20 @@ const baseStyles = StyleSheet.create({
   helperText: {
     color: '#8b7355',
     fontSize: 12,
-    marginTop: -16,
+    marginTop: -8,
     fontStyle: 'italic',
   },
   toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 44,
   },
   counterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 44,
   },
   counterControls: {
     flexDirection: 'row',
@@ -423,7 +425,7 @@ const baseStyles = StyleSheet.create({
   guestHelperText: {
     color: '#8b7355',
     fontSize: 12,
-    marginTop: -16,
+    marginTop: -8,
     fontStyle: 'italic',
   },
   containerPractice: {
@@ -438,17 +440,19 @@ const baseStyles = StyleSheet.create({
     width: '100%',
   },
   scrollPracticeContent: {
-    paddingTop: 4,
-    paddingBottom: 20,
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingTop: 24,
+    paddingBottom: 36,
   },
   backInScroll: {
-    marginTop: 12,
+    marginTop: 28,
     alignItems: 'center',
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
   difficultySection: {
-    gap: 8,
-    marginTop: 8,
+    gap: 12,
+    marginTop: 4,
   },
   sectionTitle: {
     fontSize: 17,
@@ -465,7 +469,7 @@ const baseStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-start',
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   difficultyTap: {
     alignItems: 'center',

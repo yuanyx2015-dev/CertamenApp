@@ -74,8 +74,10 @@ export function PracticeGameScreen({
   const [isPreviouslyWrong, setIsPreviouslyWrong] = useState(false); // Track if current question was previously answered wrong
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false); // Whether the current question was answered correctly
   const [starCleared, setStarCleared] = useState(false);
-  /** Tip under the star for the first few Practice category entries. */
-  const [showClearTip, setShowClearTip] = useState(false);
+  /** Eligible for the clear tip (first N Practice category entries). */
+  const [clearTipEligible, setClearTipEligible] = useState(false);
+  /** After leaving the first question of this set, never show the tip again. */
+  const [pastFirstQuestion, setPastFirstQuestion] = useState(false);
   /** Bumped by "Try Again" to re-run the loader with the SAME mode/settings. */
   const [reloadNonce, setReloadNonce] = useState(0);
 
@@ -122,6 +124,7 @@ export function PracticeGameScreen({
       setClearedThisSession(0);
       setWrongThisSession(0);
       setStartedSetSize(0);
+      setPastFirstQuestion(false);
 
       let totalQuestions = 20;
       let wrongQuestionsOnly = false;
@@ -161,13 +164,14 @@ export function PracticeGameScreen({
         practiceDifficulties.length === 1 ? practiceDifficulties[0] : null;
 
       const clearedIds = await getPracticeClearedIds(storageUserId);
-      // Tip: first N category entries into Practice (not Try Again reloads).
+      // Tip eligibility: first N category entries into Practice (not Try Again reloads).
+      // The tip itself only renders on the first question of that entry.
       if (reloadNonce === 0) {
         const entryCount = await recordPracticeCategoryEntry(storageUserId);
-        setShowClearTip(entryCount <= PRACTICE_CLEAR_TIP_ENTRY_LIMIT);
+        setClearTipEligible(entryCount <= PRACTICE_CLEAR_TIP_ENTRY_LIMIT);
       } else {
         const entryCount = await getPracticeCategoryEntryCount(storageUserId);
-        setShowClearTip(entryCount <= PRACTICE_CLEAR_TIP_ENTRY_LIMIT);
+        setClearTipEligible(entryCount <= PRACTICE_CLEAR_TIP_ENTRY_LIMIT);
       }
 
       let loadedQuestions: Question[] = [];
@@ -353,12 +357,12 @@ export function PracticeGameScreen({
       }
     }
 
-    // Prepare shuffled options
+    // Prepare shuffled options (trim so DB trailing spaces don't throw off textAlign center)
     const options = [
-      { text: currentQuestion.correct_answer, isCorrect: true },
-      { text: currentQuestion.wrong_answers[0], isCorrect: false },
-      { text: currentQuestion.wrong_answers[1], isCorrect: false },
-      { text: currentQuestion.wrong_answers[2], isCorrect: false }
+      { text: currentQuestion.correct_answer.trim(), isCorrect: true },
+      { text: currentQuestion.wrong_answers[0].trim(), isCorrect: false },
+      { text: currentQuestion.wrong_answers[1].trim(), isCorrect: false },
+      { text: currentQuestion.wrong_answers[2].trim(), isCorrect: false },
     ];
     setShuffledOptions(shuffleArray(options));
 
@@ -476,6 +480,7 @@ export function PracticeGameScreen({
 
   // Next question (leave it in the session list behind you; no server writes).
   const nextQuestion = () => {
+    setPastFirstQuestion(true);
     setCurrentQuestionIndex(currentQuestionIndex + 1);
   };
 
@@ -484,6 +489,7 @@ export function PracticeGameScreen({
    * remove from this set, advance. Never mastery / Review / ranks.
    */
   const fireClearFromPractice = async () => {
+    setPastFirstQuestion(true);
     const q = questions[currentQuestionIndex];
     if (q) {
       await addPracticeClearedId(practiceScopeIdRef.current, q.id);
@@ -816,7 +822,7 @@ export function PracticeGameScreen({
                 <Text style={styles.starHint}>
                   {starCleared ? 'Cleared!' : 'Hold to Clear from Practice'}
                 </Text>
-                {showClearTip && (
+                {clearTipEligible && !pastFirstQuestion && (
                   <Text style={styles.starTip}>
                     Questions cleared from Practice are cleared permanently.
                   </Text>

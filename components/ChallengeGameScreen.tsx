@@ -74,11 +74,12 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 function buildQueueEntry(q: Question): QueueEntry {
+  // Trim so DB trailing/leading spaces don't throw off centered option text.
   const options: ShuffledOption[] = [
-    { text: q.correct_answer, isCorrect: true },
-    { text: q.wrong_answers[0], isCorrect: false },
-    { text: q.wrong_answers[1], isCorrect: false },
-    { text: q.wrong_answers[2], isCorrect: false },
+    { text: q.correct_answer.trim(), isCorrect: true },
+    { text: q.wrong_answers[0].trim(), isCorrect: false },
+    { text: q.wrong_answers[1].trim(), isCorrect: false },
+    { text: q.wrong_answers[2].trim(), isCorrect: false },
   ];
   return { question: q, options: shuffleArray(options) };
 }
