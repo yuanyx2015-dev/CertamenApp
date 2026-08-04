@@ -4,9 +4,9 @@ import {
   Easing,
   Image,
   StyleSheet,
-  Text,
-  View,
+  View
 } from 'react-native';
+import { Text } from '../lib/AppText';
 
 type BrandIntroOverlayProps = {
   visible: boolean;
@@ -110,7 +110,9 @@ export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProp
           />
         </View>
         <Text style={styles.lockup}>
-          <Text style={styles.brand}>CertamenPrep</Text>
+          <Text face="brand" style={styles.brand}>
+            CertamenPrep
+          </Text>
           <Text style={styles.separator}>{' • '}</Text>
           <Text style={styles.motto}>Practice like it's real.</Text>
         </Text>
@@ -148,13 +150,14 @@ const styles = StyleSheet.create({
   },
   lockup: {
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 30,
   },
   brand: {
-    fontSize: 20,
+    // Cormorant wordmark: sized up so it holds the line against the motto.
+    fontSize: 25,
     fontWeight: '600',
     color: '#c9a569',
-    letterSpacing: 1.1,
+    letterSpacing: 0.7,
   },
   separator: {
     fontSize: 16,
@@ -164,6 +167,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontStyle: 'italic',
     color: '#6a6a6a',
-    letterSpacing: 0.4,
+    letterSpacing: 0.15,
   },
 });

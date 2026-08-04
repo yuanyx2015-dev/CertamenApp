@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Animated,
   Alert,
-  Platform,
+  Platform
 } from 'react-native';
+import { Text } from '../lib/AppText';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Google } from './Icons';
 import { signInWithGoogle, signInWithApple, type AuthResponse } from '../services/authService';
@@ -65,7 +65,9 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
           <View style={styles.dividerLine} />
         </View>
 
-        <Text style={styles.appName}>CertamenPrep</Text>
+        <Text face="brand" style={styles.appName}>
+          CertamenPrep
+        </Text>
         <Text style={styles.tagline}>Practice like it's real.</Text>
       </View>
 
@@ -206,8 +208,8 @@ const baseStyles = StyleSheet.create({
     marginBottom: 64,
   },
   welcomeText: {
-    fontSize: 36,
-    letterSpacing: 3,
+    fontSize: 38,
+    letterSpacing: 1.6,
     color: '#3a3a3a',
     marginBottom: 8,
   },
@@ -224,22 +226,23 @@ const baseStyles = StyleSheet.create({
     opacity: 0.4,
   },
   toText: {
-    fontSize: 14,
+    fontSize: 15,
     fontStyle: 'italic',
     color: '#6a6a6a',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   appName: {
-    fontSize: 30,
-    letterSpacing: 2,
+    // Cormorant Garamond runs small and narrow — the wordmark needs the extra px.
+    fontSize: 38,
+    letterSpacing: 1.2,
     color: '#3a3a3a',
     marginTop: 8,
   },
   tagline: {
-    fontSize: 14,
+    fontSize: 15,
     fontStyle: 'italic',
     color: '#6a6a6a',
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
     marginTop: 12,
     textAlign: 'center',
   },
@@ -248,9 +251,9 @@ const baseStyles = StyleSheet.create({
   },
   loginPrompt: {
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: 16,
     color: '#5a5a5a',
-    letterSpacing: 1,
+    letterSpacing: 0.4,
     marginBottom: 24,
   },
   buttonsContainer: {
@@ -306,8 +309,8 @@ const baseStyles = StyleSheet.create({
   },
   guestButtonText: {
     color: '#6a6a6a',
-    letterSpacing: 0.5,
-    fontSize: 14,
+    letterSpacing: 0.2,
+    fontSize: 15,
     textAlign: 'center',
     textDecorationLine: 'underline',
   },
@@ -315,9 +318,9 @@ const baseStyles = StyleSheet.create({
     marginTop: 4,
     paddingHorizontal: 24,
     color: '#8a8a8a',
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 13,
+    lineHeight: 18,
     textAlign: 'center',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
 });

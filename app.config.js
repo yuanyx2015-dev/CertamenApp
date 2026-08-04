@@ -16,10 +16,16 @@ const DEFAULT_APPLE_TEAM_ID = "YY545WKA4Y";
 module.exports = () => {
   const team =
     process.env.APPLE_TEAM_ID?.trim() || DEFAULT_APPLE_TEAM_ID;
+  const plugins = [...(appJson.expo.plugins || [])];
+  if (!plugins.includes('expo-font')) {
+    plugins.push('expo-font');
+  }
+
   return {
     ...appJson,
     expo: {
       ...appJson.expo,
+      plugins,
       ios: {
         ...appJson.expo.ios,
         appleTeamId: team,

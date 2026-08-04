@@ -1,5 +1,11 @@
 import React, { useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, PanResponder } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  PanResponder
+} from 'react-native';
+import { Text } from '../lib/AppText';
 import { InformationScreen } from './InformationScreen';
 import { ChallengeModeScreen } from './ChallengeModeScreen';
 import { ReviewWrongScreen } from './ReviewWrongScreen';
@@ -213,13 +219,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(201, 169, 97, 0.45)',
   },
   tabLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#6b5b45',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
   },
   tabLabelIPad: {
-    fontSize: 16,
+    fontSize: 17,
   },
   tabLabelSelected: {
     color: '#4a3728',

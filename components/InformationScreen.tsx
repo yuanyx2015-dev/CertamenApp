@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Animated,
   Alert,
   ActivityIndicator,
   Modal,
-  Platform,
+  Platform
 } from 'react-native';
+import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser, signOut } from '../services/authService';
 import {
@@ -69,8 +69,14 @@ function AnimatedCardButton({
   });
 
   return (
-    <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
-      <TouchableOpacity onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={onPress} activeOpacity={1}>
+    <Animated.View style={[{ flex: 1, transform: [{ scale: scaleAnim }] }, style]}>
+      <TouchableOpacity
+        style={{ flex: 1 }}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        activeOpacity={1}
+      >
         <Animated.View style={[styles.card, styles.dailyChallengeCard, innerStyle, { backgroundColor }]}>
           <Text style={[styles.dailyChallengeText, textStyle]}>{label}</Text>
         </Animated.View>
@@ -362,19 +368,25 @@ export function InformationScreen({
       </View>
 
       <View style={styles.gridSection}>
-        <View style={styles.topGridRow}>
+        <View style={styles.mainGridRow}>
           <View style={styles.leftStatsColumn}>
             <StatBox
               label="Mastered"
               scopeLabel="all ranks"
               value={masteredCount}
-              style={styles.topStatBox}
+              style={styles.sideStatBox}
             />
             <StatBox
               label="Remaining"
               scopeLabel={rankName === '—' ? 'in this rank' : `in ${rankName}`}
               value={unmasteredCount}
-              style={styles.topStatBox}
+              style={styles.sideStatBox}
+            />
+            <StatBox
+              label="To review"
+              scopeLabel="missed questions"
+              value={wrongCount}
+              style={styles.sideStatBox}
             />
           </View>
           <AnimatedCardButton
@@ -384,24 +396,16 @@ export function InformationScreen({
           />
         </View>
 
-        <View style={styles.bottomGridRow}>
-          <StatBox
-            label="To review"
-            scopeLabel="missed questions"
-            value={wrongCount}
-            style={styles.bottomStatBox}
-          />
-          <StatBox
-            label="Streak"
-            value={streak}
-            style={styles.bottomStatBox}
-            footer={
-              <Text style={styles.statSubLabel}>
-                Best: <Text style={styles.statSubValue}>{highStreak}</Text>
-              </Text>
-            }
-          />
-        </View>
+        <StatBox
+          label="Streak"
+          value={streak}
+          style={styles.streakBox}
+          footer={
+            <Text style={styles.statSubLabel}>
+              Best: <Text style={styles.statSubValue}>{highStreak}</Text>
+            </Text>
+          }
+        />
       </View>
 
       <TouchableOpacity
@@ -504,7 +508,7 @@ const baseStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   scrollContent: {
     paddingVertical: 4,
@@ -559,20 +563,20 @@ const baseStyles = StyleSheet.create({
   guestSignInBtnText: {
     color: '#3a3a3a',
     fontWeight: '600',
-    fontSize: 13,
-    letterSpacing: 0.3,
+    fontSize: 14,
+    letterSpacing: 0.15,
     textAlign: 'center',
   },
   userNameText: {
-    fontSize: 16,
+    fontSize: 21,
     fontWeight: '600',
     color: '#3a3a3a',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   userRankText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#3a3a3a',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
   },
   userMetaValue: {
     color: '#6a6a6a',
@@ -587,18 +591,18 @@ const baseStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   progressLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#6a6a6a',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   progressLabelValue: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#6a6a6a',
     fontWeight: '600',
   },
   progressTrack: {
-    height: 8,
-    borderRadius: 4,
+    height: 9,
+    borderRadius: 4.5,
     backgroundColor: 'rgba(201, 169, 97, 0.18)',
     overflow: 'hidden',
   },
@@ -609,57 +613,51 @@ const baseStyles = StyleSheet.create({
   gridSection: {
     gap: 10,
   },
-  topGridRow: {
+  /** Left: Mastered / Remaining / To review. Right: tall Daily Challenge. */
+  mainGridRow: {
     flexDirection: 'row',
     gap: 10,
     alignItems: 'stretch',
-    minHeight: 168,
   },
   leftStatsColumn: {
     flex: 1,
     gap: 10,
   },
-  topStatBox: {
+  sideStatBox: {
     flex: 1,
-    minHeight: 76,
+    minHeight: 72,
   },
-  bottomGridRow: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'stretch',
-  },
-  bottomStatBox: {
-    flex: 1,
+  streakBox: {
     minHeight: 72,
   },
   statBox: {
     justifyContent: 'space-between',
   },
   statBoxLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#3a3a3a',
-    letterSpacing: 0.2,
-    lineHeight: 15,
+    letterSpacing: 0.1,
+    lineHeight: 17,
     fontWeight: '600',
   },
   statScopeLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#8a8a8a',
     fontStyle: 'italic',
-    marginTop: 2,
-    lineHeight: 13,
+    marginTop: 1,
+    lineHeight: 14,
   },
   statValue: {
-    fontSize: 15,
+    fontSize: 20,
     fontWeight: '600',
     color: '#6a6a6a',
-    marginTop: 6,
+    marginTop: 2,
   },
   statSubLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#8a8a8a',
-    letterSpacing: 0.2,
-    marginTop: 4,
+    letterSpacing: 0.1,
+    marginTop: 2,
   },
   statSubValue: {
     fontWeight: '600',
@@ -672,16 +670,17 @@ const baseStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 168,
-    paddingHorizontal: 10,
+    // Stretch with the three left cards (Mastered + Remaining + To review).
+    minHeight: 236,
+    paddingHorizontal: 12,
   },
   dailyChallengeText: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '600',
     color: '#3a3a3a',
     textAlign: 'center',
-    letterSpacing: 0.3,
-    lineHeight: 18,
+    letterSpacing: 0.1,
+    lineHeight: 22,
   },
   wrongQuestionsBtn: {
     marginTop: 6,
@@ -711,24 +710,24 @@ const baseStyles = StyleSheet.create({
     }),
   },
   wrongQuestionsBtnText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: '#3a3a3a',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   wrongQuestionsBtnSubtitle: {
-    marginTop: 4,
-    fontSize: 11,
+    marginTop: 3,
+    fontSize: 12,
     color: '#8a8a8a',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
     textAlign: 'center',
-    lineHeight: 15,
+    lineHeight: 17,
   },
   wrongQuestionsBtnHint: {
-    marginTop: 4,
-    fontSize: 11,
+    marginTop: 3,
+    fontSize: 12,
     color: '#8a6a3a',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   accountSection: {
     marginTop: 6,
@@ -744,10 +743,10 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
   },
   accountBtnText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#3a3a3a',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   deleteBtn: {
     paddingVertical: 12,
@@ -759,10 +758,10 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteBtnText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#a01f4f',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   modalOverlay: {
     flex: 1,
@@ -793,7 +792,7 @@ const baseStyles = StyleSheet.create({
   modalMessage: {
     fontSize: 15,
     color: '#6a6a6a',
-    lineHeight: 22,
+    lineHeight: 23,
     marginBottom: 24,
     textAlign: 'center',
   },

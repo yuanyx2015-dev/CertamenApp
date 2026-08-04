@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
   Modal,
-  Pressable,
+  Pressable
 } from 'react-native';
+import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { getRankStats } from '../services/userMasteredService';
@@ -340,16 +340,17 @@ const baseStyles = StyleSheet.create({
     paddingBottom: 24,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '600',
     color: '#3a3a3a',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6a6a6a',
     textAlign: 'center',
+    lineHeight: 21,
   },
   signInBtn: {
     marginTop: 12,
@@ -362,8 +363,9 @@ const baseStyles = StyleSheet.create({
   },
   signInBtnText: {
     color: '#3a3a3a',
+    fontSize: 15,
     fontWeight: '600',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
@@ -382,15 +384,15 @@ const baseStyles = StyleSheet.create({
     gap: 8,
   },
   rankLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#6a6a6a',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
   },
   rankName: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '700',
     color: '#3a3a3a',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   progressRow: {
     flexDirection: 'row',
@@ -399,11 +401,11 @@ const baseStyles = StyleSheet.create({
     marginTop: 4,
   },
   progressPct: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#8a6a3a',
     fontWeight: '600',
-    letterSpacing: 0.2,
-    minWidth: 32,
+    letterSpacing: 0.1,
+    minWidth: 36,
     textAlign: 'right',
   },
   progressTrack: {
@@ -430,18 +432,18 @@ const baseStyles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   statsRowText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#6a6a6a',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   rankNote: {
     marginTop: 8,
     alignSelf: 'flex-end',
-    maxWidth: '78%',
-    fontSize: 12,
-    lineHeight: 16,
+    maxWidth: '82%',
+    fontSize: 13,
+    lineHeight: 18,
     color: '#8a6a3a',
-    letterSpacing: 0.15,
+    letterSpacing: 0.1,
     textAlign: 'right',
   },
   rankNoteLink: {
@@ -452,10 +454,10 @@ const baseStyles = StyleSheet.create({
     gap: 10,
   },
   pickerLabel: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#3a3a3a',
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
   },
   pickerRow: {
     flexDirection: 'row',
@@ -477,7 +479,7 @@ const baseStyles = StyleSheet.create({
     borderColor: '#c9a961',
   },
   pickerChipText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#3a3a3a',
     fontWeight: '500',
   },
@@ -485,9 +487,9 @@ const baseStyles = StyleSheet.create({
     fontWeight: '700',
   },
   pickerCaption: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#8a6a3a',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   startBtn: {
     backgroundColor: '#c9a961',
@@ -502,18 +504,18 @@ const baseStyles = StyleSheet.create({
   },
   startBtnText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   allRanksCard: {
     gap: 10,
   },
   allRanksTitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#3a3a3a',
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
   },
   rankRow: {
     gap: 2,
@@ -541,21 +543,22 @@ const baseStyles = StyleSheet.create({
     flexShrink: 1,
   },
   rankRowName: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#3a3a3a',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   rankRowNameCurrent: {
     fontWeight: '700',
     color: '#8a6a3a',
   },
   rankRowNameCurrentHero: {
-    fontSize: 15,
-    letterSpacing: 0.3,
+    fontSize: 17,
+    letterSpacing: 0.15,
     color: '#4a3728',
   },
   rankRowBadge: {
-    fontSize: 9,
+    // All-caps micro badge: keep tracking, but Spectral needs the extra px.
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
@@ -567,36 +570,42 @@ const baseStyles = StyleSheet.create({
     overflow: 'hidden',
   },
   rankRowBadgeCompleted: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.35,
     textTransform: 'uppercase',
     color: '#7a6a55',
   },
   rankInfoBtn: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 1,
     borderColor: 'rgba(138, 106, 58, 0.55)',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    overflow: 'hidden',
   },
   rankInfoBtnText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    fontStyle: 'italic',
+    // Italic Spectral "i" sits high in its em-box; keep upright for true center.
+    fontStyle: 'normal',
     color: '#8a6a3a',
     lineHeight: 11,
+    textAlign: 'center',
+    includeFontPadding: false,
+    // Tiny optical nudge so the glyph's visual center matches the circle.
+    transform: [{ translateY: 0.5 }],
   },
   rankRowCaption: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#6a6a6a',
     fontWeight: '500',
   },
   rankRowCaptionCurrent: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: '#8a6a3a',
   },
@@ -630,14 +639,14 @@ const baseStyles = StyleSheet.create({
     elevation: 4,
   },
   infoTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: '#4a3728',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
   },
   infoBody: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 13,
+    lineHeight: 19,
     color: '#5a5a5a',
   },
 });

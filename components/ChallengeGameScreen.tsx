@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   Animated,
   Easing,
-  Modal,
+  Modal
 } from 'react-native';
+import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import {
@@ -931,7 +931,6 @@ export function ChallengeGameScreen({
   );
 }
 
-
 const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
@@ -956,21 +955,22 @@ const baseStyles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 14,
+    fontSize: 15,
     color: '#6a6a6a',
   },
   errorTitle: {
-    fontSize: 18,
+    fontSize: 21,
     fontWeight: '600',
     color: '#3a3a3a',
     marginBottom: 4,
+    letterSpacing: 0.2,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6a6a6a',
     textAlign: 'center',
     marginBottom: 12,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   header: {
     flexDirection: 'row',
@@ -1009,12 +1009,12 @@ const baseStyles = StyleSheet.create({
     minWidth: 0,
   },
   headerTimerText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     color: '#c9a961',
   },
   headerText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: '#3a3a3a',
   },
@@ -1029,8 +1029,8 @@ const baseStyles = StyleSheet.create({
     paddingBottom: 2,
   },
   statusText: {
-    fontSize: 13,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 19,
     color: '#7a7a7a',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -1041,7 +1041,7 @@ const baseStyles = StyleSheet.create({
   },
   cursor: {
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: 22,
     color: '#c9a961',
   },
   buzzerBtn: {
@@ -1063,9 +1063,9 @@ const baseStyles = StyleSheet.create({
   },
   buzzerText: {
     color: '#c9a961',
-    fontSize: 24,
+    fontSize: 27,
     fontWeight: '700',
-    letterSpacing: 2,
+    letterSpacing: 1.4,
   },
   gameArea: {
     flex: 1,
@@ -1081,12 +1081,13 @@ const baseStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
     borderRadius: 12,
-    padding: 18,
-    minHeight: 108,
+    padding: 16,
+    minHeight: 116,
   },
   questionText: {
-    fontSize: 14,
-    lineHeight: 20,
+    // Primary reading surface — Spectral needs the size and leading here.
+    fontSize: 17,
+    lineHeight: 26,
     color: '#3a3a3a',
   },
   optionsGrid: {
@@ -1102,15 +1103,15 @@ const baseStyles = StyleSheet.create({
     borderColor: 'rgba(201, 169, 97, 0.45)',
     borderRadius: 10,
     padding: 14,
-    minHeight: 72,
+    minHeight: 74,
     alignItems: 'center',
     justifyContent: 'center',
   },
   optionText: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#3a3a3a',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
   },
   optionCorrect: {
     backgroundColor: 'rgba(72, 130, 88, 0.18)',
@@ -1150,9 +1151,9 @@ const baseStyles = StyleSheet.create({
   },
   continueBtnText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.25,
   },
   nextBtn: {
     backgroundColor: '#c9a961',
@@ -1167,9 +1168,9 @@ const baseStyles = StyleSheet.create({
   },
   nextBtnText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.25,
   },
   starWrap: {
     alignItems: 'center',
@@ -1182,9 +1183,9 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
   },
   starHint: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#6a6a6a',
-    letterSpacing: 0.3,
+    letterSpacing: 0.1,
   },
   footer: {
     paddingTop: 10,
@@ -1218,18 +1219,18 @@ const baseStyles = StyleSheet.create({
     borderColor: 'rgba(201, 169, 97, 0.28)',
   },
   footerFinishHint: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 17,
     color: 'rgba(106, 85, 48, 0.55)',
     textAlign: 'center',
-    maxWidth: 300,
+    maxWidth: 310,
     paddingHorizontal: 4,
   },
   footerFinishBtnText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#6a5530',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
     textAlign: 'center',
   },
   // Summary
@@ -1239,17 +1240,17 @@ const baseStyles = StyleSheet.create({
     alignItems: 'stretch',
   },
   summaryTitle: {
-    fontSize: 22,
+    fontSize: 27,
     fontWeight: '700',
     color: '#3a3a3a',
     textAlign: 'center',
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
   },
   summaryScore: {
-    fontSize: 17,
+    fontSize: 19,
     color: '#3a3a3a',
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
     marginBottom: 8,
   },
   summaryCard: {
@@ -1266,11 +1267,11 @@ const baseStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   summaryRowLabel: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#3a3a3a',
   },
   summaryRowValue: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#6a6a6a',
     fontWeight: '700',
   },
@@ -1287,9 +1288,9 @@ const baseStyles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   secondaryBtn: {
     paddingVertical: 12,
@@ -1300,10 +1301,10 @@ const baseStyles = StyleSheet.create({
     borderColor: 'rgba(201, 169, 97, 0.45)',
   },
   secondaryBtnText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#3a3a3a',
     fontWeight: '600',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   reviewModalOverlay: {
     flex: 1,
@@ -1373,7 +1374,7 @@ const baseStyles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.25,
   },
   reviewNotNowButton: {
     paddingVertical: 12,
@@ -1386,6 +1387,6 @@ const baseStyles = StyleSheet.create({
     color: '#8a8a8a',
     fontSize: 15,
     fontWeight: '600',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
 });

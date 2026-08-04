@@ -11,10 +11,10 @@ import {
   Animated,
   Easing,
   StyleSheet,
-  Text,
   useWindowDimensions,
-  View,
+  View
 } from 'react-native';
+import { Text } from '../lib/AppText';
 
 const CONFETTI_COLORS = ['#c9a961', '#d4b76a', '#5c2d42', '#6b3a52', '#ffffff', '#f5efe3'];
 const PARTICLES_PER_BURST = 10;
@@ -291,8 +291,8 @@ const styles = StyleSheet.create({
   },
   toastText: {
     color: '#f5efe3',
-    fontSize: 15,
-    letterSpacing: 0.4,
+    fontSize: 16,
+    letterSpacing: 0.15,
     textAlign: 'center',
     fontWeight: '500',
   },

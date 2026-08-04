@@ -1,5 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet
+} from 'react-native';
+import { Text } from '../lib/AppText';
 import { PracticeCategorySessionPicker } from './PracticeCategorySessionPicker';
 import { FitScrollView } from './FitScrollView';
 import { useIPadScaledStyles } from '../lib/layout';
@@ -44,8 +49,7 @@ export function StoryModeScreen({
 
         <View style={styles.footerNote}>
           <Text style={styles.footerText}>
-            Further adjustments (difficulty, questions per set, etc...) can be found in the Practice Mode Settings
-            on the top right. Progress here does not affect your rank.
+            Progress in Practice Mode does not affect Challenge Mode, Review, your rank, or anything else — at all.
           </Text>
         </View>
       </FitScrollView>
@@ -90,22 +94,22 @@ const baseStyles = StyleSheet.create({
   },
   settingsButtonText: {
     color: '#3a3a3a',
-    fontSize: 15,
-    letterSpacing: 0.5,
+    fontSize: 16,
+    letterSpacing: 0.25,
   },
   titleText: {
     color: '#3a3a3a',
-    fontSize: 22,
-    letterSpacing: 0.5,
+    fontSize: 25,
+    letterSpacing: 0.3,
     fontWeight: '600',
     textAlign: 'center',
     marginTop: 0,
   },
   subtitle: {
     color: '#6a6a6a',
-    fontSize: 15,
+    fontSize: 16,
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
     marginBottom: 8,
   },
   pickerWrap: {
@@ -120,8 +124,8 @@ const baseStyles = StyleSheet.create({
   footerText: {
     color: '#6a6a6a',
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0.1,
   },
 });

@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, AppState, type AppStateStatus } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  AppState,
+  type AppStateStatus
+} from 'react-native';
+import { Text } from '../lib/AppText';
 import { LaurelBranches } from './LaurelBranches';
 import { MeanderBorder } from './MeanderBorder';
 import { LoginScreen } from './LoginScreen';
@@ -33,6 +40,8 @@ export function RomanBackground() {
   /** Challenge Mode game session config (mode + setSize + rankIndex). */
   const [challengeConfig, setChallengeConfig] = useState<ChallengeGameConfig | null>(null);
   const [challengeGameKey, setChallengeGameKey] = useState(0);
+  /** Title and wreath are separate hit areas that fade together. */
+  const [logoPressed, setLogoPressed] = useState(false);
   /** Brand intro after login, cold start, or return from background. */
   const [showBrandIntro, setShowBrandIntro] = useState(false);
   const pendingBrandIntroRef = useRef(false);
@@ -320,36 +329,59 @@ export function RomanBackground() {
     <View style={styles.container}>
       <View style={styles.parchment} pointerEvents="none" />
 
-      {currentScreen !== 'login' ? (
+      {currentScreen !== 'login' && (
         <View
           style={[styles.logoHomeWrap, isIPad && styles.logoHomeWrapIPad]}
           pointerEvents="box-none"
         >
-          {/* One control so title + wreath share the same press fade. */}
           <TouchableOpacity
-            style={[styles.logoHome, isIPad && styles.logoHomeIPad]}
+            style={styles.logoTitleHit}
             onPress={handleNavigateToHome}
-            activeOpacity={0.72}
+            onPressIn={() => setLogoPressed(true)}
+            onPressOut={() => setLogoPressed(false)}
+            activeOpacity={1}
             accessibilityRole="button"
             accessibilityLabel="Home"
           >
-            <Text style={[styles.titleText, isIPad && styles.titleTextIPad]}>CertamenPrep</Text>
-            <View style={styles.logoLaurelSlot}>
-              {/* Absolutely positioned so the wide SVG doesn't widen the hit box over Settings. */}
-              <View style={styles.logoLaurelArt} pointerEvents="none">
-                <LaurelBranches />
-              </View>
-            </View>
+            <Text
+              face="brand"
+              style={[
+                styles.titleText,
+                isIPad && styles.titleTextIPad,
+                logoPressed && styles.logoPressed,
+              ]}
+              numberOfLines={1}
+            >
+              CertamenPrep
+            </Text>
           </TouchableOpacity>
         </View>
-      ) : (
+      )}
+
+      <View
+        style={[styles.headerContainer, isIPad && styles.headerContainerIPad]}
+        pointerEvents="box-none"
+      >
         <View
-          style={[styles.headerContainer, isIPad && styles.headerContainerIPad]}
+          style={[styles.laurelVisual, logoPressed && styles.logoPressed]}
           pointerEvents="none"
         >
           <LaurelBranches />
         </View>
-      )}
+        {/* Separate hit areas, one shared press state: the wide SVG must not
+            cover the Practice Settings button in the top-right. */}
+        {currentScreen !== 'login' && (
+          <TouchableOpacity
+            style={[styles.laurelHomeHit, isIPad && styles.laurelHomeHitIPad]}
+            onPress={handleNavigateToHome}
+            onPressIn={() => setLogoPressed(true)}
+            onPressOut={() => setLogoPressed(false)}
+            activeOpacity={1}
+            accessibilityRole="button"
+            accessibilityLabel="Home"
+          />
+        )}
+      </View>
 
       <View
         style={[
@@ -419,52 +451,34 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   logoHomeWrapIPad: {
-    top: 36,
+    top: 34,
   },
-  logoHome: {
-    alignItems: 'center',
-    paddingTop: 8,
-    // Narrow column hit target; wreath paints outside via absolute layout.
-    width: 168,
+  logoTitleHit: {
+    paddingTop: 6,
+    paddingHorizontal: 14,
+    paddingBottom: 2,
   },
-  logoHomeIPad: {
-    width: 210,
-    paddingTop: 10,
-    transform: [{ scale: 1.35 }],
-  },
-  logoLaurelSlot: {
-    marginTop: -10,
-    width: '100%',
-    height: 86,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'visible',
-  },
-  logoLaurelArt: {
-    position: 'absolute',
-    top: 0,
-    width: 280,
-    height: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoPressed: {
+    opacity: 0.72,
   },
   titleText: {
-    fontSize: 22,
+    // Cormorant Garamond has a small x-height — needs more px than a UI sans.
+    fontSize: 27,
     fontWeight: '600',
     color: '#c9a569',
-    letterSpacing: 1.2,
+    letterSpacing: 0.9,
     // Harder, darker edge — reads as outline more than a soft drop shadow.
     textShadowColor: 'rgba(55, 40, 18, 0.55)',
     textShadowOffset: { width: -0.8, height: 0.8 },
     textShadowRadius: 0.2,
   },
   titleTextIPad: {
-    fontSize: 36,
-    letterSpacing: 1.8,
+    fontSize: 44,
+    letterSpacing: 1.4,
   },
   headerContainer: {
     position: 'absolute',
-    top: 50,
+    top: 58,
     left: 0,
     right: 0,
     height: 128,
@@ -473,9 +487,24 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   headerContainerIPad: {
-    top: 56,
+    top: 66,
     height: 160,
     transform: [{ scale: 1.35 }],
+  },
+  laurelVisual: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** Narrow center hit so Practice Settings (top-right) isn't under the 280pt SVG. */
+  laurelHomeHit: {
+    width: 112,
+    height: 52,
+    borderRadius: 26,
+  },
+  laurelHomeHitIPad: {
+    width: 140,
+    height: 64,
   },
   contentContainer: {
     flex: 1,

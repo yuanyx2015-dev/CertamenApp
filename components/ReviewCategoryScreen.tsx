@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  ActivityIndicator,
+  Alert
+} from 'react-native';
+import { Text } from '../lib/AppText';
 import { getCurrentUser } from '../services/authService';
 import { getCategoryStats } from '../services/questionReviewService';
 import { FitScrollView } from './FitScrollView';
@@ -210,16 +218,16 @@ const baseStyles = StyleSheet.create({
     paddingBottom: 32,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     color: '#3a3a3a',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6a6a6a',
-    letterSpacing: 0.5,
+    letterSpacing: 0.15,
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -252,9 +260,9 @@ const baseStyles = StyleSheet.create({
     elevation: 3,
   },
   categoryLabel: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#3a3a3a',
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -262,22 +270,22 @@ const baseStyles = StyleSheet.create({
     color: '#999',
   },
   statsText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#6a6a6a',
-    letterSpacing: 0.3,
+    letterSpacing: 0.1,
     textAlign: 'center',
   },
   wrongText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#c9a961',
-    letterSpacing: 0.3,
+    letterSpacing: 0.1,
     fontWeight: '500',
     textAlign: 'center',
   },
   comingSoonText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#999',
-    letterSpacing: 0.3,
+    letterSpacing: 0.1,
     fontStyle: 'italic',
     textAlign: 'center',
   },
@@ -292,9 +300,9 @@ const baseStyles = StyleSheet.create({
     borderRadius: 12,
   },
   backButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#3a3a3a',
     fontWeight: '600',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
 });

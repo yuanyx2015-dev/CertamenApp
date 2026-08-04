@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import {
   View,
-  Text,
   TextInput,
   Switch,
   TouchableOpacity,
@@ -11,8 +10,11 @@ import {
   Alert,
   PanResponder,
   type GestureResponderEvent,
-  type LayoutChangeEvent,
+  type LayoutChangeEvent
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { Text } from '../lib/AppText';
+import { fontFamilyForRole } from '../lib/fonts';
 import { getCurrentUser } from '../services/authService';
 import {
   getOrCreateUserSettings,
@@ -42,8 +44,24 @@ import { useIPadScaledStyles } from '../lib/layout';
 
 /** Half thumb width — insets the rail so end thumbs aren't clipped. */
 const READING_SPEED_THUMB_INSET = 10;
+
+/** Crisp checkbox mark — SVG so Spectral doesn’t shrink/offset a text “✓”. */
+function DifficultyCheckMark() {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16">
+      <Path
+        d="M3.2 8.2 L6.4 11.3 L12.8 4.5"
+        stroke="#8a6a3a"
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
 /** Fixed label box half-width for centering under ticks. */
-const READING_SPEED_LABEL_HALF = 22;
+const READING_SPEED_LABEL_HALF = 24;
 
 function ReadingSpeedSlider({
   value,
@@ -517,7 +535,7 @@ export function SettingsScreen({
                         checked && styles.difficultyCheckboxSelected,
                       ]}
                     >
-                      {checked && <Text style={styles.difficultyCheckMark}>✓</Text>}
+                      {checked && <DifficultyCheckMark />}
                     </View>
                     <Text style={styles.difficultyLabel}>{label}</Text>
                   </TouchableOpacity>
@@ -672,8 +690,8 @@ const baseStyles = StyleSheet.create({
   },
   titleText: {
     color: '#3a3a3a',
-    fontSize: 26,
-    letterSpacing: 0.5,
+    fontSize: 28,
+    letterSpacing: 0.3,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 8,
@@ -683,8 +701,8 @@ const baseStyles = StyleSheet.create({
   },
   optionText: {
     color: '#3a3a3a',
-    fontSize: 16,
-    letterSpacing: 0.5,
+    fontSize: 17,
+    letterSpacing: 0.2,
   },
   optionTextWrap: {
     flex: 1,
@@ -692,10 +710,10 @@ const baseStyles = StyleSheet.create({
     gap: 2,
   },
   optionSubtext: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#8a6a3a',
-    letterSpacing: 0.15,
-    lineHeight: 14,
+    letterSpacing: 0.1,
+    lineHeight: 16,
   },
   furtherSection: {
     gap: 8,
@@ -711,12 +729,12 @@ const baseStyles = StyleSheet.create({
     minHeight: 32,
   },
   furtherCaret: {
-    fontSize: 18,
+    fontSize: 20,
     color: '#8a6a3a',
     fontWeight: '600',
     paddingHorizontal: 4,
-    lineHeight: 22,
-    width: 22,
+    lineHeight: 24,
+    width: 24,
     textAlign: 'center',
   },
   furtherCaretExpanded: {
@@ -728,7 +746,7 @@ const baseStyles = StyleSheet.create({
   },
   helperText: {
     color: '#8b7355',
-    fontSize: 12,
+    fontSize: 13,
     marginTop: -8,
     fontStyle: 'italic',
   },
@@ -765,16 +783,17 @@ const baseStyles = StyleSheet.create({
     elevation: 1,
   },
   counterButtonText: {
-    fontSize: 24,
+    // Bare "−" / "+" glyphs sit small in Spectral; nudge up to fill the circle.
+    fontSize: 26,
     fontWeight: '600',
     color: '#3a3a3a',
-    lineHeight: 24,
+    lineHeight: 27,
   },
   counterValue: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#3a3a3a',
-    minWidth: 40,
+    minWidth: 44,
     textAlign: 'center',
   },
   timerValueRow: {
@@ -784,7 +803,7 @@ const baseStyles = StyleSheet.create({
     flexShrink: 0,
   },
   timerNumberBox: {
-    width: 44,
+    width: 46,
     height: 36,
     borderRadius: 10,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
@@ -800,8 +819,10 @@ const baseStyles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   counterInput: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 19,
+    fontFamily: fontFamilyForRole('body', '600'),
+    // Weight is baked into the face; avoid system synthetic bold.
+    fontWeight: 'normal',
     color: '#3a3a3a',
     width: '100%',
     paddingVertical: 0,
@@ -810,10 +831,10 @@ const baseStyles = StyleSheet.create({
     textAlign: 'right',
   },
   counterUnit: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: '#3a3a3a',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   /** Same width as the reading-speed rail so Reset can right-edge to the last tick. */
   resetFurtherWrap: {
@@ -836,8 +857,8 @@ const baseStyles = StyleSheet.create({
   },
   resetFurtherButtonText: {
     color: '#3a3a3a',
-    fontSize: 15,
-    letterSpacing: 0.4,
+    fontSize: 16,
+    letterSpacing: 0.2,
     fontWeight: '600',
   },
   resetFurtherButtonTextDisabled: {
@@ -866,15 +887,15 @@ const baseStyles = StyleSheet.create({
   },
   buttonText: {
     color: '#3a3a3a',
-    fontSize: 16,
-    letterSpacing: 0.5,
+    fontSize: 17,
+    letterSpacing: 0.25,
   },
   disabledText: {
     color: '#999',
   },
   guestHelperText: {
     color: '#8b7355',
-    fontSize: 12,
+    fontSize: 13,
     marginTop: -8,
     fontStyle: 'italic',
   },
@@ -905,15 +926,15 @@ const baseStyles = StyleSheet.create({
     marginTop: 4,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#3a3a3a',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
   },
   difficultyHint: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#8a6a3a',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   difficultyRow: {
     flexDirection: 'row',
@@ -940,16 +961,10 @@ const baseStyles = StyleSheet.create({
     borderColor: '#b8954a',
     backgroundColor: 'rgba(201, 169, 97, 0.35)',
   },
-  difficultyCheckMark: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#8a6a3a',
-    lineHeight: 18,
-  },
   difficultyLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#3a3a3a',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
   },
 });
 
@@ -966,21 +981,21 @@ const readingSpeedSliderStyles = StyleSheet.create({
   },
   title: {
     color: '#3a3a3a',
-    fontSize: 16,
-    letterSpacing: 0.5,
+    fontSize: 17,
+    letterSpacing: 0.2,
   },
   currentValue: {
     color: '#3a3a3a',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    minWidth: 48,
+    minWidth: 54,
     textAlign: 'right',
   },
   subtext: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#8a6a3a',
-    letterSpacing: 0.15,
-    lineHeight: 14,
+    letterSpacing: 0.1,
+    lineHeight: 16,
     marginBottom: 4,
   },
   rail: {
@@ -1037,16 +1052,16 @@ const readingSpeedSliderStyles = StyleSheet.create({
   },
   labelsRow: {
     position: 'relative',
-    height: 14,
+    height: 15,
     marginTop: 4,
     overflow: 'visible',
   },
   tickLabel: {
     position: 'absolute',
     width: READING_SPEED_LABEL_HALF * 2,
-    fontSize: 9,
+    fontSize: 10,
     color: '#8a6a3a',
-    letterSpacing: -0.2,
+    letterSpacing: -0.1,
     textAlign: 'center',
   },
   tickLabelActive: {

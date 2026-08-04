@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   Animated,
-  Easing,
+  Easing
 } from 'react-native';
+import { Text } from '../lib/AppText';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { FitScrollView } from './FitScrollView';
@@ -841,7 +841,7 @@ export function PracticeGameScreen({
                   <StarIcon filled={0} progress={holdAnim} />
                 </TouchableOpacity>
                 <Text style={styles.starHint}>
-                  {starCleared ? 'Cleared!' : 'Hold to Clear from Practice'}
+                  {starCleared ? 'Cleared!' : 'Hold to clear this question from Practice Mode'}
                 </Text>
                 {clearTipEligible && !pastFirstQuestion && (
                   <Text style={styles.starTip}>
@@ -919,7 +919,7 @@ const baseStyles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 15,
-    fontSize: 14,
+    fontSize: 15,
     color: '#6a6a6a',
     textAlign: 'center',
   },
@@ -930,17 +930,18 @@ const baseStyles = StyleSheet.create({
     padding: 20,
   },
   errorTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#3a3a3a',
     marginBottom: 8,
+    letterSpacing: 0.2,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6a6a6a',
     textAlign: 'center',
     marginBottom: 20,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   header: {
     flexDirection: 'row',
@@ -984,12 +985,12 @@ const baseStyles = StyleSheet.create({
     fontWeight: '500',
   },
   headerTimerText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     color: '#c9a961',
   },
   headerText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: '#3a3a3a',
   },
@@ -1009,8 +1010,8 @@ const baseStyles = StyleSheet.create({
     paddingBottom: 2,
   },
   statusText: {
-    fontSize: 13,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 19,
     color: '#7a7a7a',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -1025,8 +1026,8 @@ const baseStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
     borderRadius: 12,
-    padding: 18,
-    minHeight: 108,
+    padding: 16,
+    minHeight: 116,
     position: 'relative',
   },
   previouslyWrongIndicator: {
@@ -1041,18 +1042,19 @@ const baseStyles = StyleSheet.create({
     backgroundColor: 'rgba(245, 239, 227, 0.95)',
   },
   previouslyWrongText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#8B4C4C',
     fontWeight: '600',
   },
   questionText: {
-    fontSize: 14,
-    lineHeight: 20,
+    // Primary reading surface — Spectral needs both size and leading here.
+    fontSize: 17,
+    lineHeight: 26,
     color: '#3a3a3a',
   },
   cursor: {
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: 22,
     color: '#c9a961',
   },
   buzzerBtn: {
@@ -1073,9 +1075,9 @@ const baseStyles = StyleSheet.create({
   },
   buzzerText: {
     color: '#c9a961',
-    fontSize: 24,
+    fontSize: 27,
     fontWeight: '700',
-    letterSpacing: 2,
+    letterSpacing: 1.4,
   },
   optionsGrid: {
     alignSelf: 'stretch',
@@ -1093,15 +1095,15 @@ const baseStyles = StyleSheet.create({
     borderColor: 'rgba(201, 169, 97, 0.45)',
     borderRadius: 10,
     padding: 14,
-    minHeight: 72,
+    minHeight: 74,
     justifyContent: 'center',
     alignItems: 'center',
   },
   optionText: {
-    fontSize: 15,
+    fontSize: 16,
     textAlign: 'center',
     color: '#3a3a3a',
-    lineHeight: 20,
+    lineHeight: 21,
   },
   optionCorrect: {
     backgroundColor: 'rgba(72, 130, 88, 0.18)',
@@ -1139,20 +1141,20 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
   },
   starHint: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#6a6a6a',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
     textAlign: 'center',
-    maxWidth: 120,
+    maxWidth: 132,
   },
   starTip: {
     marginTop: 2,
-    fontSize: 9,
-    lineHeight: 12,
+    fontSize: 10,
+    lineHeight: 14,
     color: '#8a6a3a',
-    letterSpacing: 0.15,
+    letterSpacing: 0.1,
     textAlign: 'center',
-    maxWidth: 140,
+    maxWidth: 152,
   },
   footer: {
     paddingTop: 10,
@@ -1176,10 +1178,10 @@ const baseStyles = StyleSheet.create({
     borderColor: 'rgba(201, 169, 97, 0.28)',
   },
   footerFinishBtnText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#6a5530',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
     textAlign: 'center',
   },
   nextBtn: {
@@ -1195,9 +1197,9 @@ const baseStyles = StyleSheet.create({
   },
   nextBtnText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.25,
   },
   gameOverContainer: {
     flex: 1,
@@ -1210,7 +1212,7 @@ const baseStyles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#3a3a3a',
     marginBottom: 8,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     textAlign: 'center',
   },
   statsRow: {
@@ -1265,9 +1267,9 @@ const baseStyles = StyleSheet.create({
   },
   statLabel: {
     marginTop: 6,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.9,
     color: '#6a6a6a',
     textTransform: 'uppercase',
   },
@@ -1287,9 +1289,9 @@ const baseStyles = StyleSheet.create({
   },
   primaryButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   restartButton: {
     paddingHorizontal: 40,
@@ -1311,16 +1313,17 @@ const baseStyles = StyleSheet.create({
     color: '#3a3a3a',
     fontSize: 18,
     fontWeight: '600',
-    letterSpacing: 0.5,
+    letterSpacing: 0.25,
   },
   backButton: {
-    paddingHorizontal: 40,
+    // Wider than the other buttons: "Back to Practice selection" is a long label.
+    paddingHorizontal: 24,
     paddingVertical: 15,
     backgroundColor: 'rgba(201, 169, 97, 0.12)',
     borderWidth: 2,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 10,
-    minWidth: 220,
+    minWidth: 264,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1330,9 +1333,10 @@ const baseStyles = StyleSheet.create({
   },
   backButtonText: {
     color: '#3a3a3a',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 0.5,
+    letterSpacing: 0.15,
+    textAlign: 'center',
   },
   guestBanner: {
     flexDirection: 'row',
@@ -1346,6 +1350,7 @@ const baseStyles = StyleSheet.create({
   },
   guestBannerText: {
     fontSize: 13,
+    lineHeight: 18,
     color: '#3a3a3a',
     flex: 1,
   },
@@ -1358,7 +1363,7 @@ const baseStyles = StyleSheet.create({
     borderColor: 'rgba(201, 169, 97, 0.5)',
   },
   guestSignInButtonText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#3a3a3a',
   },
@@ -1370,6 +1375,7 @@ const baseStyles = StyleSheet.create({
   },
   guestPromptText: {
     fontSize: 16,
+    lineHeight: 22,
     color: '#6a6a6a',
     textAlign: 'center',
     paddingHorizontal: 20,
@@ -1391,7 +1397,7 @@ const baseStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#3a3a3a',
-    letterSpacing: 0.5,
+    letterSpacing: 0.25,
   },
   reviewModalOverlay: {
     flex: 1,
@@ -1461,7 +1467,7 @@ const baseStyles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.25,
   },
   reviewNotNowButton: {
     paddingVertical: 12,
@@ -1474,6 +1480,6 @@ const baseStyles = StyleSheet.create({
     color: '#8a8a8a',
     fontSize: 15,
     fontWeight: '600',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
 });

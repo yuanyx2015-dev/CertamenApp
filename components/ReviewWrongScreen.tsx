@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
+  Alert
 } from 'react-native';
+import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { getWrongCount } from '../services/questionReviewService';
@@ -182,16 +182,17 @@ const baseStyles = StyleSheet.create({
     paddingBottom: 24,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '600',
     color: '#3a3a3a',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6a6a6a',
     textAlign: 'center',
+    lineHeight: 21,
   },
   signInBtn: {
     marginTop: 12,
@@ -204,8 +205,9 @@ const baseStyles = StyleSheet.create({
   },
   signInBtnText: {
     color: '#3a3a3a',
+    fontSize: 15,
     fontWeight: '600',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
@@ -224,42 +226,42 @@ const baseStyles = StyleSheet.create({
     gap: 4,
   },
   summaryLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#6a6a6a',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
   },
   summaryValue: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
     color: '#3a3a3a',
   },
   summaryCaption: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: 13,
     color: '#6a6a6a',
-    lineHeight: 17,
+    lineHeight: 18,
   },
   infoCard: {
     gap: 6,
   },
   infoTitle: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#3a3a3a',
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.15,
   },
   infoBody: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#3a3a3a',
-    lineHeight: 19,
-    letterSpacing: 0.2,
+    lineHeight: 20,
+    letterSpacing: 0.1,
   },
   infoBodyMuted: {
     marginTop: 6,
-    fontSize: 12,
+    fontSize: 13,
     color: '#8a8a8a',
-    lineHeight: 17,
-    letterSpacing: 0.2,
+    lineHeight: 19,
+    letterSpacing: 0.1,
     fontStyle: 'italic',
   },
   startBtn: {
@@ -278,8 +280,8 @@ const baseStyles = StyleSheet.create({
   },
   startBtnText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
 });

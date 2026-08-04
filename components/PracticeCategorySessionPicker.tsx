@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Animated
+} from 'react-native';
+import { Text } from '../lib/AppText';
 import { useIPadScaledStyles } from '../lib/layout';
 const PRACTICE_CATEGORIES: { key: string; label: string }[] = [
   { key: 'mythology', label: 'Mythology' },
@@ -97,9 +103,9 @@ const baseStyles = StyleSheet.create({
     elevation: 3,
   },
   categoryLabel: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#3a3a3a',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
     fontWeight: '500',
     textAlign: 'center',
   },

@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
   ActivityIndicator,
   TextInput,
   Alert
 } from 'react-native';
+import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { 
@@ -437,9 +437,9 @@ const baseStyles = StyleSheet.create({
     zIndex: 2,
   },
   topBackButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#8a6a3a',
-    letterSpacing: 0.3,
+    letterSpacing: 0.1,
     fontWeight: '500',
   },
   headerSection: {
@@ -451,16 +451,16 @@ const baseStyles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     color: '#3a3a3a',
-    letterSpacing: 0.8,
+    letterSpacing: 0.4,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6a6a6a',
-    letterSpacing: 0.4,
+    letterSpacing: 0.15,
     textAlign: 'center',
     marginBottom: 0,
   },
@@ -516,13 +516,13 @@ const baseStyles = StyleSheet.create({
     fontSize: 12,
     color: '#c9a961',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
     fontWeight: '500',
   },
   questionText: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#3a3a3a',
-    lineHeight: 24,
+    lineHeight: 26,
     marginBottom: 12,
   },
   answerRow: {
@@ -532,12 +532,12 @@ const baseStyles = StyleSheet.create({
     gap: 8,
   },
   answerLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6a6a6a',
     fontWeight: '500',
   },
   answerText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#c9a961',
     fontWeight: '500',
   },
@@ -561,9 +561,9 @@ const baseStyles = StyleSheet.create({
     fontStyle: 'italic',
   },
   explanationText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#3a3a3a',
-    lineHeight: 20,
+    lineHeight: 23,
     marginBottom: 12,
   },
   customQuestionContainer: {
@@ -573,7 +573,7 @@ const baseStyles = StyleSheet.create({
     borderTopColor: 'rgba(201, 169, 97, 0.3)',
   },
   customQuestionLabel: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#6a6a6a',
     marginBottom: 8,
     fontWeight: '500',
@@ -629,9 +629,9 @@ const baseStyles = StyleSheet.create({
     borderRadius: 6,
   },
   customAnswerText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#3a3a3a',
-    lineHeight: 20,
+    lineHeight: 23,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -648,9 +648,9 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
   },
   explainButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#8a7040',
-    letterSpacing: 0.5,
+    letterSpacing: 0.15,
     fontWeight: '500',
   },
   markCorrectButton: {
@@ -664,9 +664,9 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
   },
   markCorrectButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#4a7a4a',
-    letterSpacing: 0.5,
+    letterSpacing: 0.15,
     fontWeight: '500',
   },
 });
