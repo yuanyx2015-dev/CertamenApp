@@ -4,11 +4,11 @@ import {
   Text, 
   TouchableOpacity, 
   StyleSheet, 
-  ScrollView, 
   ActivityIndicator,
   TextInput,
   Alert
 } from 'react-native';
+import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { 
   getWrongQuestionsByCategory,
@@ -268,7 +268,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       )}
 
       {/* Questions List */}
-      <ScrollView 
+      <FitScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -405,7 +405,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
             );
           })
         )}
-      </ScrollView>
+      </FitScrollView>
     </View>
   );
 }

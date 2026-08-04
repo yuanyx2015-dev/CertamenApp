@@ -3,13 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
   Modal,
   Pressable,
 } from 'react-native';
+import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { getRankStats } from '../services/userMasteredService';
 import {
@@ -142,7 +142,7 @@ export function ChallengeModeScreen({
 
   return (
     <>
-    <ScrollView
+    <FitScrollView
       style={styles.scroll}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
@@ -284,7 +284,7 @@ export function ChallengeModeScreen({
           );
         })}
       </View>
-    </ScrollView>
+    </FitScrollView>
 
     <Modal
       visible={infoRankIdx !== null}

@@ -113,7 +113,7 @@ export function MainTabsScreen({
           />
         );
       case 'practice':
-        return <StoryModeScreen onNavigate={onNavigate} showBackToMenu={false} />;
+        return <StoryModeScreen onNavigate={onNavigate} />;
       default:
         return null;
     }

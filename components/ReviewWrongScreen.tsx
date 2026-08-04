@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { getWrongCount } from '../services/questionReviewService';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
@@ -122,7 +122,7 @@ export function ReviewWrongScreen({
   };
 
   return (
-    <ScrollView
+    <FitScrollView
       style={styles.scroll}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
@@ -154,7 +154,7 @@ export function ReviewWrongScreen({
             {wrongCount === 0 ? 'No wrong questions' : 'Start review session'}
           </Text>
       </TouchableOpacity>
-    </ScrollView>
+    </FitScrollView>
   );
 }
 

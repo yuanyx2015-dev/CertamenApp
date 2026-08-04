@@ -1,54 +1,46 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { PracticeCategorySessionPicker } from './PracticeCategorySessionPicker';
+import { FitScrollView } from './FitScrollView';
 import { useIPadScaledStyles } from '../lib/layout';
 
 /**
- * Practice Mode (story route): pick a category, then timed session using difficulty from Practice settings.
+ * Practice Mode hub: pick a category, then timed session using Practice settings.
  */
 export function StoryModeScreen({
   onNavigate,
-  showBackToMenu = true,
 }: {
   onNavigate?: (
     screen: string,
     category?: string,
     practiceDifficulty?: 'easy' | 'medium' | 'hard'
   ) => void;
-  showBackToMenu?: boolean;
 }) {
   const styles = useIPadScaledStyles(baseStyles);
-  const embedded = !showBackToMenu;
 
   return (
     <View style={[styles.container]}>
-      <ScrollView
+      <FitScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          embedded && styles.scrollContentEmbedded,
-        ]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.settingsRow}>
-          <TouchableOpacity style={styles.settingsButton} onPress={() => onNavigate?.('settings-practice')}>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => onNavigate?.('settings-practice')}
+          >
             <Text style={styles.settingsButtonText}>Settings</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={[styles.titleText, embedded && styles.titleTextEmbedded]}>Practice Mode</Text>
+        <Text style={styles.titleText}>Practice Mode</Text>
         <Text style={styles.subtitle}>Choose a category to start</Text>
 
         <View style={styles.pickerWrap}>
           <PracticeCategorySessionPicker onNavigate={onNavigate} />
         </View>
-
-        {showBackToMenu && (
-          <TouchableOpacity style={styles.backButton} onPress={() => onNavigate?.('main')}>
-            <Text style={styles.backButtonText}>Back to menu</Text>
-          </TouchableOpacity>
-        )}
 
         <View style={styles.footerNote}>
           <Text style={styles.footerText}>
@@ -56,7 +48,7 @@ export function StoryModeScreen({
             on the top right. Progress here does not affect your rank.
           </Text>
         </View>
-      </ScrollView>
+      </FitScrollView>
     </View>
   );
 }
@@ -74,11 +66,6 @@ const baseStyles = StyleSheet.create({
     width: '100%',
   },
   scrollContent: {
-    paddingTop: 88,
-    paddingBottom: 32,
-    gap: 16,
-  },
-  scrollContentEmbedded: {
     paddingTop: 8,
     paddingBottom: 24,
     gap: 12,
@@ -86,6 +73,7 @@ const baseStyles = StyleSheet.create({
   settingsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    zIndex: 2,
   },
   settingsButton: {
     paddingHorizontal: 20,
@@ -107,14 +95,10 @@ const baseStyles = StyleSheet.create({
   },
   titleText: {
     color: '#3a3a3a',
-    fontSize: 26,
+    fontSize: 22,
     letterSpacing: 0.5,
     fontWeight: '600',
     textAlign: 'center',
-    marginTop: 8,
-  },
-  titleTextEmbedded: {
-    fontSize: 22,
     marginTop: 0,
   },
   subtitle: {
@@ -139,20 +123,5 @@ const baseStyles = StyleSheet.create({
     lineHeight: 20,
     textAlign: 'center',
     letterSpacing: 0.3,
-  },
-  backButton: {
-    alignSelf: 'center',
-    marginTop: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(201, 169, 97, 0.3)',
-    borderRadius: 12,
-  },
-  backButtonText: {
-    color: '#3a3a3a',
-    fontSize: 16,
-    letterSpacing: 0.5,
   },
 });

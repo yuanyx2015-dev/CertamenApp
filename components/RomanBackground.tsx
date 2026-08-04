@@ -125,6 +125,15 @@ export function RomanBackground() {
     }
   };
 
+  /** Logo / brand tap: always open the Home tab (profile), never a contextual return tab. */
+  const handleNavigateToHome = () => {
+    if (currentScreen !== 'settings-practice') {
+      previousScreen.current = currentScreen;
+    }
+    setMainTab('profile');
+    setCurrentScreen('main');
+  };
+
   const handleNavigate = (
     screen: string,
     category?: string,
@@ -139,7 +148,7 @@ export function RomanBackground() {
       }
     }
 
-    let resolvedScreen = screen;
+    let resolvedScreen = screen === 'settings' ? 'settings-practice' : screen;
     let explicitMainTab: MainTabId | null = null;
 
     if (resolvedScreen === 'practice' || resolvedScreen === 'story') {
@@ -155,7 +164,7 @@ export function RomanBackground() {
       setPracticeGameKey((prev) => prev + 1);
     }
 
-    if (resolvedScreen === 'settings' || resolvedScreen === 'settings-practice') {
+    if (resolvedScreen === 'settings-practice') {
       if (currentScreen === 'main') {
         mainTabBeforeSettingsRef.current = mainTab;
       }
@@ -175,14 +184,14 @@ export function RomanBackground() {
         // The AI-explanation review flow is entered from the Profile screen,
         // so closing it returns to Profile rather than the Review tab.
         setMainTab('profile');
-      } else if (currentScreen === 'settings' || currentScreen === 'settings-practice') {
+      } else if (currentScreen === 'settings-practice') {
         setMainTab(mainTabBeforeSettingsRef.current);
       } else {
         setMainTab('profile');
       }
     }
 
-    if (currentScreen !== 'settings' && currentScreen !== 'settings-practice') {
+    if (currentScreen !== 'settings-practice') {
       previousScreen.current = currentScreen;
     }
     if (category && resolvedScreen !== 'practice-game') {
@@ -246,7 +255,6 @@ export function RomanBackground() {
             onTabChange={setMainTab}
           />
         );
-      case 'settings':
       case 'settings-practice':
         return (
           <SettingsScreen
@@ -312,22 +320,36 @@ export function RomanBackground() {
     <View style={styles.container}>
       <View style={styles.parchment} pointerEvents="none" />
 
-      {currentScreen !== 'login' && (
-        <TouchableOpacity
-          style={[styles.titleContainer, isIPad && styles.titleContainerIPad]}
-          onPress={() => handleNavigate('main')}
-          activeOpacity={0.6}
+      {currentScreen !== 'login' ? (
+        <View
+          style={[styles.logoHomeWrap, isIPad && styles.logoHomeWrapIPad]}
+          pointerEvents="box-none"
         >
-          <Text style={[styles.titleText, isIPad && styles.titleTextIPad]}>CertamenPrep</Text>
-        </TouchableOpacity>
+          {/* One control so title + wreath share the same press fade. */}
+          <TouchableOpacity
+            style={[styles.logoHome, isIPad && styles.logoHomeIPad]}
+            onPress={handleNavigateToHome}
+            activeOpacity={0.72}
+            accessibilityRole="button"
+            accessibilityLabel="Home"
+          >
+            <Text style={[styles.titleText, isIPad && styles.titleTextIPad]}>CertamenPrep</Text>
+            <View style={styles.logoLaurelSlot}>
+              {/* Absolutely positioned so the wide SVG doesn't widen the hit box over Settings. */}
+              <View style={styles.logoLaurelArt} pointerEvents="none">
+                <LaurelBranches />
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View
+          style={[styles.headerContainer, isIPad && styles.headerContainerIPad]}
+          pointerEvents="none"
+        >
+          <LaurelBranches />
+        </View>
       )}
-
-      <View
-        style={[styles.headerContainer, isIPad && styles.headerContainerIPad]}
-        pointerEvents="box-none"
-      >
-        <LaurelBranches />
-      </View>
 
       <View
         style={[
@@ -388,18 +410,43 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#f5efe3',
   },
-  titleContainer: {
+  logoHomeWrap: {
     position: 'absolute',
     top: 45,
     left: 0,
     right: 0,
     alignItems: 'center',
     zIndex: 20,
-    paddingVertical: 8,
   },
-  titleContainerIPad: {
+  logoHomeWrapIPad: {
     top: 36,
-    paddingVertical: 10,
+  },
+  logoHome: {
+    alignItems: 'center',
+    paddingTop: 8,
+    // Narrow column hit target; wreath paints outside via absolute layout.
+    width: 168,
+  },
+  logoHomeIPad: {
+    width: 210,
+    paddingTop: 10,
+    transform: [{ scale: 1.35 }],
+  },
+  logoLaurelSlot: {
+    marginTop: -10,
+    width: '100%',
+    height: 86,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
+  logoLaurelArt: {
+    position: 'absolute',
+    top: 0,
+    width: 280,
+    height: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   titleText: {
     fontSize: 22,

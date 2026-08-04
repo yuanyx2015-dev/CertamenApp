@@ -7,10 +7,10 @@ import {
   Animated,
   Alert,
   ActivityIndicator,
-  ScrollView,
   Modal,
   Platform,
 } from 'react-native';
+import { FitScrollView } from './FitScrollView';
 import { getCurrentUser, signOut } from '../services/authService';
 import {
   getOrCreateUserStats,
@@ -329,7 +329,7 @@ export function InformationScreen({
   }
 
   return (
-    <ScrollView
+    <FitScrollView
       style={styles.scroll}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
@@ -476,7 +476,7 @@ export function InformationScreen({
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </FitScrollView>
   );
 }
 

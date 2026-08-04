@@ -4,16 +4,23 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   ActivityIndicator,
   Animated,
   Easing,
 } from 'react-native';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
+import { FitScrollView } from './FitScrollView';
 import {
   getOrCreateUserSettings,
   normalizePracticeDifficulties,
+  clampPreBuzzSeconds,
+  clampAnswerSeconds,
+  clampReadingSpeedMultiplier,
+  streamIntervalMsForReadingSpeed,
+  DEFAULT_PRE_BUZZ_SECONDS,
+  DEFAULT_ANSWER_SECONDS,
+  DEFAULT_READING_SPEED_MULTIPLIER,
   type UserSettings,
 } from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
@@ -29,8 +36,6 @@ import type { FeedbackOverlayHandle } from './RomanFeedback';
 import { StarIcon, MASTERED_CONFIRM_MS } from './StarIcon';
 import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
 import { isIPad, useIPadColumnScale, useIPadScaledStyles } from '../lib/layout';
-/** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
-const PRE_BUZZ_SECONDS = 10;
 /** Same hold duration as Challenge / Review mastery star. */
 const HOLD_TO_CLEAR_MS = 500;
 
@@ -67,7 +72,7 @@ export function PracticeGameScreen({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [shuffledOptions, setShuffledOptions] = useState<Array<{text: string; isCorrect: boolean}>>([]);
   const [statusText, setStatusText] = useState('Loading questions...');
-  const [timeRemaining, setTimeRemaining] = useState(5);
+  const [timeRemaining, setTimeRemaining] = useState(DEFAULT_ANSWER_SECONDS);
   /** Countdown after the full question is shown; null = not running (still streaming or already buzzed/resolved). */
   const [preBuzzSecondsRemaining, setPreBuzzSecondsRemaining] = useState<number | null>(null);
   const [isWrongQuestionsMode, setIsWrongQuestionsMode] = useState(false); // Track if using wrong questions mode
@@ -84,9 +89,12 @@ export function PracticeGameScreen({
   const charIndexRef = useRef(0);
   const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const answerRemainingRef = useRef<number>(5);
+  const answerRemainingRef = useRef<number>(DEFAULT_ANSWER_SECONDS);
   const preBuzzIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const preBuzzRemainingRef = useRef<number | null>(null);
+  const preBuzzSecondsRef = useRef(DEFAULT_PRE_BUZZ_SECONDS);
+  const answerSecondsRef = useRef(DEFAULT_ANSWER_SECONDS);
+  const readingSpeedRef = useRef(DEFAULT_READING_SPEED_MULTIPLIER);
   const fullTextRef = useRef('');
   const feedbackRef = useRef<FeedbackOverlayHandle>(null);
   const isBuzzedRef = useRef(false);
@@ -155,6 +163,16 @@ export function PracticeGameScreen({
       }
 
       const storageUserId = practiceScopeIdRef.current;
+      const nextPreBuzz = clampPreBuzzSeconds(settingsForScope?.pre_buzz_seconds);
+      const nextAnswer = clampAnswerSeconds(settingsForScope?.answer_seconds);
+      const nextReadingSpeed = clampReadingSpeedMultiplier(
+        settingsForScope?.reading_speed_multiplier
+      );
+      preBuzzSecondsRef.current = nextPreBuzz;
+      answerSecondsRef.current = nextAnswer;
+      readingSpeedRef.current = nextReadingSpeed;
+      setTimeRemaining(nextAnswer);
+
       const practiceDifficulties = normalizePracticeDifficulties(
         settingsForScope?.practice_session_difficulty
       );
@@ -269,7 +287,7 @@ export function PracticeGameScreen({
     feedbackRef.current?.show(isCorrect ? 'correct' : 'wrong');
   };
 
-  /** No buzz before PRE_BUZZ_SECONDS elapsed after the tossup finished — score as incorrect. */
+  /** No buzz before the configured buzz window ends — score as incorrect. */
   const handleNoBuzzInTime = async () => {
     if (isBuzzedRef.current || isAnsweredRef.current) return;
     isAnsweredRef.current = true;
@@ -295,8 +313,9 @@ export function PracticeGameScreen({
 
   const startPreBuzzCountdown = () => {
     clearPreBuzzTimer();
-    preBuzzRemainingRef.current = PRE_BUZZ_SECONDS;
-    setPreBuzzSecondsRemaining(PRE_BUZZ_SECONDS);
+    const seconds = preBuzzSecondsRef.current;
+    preBuzzRemainingRef.current = seconds;
+    setPreBuzzSecondsRemaining(seconds);
     // Decrement and fire the timeout handler from the timer callback (not from
     // inside a setState updater), so FeedbackOverlay's state isn't updated
     // during this component's render.
@@ -366,19 +385,22 @@ export function PracticeGameScreen({
     ];
     setShuffledOptions(shuffleArray(options));
 
-    // Start streaming text
+    // Start streaming text (pace from Further adjustments → Reading speed)
+    const streamMs = streamIntervalMsForReadingSpeed(readingSpeedRef.current);
     streamIntervalRef.current = setInterval(() => {
       if (charIndexRef.current < fullTextRef.current.length) {
         setDisplayedText(fullTextRef.current.substring(0, charIndexRef.current + 1));
         charIndexRef.current++;
-      } else {
-        if (streamIntervalRef.current) {
-          clearInterval(streamIntervalRef.current);
-        }
-        setStatusText('Waiting for buzz...');
-        startPreBuzzCountdown();
+        return;
       }
-    }, 50); // 50ms per character
+      // Stream finished — stop once, then start the buzz countdown once.
+      // (Calling startPreBuzzCountdown on every leftover tick reset the clock to 10s.)
+      if (!streamIntervalRef.current) return;
+      clearInterval(streamIntervalRef.current);
+      streamIntervalRef.current = null;
+      setStatusText('Waiting for buzz...');
+      startPreBuzzCountdown();
+    }, streamMs);
   };
 
   // Handle buzz
@@ -395,8 +417,9 @@ export function PracticeGameScreen({
 
     setIsBuzzed(true);
     setStatusText('Buzzed! Select your answer...');
-    answerRemainingRef.current = 5;
-    setTimeRemaining(5);
+    const seconds = answerSecondsRef.current;
+    answerRemainingRef.current = seconds;
+    setTimeRemaining(seconds);
 
     // Decrement and fire the timeout handler from the timer callback (not from
     // inside a setState updater), so FeedbackOverlay's state isn't updated
@@ -486,22 +509,16 @@ export function PracticeGameScreen({
 
   /**
    * Hold-to-clear: permanently exclude from future Practice pools (device-local),
-   * remove from this set, advance. Never mastery / Review / ranks.
+   * then advance — set length stays fixed (like Challenge mastered count).
+   * Never mastery / Review / ranks.
    */
   const fireClearFromPractice = async () => {
-    setPastFirstQuestion(true);
     const q = questions[currentQuestionIndex];
     if (q) {
       await addPracticeClearedId(practiceScopeIdRef.current, q.id);
     }
     setClearedThisSession((n) => n + 1);
-    setQuestions((prev) => {
-      const next = [...prev];
-      if (currentQuestionIndex >= 0 && currentQuestionIndex < next.length) {
-        next.splice(currentQuestionIndex, 1);
-      }
-      return next;
-    });
+    nextQuestion();
   };
 
   const handleStarPressIn = () => {
@@ -535,20 +552,21 @@ export function PracticeGameScreen({
     }).start();
   };
 
-  // Start first question on mount (only when questions are loaded)
+  // Start / advance questions. Depend on index + set size, not the questions
+  // array identity (a new array reference would remount mid-countdown and stall the timer).
   useEffect(() => {
-    if (!isLoading && questions.length > 0) {
-      startQuestion();
+    if (!isLoading && questions.length > 0 && currentQuestionIndex < questions.length) {
+      void startQuestion();
     }
-    
-    // Cleanup function when component unmounts (user exits game)
+
     return () => {
-      // Clear all intervals
       if (streamIntervalRef.current) {
         clearInterval(streamIntervalRef.current);
+        streamIntervalRef.current = null;
       }
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
       }
       clearPreBuzzTimer();
       if (holdTimerRef.current) {
@@ -556,14 +574,15 @@ export function PracticeGameScreen({
         holdTimerRef.current = null;
       }
     };
-  }, [currentQuestionIndex, isLoading, questions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- startQuestion closes over latest index/questions
+  }, [currentQuestionIndex, isLoading, startedSetSize]);
 
-  // Check if game is over (empty pool after clears, or index past the end via Next).
+  // Check if game is over (index past the fixed set).
   const isGameOver =
     !isLoading &&
     !loadError &&
     startedSetSize > 0 &&
-    (questions.length === 0 || currentQuestionIndex >= questions.length);
+    currentQuestionIndex >= questions.length;
 
   // Loading state
   if (isLoading) {
@@ -653,7 +672,7 @@ export function PracticeGameScreen({
             style={styles.backButton}
             onPress={() => onNavigate?.('main')}
           >
-            <Text style={styles.backButtonText}>Back to Menu</Text>
+            <Text style={styles.backButtonText}>Back to Practice selection</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -682,7 +701,7 @@ export function PracticeGameScreen({
       <View style={styles.header}>
         <View style={styles.headerColLeft}>
           <Text style={styles.headerText}>
-            Question {currentQuestionIndex + 1}/{questions.length}
+            Question {currentQuestionIndex + 1}/{startedSetSize || questions.length}
           </Text>
         </View>
         <View
@@ -705,11 +724,13 @@ export function PracticeGameScreen({
               </Text>
             )}
         </View>
-        <View style={styles.headerColRight} />
+        <View style={styles.headerColRight}>
+          <Text style={styles.headerCount}>★ {clearedThisSession} cleared</Text>
+        </View>
       </View>
 
       {/* Game Area */}
-      <ScrollView
+      <FitScrollView
         style={styles.gameArea}
         contentContainerStyle={styles.gameAreaContent}
         showsVerticalScrollIndicator={false}
@@ -831,7 +852,7 @@ export function PracticeGameScreen({
             )}
           </View>
         )}
-      </ScrollView>
+      </FitScrollView>
     </>
   );
 
@@ -956,6 +977,11 @@ const baseStyles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     minWidth: 0,
+  },
+  headerCount: {
+    fontSize: 14,
+    color: '#6a6a6a',
+    fontWeight: '500',
   },
   headerTimerText: {
     fontSize: 17,

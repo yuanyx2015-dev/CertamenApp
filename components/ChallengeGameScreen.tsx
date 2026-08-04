@@ -4,12 +4,12 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   ActivityIndicator,
   Animated,
   Easing,
   Modal,
 } from 'react-native';
+import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import {
   bumpUserStreak,
@@ -629,7 +629,7 @@ export function ChallengeGameScreen({
     const correct = masteredCount + passedCount;
     return (
       <View style={[styles.container]}>
-        <ScrollView contentContainerStyle={styles.summaryScroll}>
+        <FitScrollView contentContainerStyle={styles.summaryScroll}>
           <Text style={styles.summaryTitle}>Set Complete</Text>
           <Text style={styles.summaryScore}>
             {correct} / {totalAttempted} correct
@@ -678,7 +678,7 @@ export function ChallengeGameScreen({
           >
             <Text style={styles.secondaryBtnText}>Return to Main</Text>
           </TouchableOpacity>
-        </ScrollView>
+        </FitScrollView>
 
         <Modal
           visible={showReviewModal}
@@ -753,7 +753,7 @@ export function ChallengeGameScreen({
         </View>
       </View>
 
-      <ScrollView
+      <FitScrollView
         style={styles.gameArea}
         contentContainerStyle={styles.gameAreaContent}
         showsVerticalScrollIndicator={false}
@@ -869,7 +869,7 @@ export function ChallengeGameScreen({
             )}
           </View>
         )}
-      </ScrollView>
+      </FitScrollView>
     </>
   );
 

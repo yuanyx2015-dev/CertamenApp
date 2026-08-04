@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Alert } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 import { getCategoryStats } from '../services/questionReviewService';
+import { FitScrollView } from './FitScrollView';
 import { useIPadScaledStyles } from '../lib/layout';
 // Simple reusable animated button component
 function AnimatedCategoryButton({ 
@@ -149,7 +150,7 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
 
   return (
     <View style={[styles.container]}>
-      <ScrollView 
+      <FitScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -177,7 +178,7 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
         >
           <Text style={styles.backButtonText}>Back to Profile</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </FitScrollView>
     </View>
   );
 }
