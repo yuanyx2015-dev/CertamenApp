@@ -154,24 +154,15 @@ export function ChallengeModeScreen({
           <View key={rowIdx} style={styles.pickerRow}>
             {row.map((n) => {
               const selected = setSize === n;
-              const greyed = n > unmasteredHere;
               return (
                 <TouchableOpacity
                   key={n}
-                  style={[
-                    styles.pickerChip,
-                    selected && styles.pickerChipSelected,
-                    greyed && styles.pickerChipGreyed,
-                  ]}
+                  style={[styles.pickerChip, selected && styles.pickerChipSelected]}
                   onPress={() => setSetSize(n)}
                   activeOpacity={0.7}
                 >
                   <Text
-                    style={[
-                      styles.pickerChipText,
-                      selected && styles.pickerChipTextSelected,
-                      greyed && styles.pickerChipTextGreyed,
-                    ]}
+                    style={[styles.pickerChipText, selected && styles.pickerChipTextSelected]}
                   >
                     {n}
                   </Text>
@@ -373,9 +364,6 @@ const baseStyles = StyleSheet.create({
     backgroundColor: 'rgba(201, 169, 97, 0.35)',
     borderColor: '#c9a961',
   },
-  pickerChipGreyed: {
-    opacity: 0.45,
-  },
   pickerChipText: {
     fontSize: 14,
     color: '#3a3a3a',
@@ -383,9 +371,6 @@ const baseStyles = StyleSheet.create({
   },
   pickerChipTextSelected: {
     fontWeight: '700',
-  },
-  pickerChipTextGreyed: {
-    color: '#9a9a9a',
   },
   pickerCaption: {
     fontSize: 11,

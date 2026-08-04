@@ -5,7 +5,7 @@
 **[VISUAL: App logo with Roman-themed background, laurel wreaths]**
 
 **NARRATOR:**
-"Welcome to CertamenPrep—the ultimate quiz experience for Latin students and Roman history enthusiasts. Whether you're preparing for competition or just love ancient Rome, CertamenPrep brings the excitement of Certamen right to your fingertips."
+"Welcome to CertamenPrep—practice like it's real. The quiz experience for Latin students and Certamen competitors. Whether you're preparing for competition or just love ancient Rome, CertamenPrep brings match-day pressure right to your fingertips."
 
 ---
 

@@ -481,7 +481,7 @@ export function PracticeGameScreen({
   };
 
   const handleStarPressOut = () => {
-    // Hold finished — keep the expanded star + border until we advance.
+    // Hold finished — keep the filled star until we advance.
     if (justMasteredRef.current) return;
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);

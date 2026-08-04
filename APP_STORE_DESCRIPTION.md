@@ -8,15 +8,17 @@ Draft listing copy for App Store Connect. Paste into the store listing; the app 
 
 ## Promotional Text (170 characters max — appears at top)
 
-Practice Certamen-style toss-ups. Master questions, climb 11 Roman ranks from Miles to Legatus Legionis, and review what you miss.
+Practice like it's real. Certamen-style toss-ups, 11 Roman ranks from Miles to Legatus Legionis, and review for what you miss.
 
-*(Character count: 128)*
+*(Character count: 118)*
 
 ---
 
 ## App Store Description (Full)
 
-**CertamenPrep** helps middle and high school Certamen competitors practice with real toss-up pacing. Questions stream letter by letter. Buzz in, answer under a short timer, and build lasting knowledge by mastering what you get right.
+**CertamenPrep — Practice like it's real.**
+
+Helps middle and high school Certamen competitors practice with real toss-up pacing. Questions stream letter by letter. Buzz in, answer under a short timer, and build lasting knowledge by mastering what you get right.
 
 Study six areas of Certamen content: Mythology, History, Language, Literature, Culture & Life, and Living Latin.
 
@@ -84,8 +86,13 @@ Version 1.1.0
 
 ---
 
-## Short Tagline Options (choose one)
+## Short Tagline (official)
 
+**Practice like it's real.**
+
+Also used on the marketing site hero/footer and the in-app login screen.
+
+Previous alternatives (retired):
 1. "Certamen practice, letter by letter"
 2. "From Miles to Legatus Legionis"
 3. "Master the toss-up"

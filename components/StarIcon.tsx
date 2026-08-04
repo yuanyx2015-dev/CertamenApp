@@ -6,13 +6,13 @@ import { useIPadScale, useIPadScaledStyles } from '../lib/layout';
 const STAR_PATH =
   'M12 17.27l5.18 3.04-1.37-5.91 4.59-3.97-6.06-.52L12 4l-2.34 5.91-6.06.52 4.59 3.97-1.37 5.91L12 17.27z';
 
-/** How long the mastered border stays visible before advancing. */
-export const MASTERED_CONFIRM_MS = 400;
+/** Brief pause after the star is full before advancing (keep short). */
+export const MASTERED_CONFIRM_MS = 80;
 
 /**
  * Hold-to-master star used by both game screens.
  * `filled` is the static fill before any animation; `progress` (0..1) drives the live overlay.
- * At full progress the star expands and a gold ring border locks in so mastery is obvious.
+ * At full progress the star itself fills solid gold — no outer ring.
  */
 export function StarIcon({ filled, progress }: { filled: number; progress: Animated.Value }) {
   const iPadScale = useIPadScale();
@@ -21,32 +21,12 @@ export function StarIcon({ filled, progress }: { filled: number; progress: Anima
 
   const scale = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.18],
-  });
-
-  // Ring only appears as the hold finishes — clear "you mastered it" signal.
-  const ringOpacity = progress.interpolate({
-    inputRange: [0, 0.82, 1],
-    outputRange: [0, 0, 1],
-  });
-  const ringScale = progress.interpolate({
-    inputRange: [0, 0.82, 1],
-    outputRange: [0.9, 0.9, 1],
+    outputRange: [1, 1.08],
   });
 
   return (
     <Animated.View style={[styles.wrap, { transform: [{ scale }] }]}>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.masteredRing,
-          {
-            opacity: ringOpacity,
-            transform: [{ scale: ringScale }],
-          },
-        ]}
-      />
-      {/* Outline (always visible) */}
+      {/* Outline / empty star */}
       <Svg width={svgSize} height={svgSize} viewBox="0 0 24 24">
         <Path
           d={STAR_PATH}
@@ -55,7 +35,7 @@ export function StarIcon({ filled, progress }: { filled: number; progress: Anima
           strokeWidth={1}
         />
       </Svg>
-      {/* Animated fill overlay using opacity */}
+      {/* Animated fill — star itself fills as you hold */}
       <Animated.View pointerEvents="none" style={[styles.overlay, { opacity: progress }]}>
         <Svg width={svgSize} height={svgSize} viewBox="0 0 24 24">
           <Path d={STAR_PATH} fill="#c9a961" stroke="#5c4a2e" strokeWidth={1.5} />
@@ -71,15 +51,6 @@ const baseStyles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  masteredRing: {
-    position: 'absolute',
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    borderWidth: 2.5,
-    borderColor: '#c9a961',
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
   },
   overlay: {
     position: 'absolute',

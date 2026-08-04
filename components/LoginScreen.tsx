@@ -66,6 +66,7 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
         </View>
 
         <Text style={styles.appName}>CertamenPrep</Text>
+        <Text style={styles.tagline}>Practice like it's real.</Text>
       </View>
 
       <View style={styles.loginSection}>
@@ -233,6 +234,14 @@ const baseStyles = StyleSheet.create({
     letterSpacing: 2,
     color: '#3a3a3a',
     marginTop: 8,
+  },
+  tagline: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: '#6a6a6a',
+    letterSpacing: 0.5,
+    marginTop: 12,
+    textAlign: 'center',
   },
   loginSection: {
     width: '100%',

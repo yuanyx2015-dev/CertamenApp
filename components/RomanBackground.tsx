@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, AppState, type AppStateStatus } from 'react-native';
 import { LaurelBranches } from './LaurelBranches';
 import { MeanderBorder } from './MeanderBorder';
 import { LoginScreen } from './LoginScreen';
@@ -15,8 +15,9 @@ import {
 } from './ChallengeGameScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
 import { StreakConfettiProvider } from './StreakConfetti';
+import { BrandIntroOverlay } from './BrandIntroOverlay';
 import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
-import { isIPad } from '../lib/layout';
+import { isIPad, isIPhone } from '../lib/layout';
 
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
@@ -32,6 +33,29 @@ export function RomanBackground() {
   /** Challenge Mode game session config (mode + setSize + rankIndex). */
   const [challengeConfig, setChallengeConfig] = useState<ChallengeGameConfig | null>(null);
   const [challengeGameKey, setChallengeGameKey] = useState(0);
+  /** Brand intro after login, cold start, or return from background. */
+  const [showBrandIntro, setShowBrandIntro] = useState(false);
+  const pendingBrandIntroRef = useRef(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const isAuthenticatedRef = useRef(false);
+  const isGuestModeRef = useRef(false);
+  const currentScreenRef = useRef(currentScreen);
+
+  useEffect(() => {
+    isAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    isGuestModeRef.current = isGuestMode;
+  }, [isGuestMode]);
+
+  useEffect(() => {
+    currentScreenRef.current = currentScreen;
+    if (currentScreen === 'main' && pendingBrandIntroRef.current) {
+      pendingBrandIntroRef.current = false;
+      setShowBrandIntro(true);
+    }
+  }, [currentScreen]);
 
   useEffect(() => {
     checkSession();
@@ -41,12 +65,20 @@ export function RomanBackground() {
       if (session) {
         setIsAuthenticated(true);
         setIsGuestMode(false);
-        setCurrentScreen((prev) => (prev === 'login' ? 'main' : prev));
+        setCurrentScreen((prev) => {
+          if (prev === 'login') {
+            pendingBrandIntroRef.current = true;
+            return 'main';
+          }
+          return prev;
+        });
       } else {
         setIsAuthenticated(false);
         // Avoid sending guest users (no Supabase session) back to login on INITIAL_SESSION.
         if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
           setIsGuestMode(false);
+          setShowBrandIntro(false);
+          pendingBrandIntroRef.current = false;
           setCurrentScreen('login');
         }
       }
@@ -57,11 +89,36 @@ export function RomanBackground() {
     };
   }, []);
 
+  // Re-play brand intro when returning to the app from background (not Control Center blips).
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      const wasBackground = appStateRef.current === 'background';
+      appStateRef.current = nextState;
+
+      if (
+        wasBackground &&
+        nextState === 'active' &&
+        (isAuthenticatedRef.current || isGuestModeRef.current) &&
+        currentScreenRef.current === 'main'
+      ) {
+        setShowBrandIntro(true);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   const checkSession = async () => {
     const session = await getSession();
     if (session) {
       setIsAuthenticated(true);
-      setCurrentScreen('main');
+      // Only queue intro when leaving login — avoids a double-queue race with onAuthStateChange.
+      setCurrentScreen((prev) => {
+        if (prev === 'login') {
+          pendingBrandIntroRef.current = true;
+        }
+        return 'main';
+      });
     } else {
       setIsAuthenticated(false);
       setCurrentScreen('login');
@@ -138,12 +195,14 @@ export function RomanBackground() {
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
     setIsGuestMode(false);
+    pendingBrandIntroRef.current = true;
     handleNavigate('main');
   };
 
   const handleGuestMode = () => {
     setIsGuestMode(true);
     setMainTab('profile');
+    pendingBrandIntroRef.current = true;
     setCurrentScreen('main');
   };
 
@@ -277,6 +336,8 @@ export function RomanBackground() {
           isGameScreen && styles.contentContainerGame,
           isReviewGame && styles.contentContainerReviewGame,
           isIPad && isMainTabScreen && styles.contentContainerMainIPad,
+          // iPhone only: pull main tabs closer to the bottom (leave Android / iPad alone).
+          isIPhone && isMainTabScreen && styles.contentContainerMainIPhone,
         ]}
       >
         {/* Main tabs / games manage their own iPad scale so footers & tabs stay visible. */}
@@ -301,6 +362,11 @@ export function RomanBackground() {
       >
         <MeanderBorder />
       </View>
+
+      <BrandIntroOverlay
+        visible={showBrandIntro}
+        onFinished={() => setShowBrandIntro(false)}
+      />
     </View>
     </StreakConfettiProvider>
   );
@@ -334,6 +400,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#c9a569',
     letterSpacing: 1.2,
+    // Harder, darker edge — reads as outline more than a soft drop shadow.
+    textShadowColor: 'rgba(55, 40, 18, 0.55)',
+    textShadowOffset: { width: -0.8, height: 0.8 },
+    textShadowRadius: 0.2,
   },
   titleTextIPad: {
     fontSize: 36,
@@ -367,6 +437,9 @@ const styles = StyleSheet.create({
     paddingTop: 200,
     paddingBottom: 56,
     justifyContent: 'flex-start',
+  },
+  contentContainerMainIPhone: {
+    paddingBottom: 50,
   },
   contentContainerCompact: {
     paddingTop: 128,

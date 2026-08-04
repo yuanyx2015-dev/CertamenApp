@@ -7,6 +7,9 @@ import type { ImageStyle, TextStyle, ViewStyle } from 'react-native';
  */
 export const isIPad = Platform.OS === 'ios' && Platform.isPad;
 
+/** True only on iPhone (iOS and not iPad). Never true on Android. */
+export const isIPhone = Platform.OS === 'ios' && !Platform.isPad;
+
 /** Phone content column width used across main screens. */
 export const PHONE_CONTENT_MAX_WIDTH = 448;
 

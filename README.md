@@ -1,5 +1,7 @@
 # CertamenPrep 🏛️
 
+**Practice like it's real.**
+
 A mobile learning app for Certamen-style practice with a Roman-themed UI. Master mythology, history, language, literature, culture, and living Latin while climbing eleven military ranks from **Miles** to **Legatus Legionis**.
 
 ![App Banner](assets/screenshots/banner.png)
