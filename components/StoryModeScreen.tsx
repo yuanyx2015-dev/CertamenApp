@@ -52,8 +52,8 @@ export function StoryModeScreen({
 
         <View style={styles.footerNote}>
           <Text style={styles.footerText}>
-            Further adjustments (difficulty level, number of questions, etc...) are in the Settings. Progress here
-            does not affect your score or your rank.
+            Further adjustments (difficulty, questions per set, etc...) can be found in the Practice Mode Settings
+            on the top right. Progress here does not affect your rank.
           </Text>
         </View>
       </ScrollView>
