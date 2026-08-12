@@ -60,6 +60,35 @@ function DifficultyCheckMark() {
     </Svg>
   );
 }
+
+/** Counter − / + — SVG like the difficulty check so glyphs stay centered in the circle. */
+function CounterMinusIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 18 18">
+      <Path
+        d="M4 9 H14"
+        stroke="#3a3a3a"
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
+function CounterPlusIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 18 18">
+      <Path
+        d="M4 9 H14 M9 4 V14"
+        stroke="#3a3a3a"
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
 /** Fixed label box half-width for centering under ticks. */
 const READING_SPEED_LABEL_HALF = 24;
 
@@ -468,16 +497,18 @@ export function SettingsScreen({
               style={styles.counterButton}
               onPress={() => handleNumTossupsChange(numTossups - 5)}
               activeOpacity={0.7}
+              accessibilityLabel="Decrease number of questions"
             >
-              <Text style={styles.counterButtonText}>−</Text>
+              <CounterMinusIcon />
             </TouchableOpacity>
             <Text style={styles.counterValue}>{numTossups}</Text>
             <TouchableOpacity
               style={styles.counterButton}
               onPress={() => handleNumTossupsChange(numTossups + 5)}
               activeOpacity={0.7}
+              accessibilityLabel="Increase number of questions"
             >
-              <Text style={styles.counterButtonText}>+</Text>
+              <CounterPlusIcon />
             </TouchableOpacity>
           </View>
         </View>
@@ -781,13 +812,6 @@ const baseStyles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-  },
-  counterButtonText: {
-    // Bare "−" / "+" glyphs sit small in Spectral; nudge up to fill the circle.
-    fontSize: 26,
-    fontWeight: '600',
-    color: '#3a3a3a',
-    lineHeight: 27,
   },
   counterValue: {
     fontSize: 19,

@@ -398,6 +398,11 @@ export function RomanBackground() {
             (isIPad
               ? styles.contentContainerMainPracticeIPad
               : styles.contentContainerMainPractice),
+          // Wrong-questions category list only (Mythology/History/…), not the 6-category hub.
+          currentScreen === 'categoryQuestions' &&
+            (isIPad
+              ? styles.contentContainerCategoryQuestionsIPad
+              : styles.contentContainerCategoryQuestions),
         ]}
       >
         {/* Main tabs / games manage their own iPad scale so footers & tabs stay visible. */}
@@ -528,6 +533,14 @@ const styles = StyleSheet.create({
   },
   contentContainerMainPracticeIPad: {
     paddingTop: 155,
+  },
+  contentContainerCategoryQuestions: {
+    paddingTop: 118,
+    justifyContent: 'flex-start',
+  },
+  contentContainerCategoryQuestionsIPad: {
+    paddingTop: 145,
+    justifyContent: 'flex-start',
   },
   contentContainerCompact: {
     paddingTop: 128,

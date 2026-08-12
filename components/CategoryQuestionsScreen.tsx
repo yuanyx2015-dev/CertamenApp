@@ -5,8 +5,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   TextInput,
+  ScrollView,
   Alert
 } from 'react-native';
+import Svg, { Path, Rect } from 'react-native-svg';
 import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
@@ -28,6 +30,53 @@ import { useIPadScaledStyles } from '../lib/layout';
 interface CategoryQuestionsScreenProps {
   onNavigate?: (screen: string) => void;
   category: string;
+}
+
+/** Neutral “[?]” mark — avoid Gemini/third-party brand marks in the button. */
+function ExplainAiIcon() {
+  return (
+    <Svg width={15} height={15} viewBox="0 0 15 15">
+      <Rect
+        x={1.25}
+        y={1.25}
+        width={12.5}
+        height={12.5}
+        rx={2.5}
+        stroke="#8a7040"
+        strokeWidth={1.4}
+        fill="none"
+      />
+      <Path
+        d="M5.4 5.6 C5.4 4.35 6.35 3.55 7.5 3.55 C8.65 3.55 9.6 4.35 9.6 5.45 C9.6 6.35 9.05 6.85 8.35 7.3 C7.7 7.7 7.35 8.05 7.35 8.75"
+        stroke="#8a7040"
+        strokeWidth={1.35}
+        strokeLinecap="round"
+        fill="none"
+      />
+      <Path
+        d="M7.35 11.15 V11.2"
+        stroke="#8a7040"
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+/** Crisp check — SVG so Spectral doesn’t offset a text “✓”. */
+function MasteredCheckIcon() {
+  return (
+    <Svg width={15} height={15} viewBox="0 0 15 15">
+      <Path
+        d="M2.8 7.6 L6.1 10.8 L12.2 3.9"
+        stroke="#4a7a4a"
+        strokeWidth={2.1}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
 }
 
 export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuestionsScreenProps) {
@@ -314,7 +363,13 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
                     </View>
                   ) : aiExplanation ? (
                     <>
-                      <Text style={styles.explanationText}>{aiExplanation}</Text>
+                      <ScrollView
+                        style={styles.explanationScroll}
+                        contentContainerStyle={styles.explanationScrollContent}
+                        nestedScrollEnabled
+                      >
+                        <Text style={styles.explanationText}>{aiExplanation}</Text>
+                      </ScrollView>
                       
                       {/* Custom Question Input */}
                       <View style={styles.customQuestionContainer}>
@@ -372,7 +427,12 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
                         )}
                         {customAnswer && (
                           <View style={styles.customAnswerBox}>
-                            <Text style={styles.customAnswerText}>{customAnswer}</Text>
+                            <ScrollView
+                              style={styles.customAnswerScroll}
+                              nestedScrollEnabled
+                            >
+                              <Text style={styles.customAnswerText}>{customAnswer}</Text>
+                            </ScrollView>
                           </View>
                         )}
                       </View>
@@ -387,18 +447,24 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
                   style={styles.explainButton}
                   onPress={() => handleExplainQuestion(question.question_text, question.correct_answer, question.id)}
                 >
-                  <Text style={styles.explainButtonText}>
-                    {expandedQuestionId === question.id ? '✕ Hide' : '🤖 Explain with AI'}
-                  </Text>
+                  {expandedQuestionId === question.id ? (
+                    <Text style={styles.explainButtonText}>✕ Hide</Text>
+                  ) : (
+                    <View style={styles.buttonInner}>
+                      <ExplainAiIcon />
+                      <Text style={styles.explainButtonText}>Explain with AI</Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.markCorrectButton}
                   onPress={() => handleMarkMastered(question.id)}
                 >
-                  <Text style={styles.markCorrectButtonText}>
-                    ✓ Mark as Mastered
-                  </Text>
+                  <View style={styles.buttonInner}>
+                    <MasteredCheckIcon />
+                    <Text style={styles.markCorrectButtonText}>Mark as Mastered</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
@@ -431,9 +497,9 @@ const baseStyles = StyleSheet.create({
   },
   topBackButton: {
     alignSelf: 'flex-start',
-    paddingVertical: 4,
+    paddingVertical: 2,
     paddingHorizontal: 2,
-    marginBottom: 8,
+    marginBottom: 2,
     zIndex: 2,
   },
   topBackButtonText: {
@@ -446,9 +512,9 @@ const baseStyles = StyleSheet.create({
     zIndex: 2,
   },
   headerBlock: {
-    paddingTop: 4,
-    paddingBottom: 16,
-    marginBottom: 8,
+    paddingTop: 0,
+    paddingBottom: 10,
+    marginBottom: 4,
   },
   title: {
     fontSize: 26,
@@ -560,11 +626,18 @@ const baseStyles = StyleSheet.create({
     color: '#6a6a6a',
     fontStyle: 'italic',
   },
+  /** Caps a long explanation so the card stays readable; the text scrolls inside. */
+  explanationScroll: {
+    maxHeight: 140,
+    marginBottom: 10,
+  },
+  explanationScrollContent: {
+    paddingRight: 4,
+  },
   explanationText: {
     fontSize: 15,
     color: '#3a3a3a',
     lineHeight: 23,
-    marginBottom: 12,
   },
   customQuestionContainer: {
     marginTop: 12,
@@ -628,6 +701,9 @@ const baseStyles = StyleSheet.create({
     borderLeftColor: '#c9a961',
     borderRadius: 6,
   },
+  customAnswerScroll: {
+    maxHeight: 180,
+  },
   customAnswerText: {
     fontSize: 15,
     color: '#3a3a3a',
@@ -646,12 +722,20 @@ const baseStyles = StyleSheet.create({
     borderColor: 'rgba(201, 169, 97, 0.4)',
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   explainButtonText: {
     fontSize: 15,
     color: '#8a7040',
     letterSpacing: 0.15,
     fontWeight: '500',
+    flexShrink: 1,
   },
   markCorrectButton: {
     flex: 1,
@@ -662,11 +746,13 @@ const baseStyles = StyleSheet.create({
     borderColor: 'rgba(100, 180, 100, 0.4)',
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   markCorrectButtonText: {
     fontSize: 15,
     color: '#4a7a4a',
     letterSpacing: 0.15,
     fontWeight: '500',
+    flexShrink: 1,
   },
 });
