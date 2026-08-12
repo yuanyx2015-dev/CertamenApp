@@ -10,9 +10,6 @@ npm-debug.*
 *.orig.*
 web-build/
 
-# Local venv for scripts/make-store-screenshots.py
-.venv-store/
-
 # macOS
 .DS_Store
 
