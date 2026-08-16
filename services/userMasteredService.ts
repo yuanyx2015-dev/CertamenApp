@@ -87,6 +87,28 @@ export const getRankPoolQuestions = async (
 };
 
 /**
+ * Mastered questions for the Practice "Mastered" pool (all categories).
+ * Server-side join, same shape as getAllWrongQuestions.
+ */
+export const getAllMasteredQuestions = async (
+  userId: string,
+  limit: number = 1200
+): Promise<{ data: Question[] | null; error: any }> => {
+  const { data, error } = await supabase.rpc('get_user_mastered_questions', {
+    p_user_id: userId,
+    p_category: null,
+    p_limit: limit,
+  });
+
+  if (error) {
+    console.error('Error fetching mastered questions:', error);
+    return { data: null, error };
+  }
+
+  return { data: (data ?? []) as Question[], error: null };
+};
+
+/**
  * Count of mastered questions for the user (all difficulties).
  */
 export const getMasteredCount = async (userId: string) => {

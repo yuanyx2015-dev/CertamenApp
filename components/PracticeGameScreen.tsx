@@ -14,6 +14,7 @@ import { FitScrollView } from './FitScrollView';
 import {
   getOrCreateUserSettings,
   normalizePracticeDifficulties,
+  normalizePracticeQuestionPool,
   clampPreBuzzSeconds,
   clampAnswerSeconds,
   clampReadingSpeedMultiplier,
@@ -24,6 +25,8 @@ import {
   type UserSettings,
 } from '../services/userSettingsService';
 import { markQuestionAsWrong, getAllWrongQuestions, isQuestionWrong } from '../services/questionReviewService';
+import { getAllMasteredQuestions } from '../services/userMasteredService';
+import { PRACTICE_POOL_FETCH_LIMIT } from '../services/practicePoolService';
 import {
   addPracticeClearedId,
   getPracticeCategoryEntryCount,
@@ -66,6 +69,11 @@ export function PracticeGameScreen({
   const [wrongThisSession, setWrongThisSession] = useState(0); // # answered wrong in this set
   /** Original set size for end-of-set stats (pool shrinks when cleared). */
   const [startedSetSize, setStartedSetSize] = useState(0);
+  /**
+   * Set size asked for in Settings. Category and difficulty can leave the pool
+   * short of it, so the set says so instead of quietly dealing fewer.
+   */
+  const [requestedSetSize, setRequestedSetSize] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
   const [isBuzzed, setIsBuzzed] = useState(false);
   const [isAnswered, setIsAnswered] = useState(false);
@@ -75,7 +83,11 @@ export function PracticeGameScreen({
   const [timeRemaining, setTimeRemaining] = useState(DEFAULT_ANSWER_SECONDS);
   /** Countdown after the full question is shown; null = not running (still streaming or already buzzed/resolved). */
   const [preBuzzSecondsRemaining, setPreBuzzSecondsRemaining] = useState<number | null>(null);
-  const [isWrongQuestionsMode, setIsWrongQuestionsMode] = useState(false); // Track if using wrong questions mode
+  /**
+   * Active pool for this set. Hold-to-clear belongs to All only: clears are a
+   * Practice-local hide, and they must never touch the Wrong / Mastered lists.
+   */
+  const [practicePool, setPracticePool] = useState<'all' | 'wrong' | 'mastered'>('all');
   const [isPreviouslyWrong, setIsPreviouslyWrong] = useState(false); // Track if current question was previously answered wrong
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false); // Whether the current question was answered correctly
   const [starCleared, setStarCleared] = useState(false);
@@ -132,10 +144,11 @@ export function PracticeGameScreen({
       setClearedThisSession(0);
       setWrongThisSession(0);
       setStartedSetSize(0);
+      setRequestedSetSize(0);
       setPastFirstQuestion(false);
 
       let totalQuestions = 20;
-      let wrongQuestionsOnly = false;
+      let questionPool: 'all' | 'wrong' | 'mastered' = 'all';
       let user = null;
       let settingsForScope: UserSettings | null = null;
 
@@ -147,8 +160,11 @@ export function PracticeGameScreen({
           settingsForScope = settings ?? null;
           if (settings) {
             totalQuestions = settings.num_tossups;
-            wrongQuestionsOnly = settings.wrong_questions_only;
-            setIsWrongQuestionsMode(wrongQuestionsOnly);
+            questionPool = normalizePracticeQuestionPool(
+              settings.practice_question_pool,
+              settings.wrong_questions_only
+            );
+            setPracticePool(questionPool);
           }
         } else {
           practiceScopeIdRef.current = 'guest';
@@ -183,38 +199,54 @@ export function PracticeGameScreen({
 
       const clearedIds = await getPracticeClearedIds(storageUserId);
       // Tip eligibility: first N category entries into Practice (not Try Again reloads).
-      // The tip itself only renders on the first question of that entry.
-      if (reloadNonce === 0) {
-        const entryCount = await recordPracticeCategoryEntry(storageUserId);
-        setClearTipEligible(entryCount <= PRACTICE_CLEAR_TIP_ENTRY_LIMIT);
+      // The tip itself only renders on the first question of that entry, and only
+      // All can clear — so Wrong / Mastered sets must not spend an entry.
+      if (questionPool === 'all') {
+        if (reloadNonce === 0) {
+          const entryCount = await recordPracticeCategoryEntry(storageUserId);
+          setClearTipEligible(entryCount <= PRACTICE_CLEAR_TIP_ENTRY_LIMIT);
+        } else {
+          const entryCount = await getPracticeCategoryEntryCount(storageUserId);
+          setClearTipEligible(entryCount <= PRACTICE_CLEAR_TIP_ENTRY_LIMIT);
+        }
       } else {
-        const entryCount = await getPracticeCategoryEntryCount(storageUserId);
-        setClearTipEligible(entryCount <= PRACTICE_CLEAR_TIP_ENTRY_LIMIT);
+        setClearTipEligible(false);
       }
 
       let loadedQuestions: Question[] = [];
 
       try {
-        if (wrongQuestionsOnly && !isGuestMode && user) {
-          const fetchCap = Math.max(totalQuestions * 4, 120);
-          const { data: wrongQuestions, error: wrongError } = await getAllWrongQuestions(
-            user.id,
-            fetchCap
-          );
-          if (wrongError) throw wrongError;
-          let pool = (wrongQuestions ?? []).filter((q) => !clearedIds.has(q.id));
+        if (
+          (questionPool === 'wrong' || questionPool === 'mastered') &&
+          !isGuestMode &&
+          user
+        ) {
+          // Same limit Settings counts against, so the max it shows can always be dealt.
+          const { data: poolSource, error: poolError } =
+            questionPool === 'wrong'
+              ? await getAllWrongQuestions(user.id, PRACTICE_POOL_FETCH_LIMIT)
+              : await getAllMasteredQuestions(user.id, PRACTICE_POOL_FETCH_LIMIT);
+          if (poolError) throw poolError;
+          // Practice clears are scoped to All, so they don't shrink these pools.
+          let pool = poolSource ?? [];
           if (storyPracticeCategory) {
             pool = pool.filter((q) => q.category === storyPracticeCategory);
           }
           pool = pool.filter((q) => difficultySet.has(q.difficulty));
           loadedQuestions = shuffleArray(pool).slice(0, totalQuestions);
           if (loadedQuestions.length === 0) {
-            if (wrongQuestions && wrongQuestions.length > 0) {
+            if (poolSource && poolSource.length > 0) {
               setLoadError(
-                'It seems as if there are no wrong questions for this category in your selected difficulties. Change settings or practice more in this category!'
+                questionPool === 'wrong'
+                  ? 'It seems as if there are no wrong questions for this category in your selected difficulties. Change settings or practice more in this category!'
+                  : 'No mastered questions match this category and difficulty. Change settings or master more here first.'
               );
             } else {
-              setLoadError('You have no wrong questions to review! Try Challenge Mode first.');
+              setLoadError(
+                questionPool === 'wrong'
+                  ? 'You have no wrong questions to review! Try Challenge Mode first.'
+                  : 'You have no mastered questions yet. Master some in Challenge or Review first.'
+              );
             }
             setIsLoading(false);
             return;
@@ -254,6 +286,7 @@ export function PracticeGameScreen({
 
         setQuestions(loadedQuestions);
         setStartedSetSize(loadedQuestions.length);
+        setRequestedSetSize(totalQuestions);
         setIsLoading(false);
         setStatusText('Ready...');
       } catch (error) {
@@ -366,7 +399,7 @@ export function PracticeGameScreen({
     fullTextRef.current = currentQuestion.question_text;
 
     // Check if this question was previously answered wrong (only when profile scoring applies)
-    if (!isWrongQuestionsMode && !isGuestMode) {
+    if (practicePool === 'all' && !isGuestMode) {
       const user = await getCurrentUser();
       if (user) {
         const { data: wasWrong } = await isQuestionWrong(user.id, currentQuestion.id);
@@ -628,14 +661,16 @@ export function PracticeGameScreen({
           <Text style={styles.gameOverTitle}>Practice Complete!</Text>
 
           <View style={styles.statsRow}>
-            <View style={[styles.statCard, styles.statCardMastered]}>
-              <View style={styles.statNumberBox}>
-                <Text style={[styles.statNumber, styles.statNumberMastered]}>
-                  {clearedThisSession}
-                </Text>
+            {practicePool === 'all' && (
+              <View style={[styles.statCard, styles.statCardMastered]}>
+                <View style={styles.statNumberBox}>
+                  <Text style={[styles.statNumber, styles.statNumberMastered]}>
+                    {clearedThisSession}
+                  </Text>
+                </View>
+                <Text style={styles.statLabel}>Cleared</Text>
               </View>
-              <Text style={styles.statLabel}>Cleared</Text>
-            </View>
+            )}
             <View style={[styles.statCard, styles.statCardWrong]}>
               <View style={styles.statNumberBox}>
                 <Text style={[styles.statNumber, styles.statNumberWrong, styles.statNumberFraction]}>
@@ -725,9 +760,17 @@ export function PracticeGameScreen({
             )}
         </View>
         <View style={styles.headerColRight}>
-          <Text style={styles.headerCount}>★ {clearedThisSession} cleared</Text>
+          {practicePool === 'all' && (
+            <Text style={styles.headerCount}>★ {clearedThisSession} cleared</Text>
+          )}
         </View>
       </View>
+
+      {startedSetSize > 0 && startedSetSize < requestedSetSize && (
+        <Text style={styles.shortSetNote}>
+          {startedSetSize} of {requestedSetSize} available here
+        </Text>
+      )}
 
       {/* Game Area */}
       <FitScrollView
@@ -746,7 +789,7 @@ export function PracticeGameScreen({
 
         {/* Question Box */}
         <View style={styles.questionBox}>
-          {isPreviouslyWrong && !isWrongQuestionsMode && !isGuestMode && (
+          {isPreviouslyWrong && practicePool === 'all' && !isGuestMode && (
             <View style={styles.previouslyWrongIndicator}>
               <Text style={styles.previouslyWrongText}>Previously Incorrect</Text>
             </View>
@@ -828,7 +871,7 @@ export function PracticeGameScreen({
               <Text style={styles.nextBtnText}>Next Question →</Text>
             </TouchableOpacity>
 
-            {lastAnswerCorrect && (
+            {lastAnswerCorrect && practicePool === 'all' && (
               <View style={styles.starWrap}>
                 <TouchableOpacity
                   onPressIn={handleStarPressIn}
@@ -983,6 +1026,15 @@ const baseStyles = StyleSheet.create({
     fontSize: 14,
     color: '#6a6a6a',
     fontWeight: '500',
+  },
+  shortSetNote: {
+    fontSize: 12,
+    color: '#8a6a3a',
+    fontStyle: 'italic',
+    letterSpacing: 0.1,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 4,
   },
   headerTimerText: {
     fontSize: 18,

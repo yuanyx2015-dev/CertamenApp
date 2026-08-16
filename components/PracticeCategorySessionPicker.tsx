@@ -7,6 +7,17 @@ import {
 } from 'react-native';
 import { Text } from '../lib/AppText';
 import { useIPadScaledStyles } from '../lib/layout';
+import { getCurrentUser } from '../services/authService';
+import {
+  getOrCreateUserSettings,
+  normalizePracticeDifficulties,
+  normalizePracticeQuestionPool,
+  type PracticeQuestionPool,
+} from '../services/userSettingsService';
+import {
+  countPoolByCategory,
+  fetchPracticePoolQuestions,
+} from '../services/practicePoolService';
 const PRACTICE_CATEGORIES: { key: string; label: string }[] = [
   { key: 'mythology', label: 'Mythology' },
   { key: 'history', label: 'History' },
@@ -16,7 +27,16 @@ const PRACTICE_CATEGORIES: { key: string; label: string }[] = [
   { key: 'living-latin', label: 'Living Latin' },
 ];
 
-function CategoryBox({ label, onPress }: { label: string; onPress: () => void }) {
+function CategoryBox({
+  label,
+  count,
+  onPress,
+}: {
+  label: string;
+  /** Wrong / Mastered pool count at the selected difficulties; null in All. */
+  count: number | null;
+  onPress: () => void;
+}) {
   const styles = useIPadScaledStyles(baseStyles);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const bgColorAnim = React.useRef(new Animated.Value(0)).current;
@@ -50,6 +70,11 @@ function CategoryBox({ label, onPress }: { label: string; onPress: () => void })
       >
         <Animated.View style={[styles.categoryButton, { backgroundColor }]}>
           <Text style={styles.categoryLabel}>{label}</Text>
+          {count !== null && (
+            <Text style={[styles.categoryCount, count === 0 && styles.categoryCountEmpty]}>
+              {count === 0 ? 'none available' : `${count} available`}
+            </Text>
+          )}
         </Animated.View>
       </TouchableOpacity>
     </Animated.View>
@@ -64,12 +89,58 @@ type NavigateFn = (
 
 export function PracticeCategorySessionPicker({ onNavigate }: { onNavigate?: NavigateFn }) {
   const styles = useIPadScaledStyles(baseStyles);
+  const [pool, setPool] = React.useState<PracticeQuestionPool>('all');
+  const [counts, setCounts] = React.useState<Record<string, number> | null>(null);
+
+  // Counts only mean something for the per-user Wrong / Mastered lists, so All
+  // shows plain tiles and skips the fetch entirely.
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      const user = await getCurrentUser();
+      if (!user) {
+        if (!cancelled) {
+          setPool('all');
+          setCounts(null);
+        }
+        return;
+      }
+
+      const { data: settings } = await getOrCreateUserSettings(user.id);
+      const activePool = normalizePracticeQuestionPool(
+        settings?.practice_question_pool,
+        !!settings?.wrong_questions_only
+      );
+      if (cancelled) return;
+      setPool(activePool);
+
+      if (activePool === 'all') {
+        setCounts(null);
+        return;
+      }
+
+      const difficulties = normalizePracticeDifficulties(
+        settings?.practice_session_difficulty
+      );
+      const { data, error } = await fetchPracticePoolQuestions(user.id, activePool);
+      if (cancelled) return;
+      setCounts(error ? null : countPoolByCategory(data, difficulties));
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <View style={styles.grid}>
       {PRACTICE_CATEGORIES.map(({ key, label }) => (
         <CategoryBox
           key={key}
           label={label}
+          count={pool === 'all' || !counts ? null : (counts[key] ?? 0)}
           onPress={() => onNavigate?.('practice-game', key)}
         />
       ))}
@@ -108,5 +179,16 @@ const baseStyles = StyleSheet.create({
     letterSpacing: 0.2,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  categoryCount: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#8a6a3a',
+    letterSpacing: 0.1,
+    textAlign: 'center',
+  },
+  categoryCountEmpty: {
+    color: '#a8681f',
+    fontStyle: 'italic',
   },
 });

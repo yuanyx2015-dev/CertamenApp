@@ -4,6 +4,9 @@ import { clearPracticeLocalData } from './practiceClearedService';
 
 export type PracticeSessionDifficulty = 'easy' | 'medium' | 'hard';
 
+/** Practice pool picker: the whole bank, or only the user's wrong / mastered lists. */
+export type PracticeQuestionPool = 'all' | 'wrong' | 'mastered';
+
 /** Canonical order for Practice difficulty multi-select. */
 export const PRACTICE_DIFFICULTY_OPTIONS: PracticeSessionDifficulty[] = [
   'easy',
@@ -15,6 +18,8 @@ export interface UserSettings {
   user_id: string;
   num_tossups: number;
   wrong_questions_only: boolean;
+  /** Practice pool: all / wrong / mastered. Legacy rows only have wrong_questions_only. */
+  practice_question_pool?: PracticeQuestionPool;
   /** One or more difficulties (never empty after normalize). Legacy single string is migrated. */
   practice_session_difficulty?: PracticeSessionDifficulty | PracticeSessionDifficulty[];
   /** Seconds to buzz after the tossup finishes typing (Practice). */
@@ -114,6 +119,15 @@ export const FURTHER_ADJUSTMENT_DEFAULTS = {
   reading_speed_multiplier: DEFAULT_READING_SPEED_MULTIPLIER,
 } as const;
 
+/** Resolve pool from the new field, falling back to the old boolean. */
+export function normalizePracticeQuestionPool(
+  pool: UserSettings['practice_question_pool'],
+  wrongOnly: boolean
+): PracticeQuestionPool {
+  if (pool === 'all' || pool === 'wrong' || pool === 'mastered') return pool;
+  return wrongOnly ? 'wrong' : 'all';
+}
+
 /** Normalize stored difficulty to a non-empty unique list in easy → hard order. */
 export function normalizePracticeDifficulties(
   value: UserSettings['practice_session_difficulty']
@@ -157,6 +171,7 @@ const getDefaultSettings = (userId: string): UserSettings => ({
   user_id: userId,
   num_tossups: 20,
   wrong_questions_only: false,
+  practice_question_pool: 'all',
   practice_session_difficulty: ['easy'],
   pre_buzz_seconds: DEFAULT_PRE_BUZZ_SECONDS,
   answer_seconds: DEFAULT_ANSWER_SECONDS,
@@ -170,8 +185,14 @@ const getDefaultSettings = (userId: string): UserSettings => ({
 });
 
 function normalizeParsedSettings(data: UserSettings): UserSettings {
+  const practice_question_pool = normalizePracticeQuestionPool(
+    data.practice_question_pool,
+    !!data.wrong_questions_only
+  );
   return {
     ...data,
+    practice_question_pool,
+    wrong_questions_only: practice_question_pool === 'wrong',
     practice_session_difficulty: normalizePracticeDifficulties(
       data.practice_session_difficulty
     ),

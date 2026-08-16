@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import {
   View,
   TextInput,
-  Switch,
   TouchableOpacity,
   StyleSheet,
   Animated,
@@ -21,7 +20,9 @@ import {
   updateSetting,
   updateUserSettings,
   type PracticeSessionDifficulty,
+  type PracticeQuestionPool,
   normalizePracticeDifficulties,
+  normalizePracticeQuestionPool,
   PRACTICE_DIFFICULTY_OPTIONS,
   DEFAULT_PRE_BUZZ_SECONDS,
   DEFAULT_ANSWER_SECONDS,
@@ -38,7 +39,13 @@ import {
   formatReadingSpeedLabel,
   parseTimerSecondsInput,
 } from '../services/userSettingsService';
-import { getAllWrongQuestions } from '../services/questionReviewService';
+import {
+  categoriesShortOfSetSize,
+  countPoolAtDifficulties,
+  fetchPracticePoolQuestions,
+  PRACTICE_POOL_CATEGORIES,
+  type PracticePoolQuestion,
+} from '../services/practicePoolService';
 import { FitScrollView } from './FitScrollView';
 import { useIPadScaledStyles } from '../lib/layout';
 
@@ -57,6 +64,28 @@ function DifficultyCheckMark() {
         strokeLinejoin="round"
         fill="none"
       />
+    </Svg>
+  );
+}
+
+/** Warning triangle for pool/difficulty combos a category can't fill. */
+function WarningTriangleIcon() {
+  return (
+    <Svg width={17} height={17} viewBox="0 0 17 17">
+      <Path
+        d="M8.5 2.1 L15.6 14.6 H1.4 Z"
+        stroke="#a8681f"
+        strokeWidth={1.4}
+        strokeLinejoin="round"
+        fill="rgba(201, 169, 97, 0.25)"
+      />
+      <Path
+        d="M8.5 6.2 V10.3"
+        stroke="#a8681f"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+      />
+      <Path d="M8.5 12.3 V12.4" stroke="#a8681f" strokeWidth={1.9} strokeLinecap="round" />
     </Svg>
   );
 }
@@ -283,11 +312,13 @@ export function SettingsScreen({
   isGuestMode?: boolean;
 }) {
   const styles = useIPadScaledStyles(baseStyles);
-  const [wrongQuestionsOnly, setWrongQuestionsOnly] = React.useState(false);
+  const [questionPool, setQuestionPool] = React.useState<PracticeQuestionPool>('all');
   const [numTossups, setNumTossups] = React.useState(20);
   const [isLoading, setIsLoading] = React.useState(true);
   const [userId, setUserId] = React.useState<string | null>(null);
-  const [wrongQuestionCount, setWrongQuestionCount] = React.useState(0);
+  // null = not loaded or the fetch failed, so counts are unknown rather than zero.
+  const [wrongPool, setWrongPool] = React.useState<PracticePoolQuestion[] | null>(null);
+  const [masteredPool, setMasteredPool] = React.useState<PracticePoolQuestion[] | null>(null);
   const [practiceSessionDifficulties, setPracticeSessionDifficulties] =
     React.useState<PracticeSessionDifficulty[]>(['easy']);
   const [preBuzzSeconds, setPreBuzzSeconds] = React.useState(DEFAULT_PRE_BUZZ_SECONDS);
@@ -311,7 +342,11 @@ export function SettingsScreen({
       setUserId(userIdToUse);
       const { data: settings, error } = await getOrCreateUserSettings(userIdToUse);
       if (settings && !error) {
-        setWrongQuestionsOnly(settings.wrong_questions_only);
+        const pool = normalizePracticeQuestionPool(
+          settings.practice_question_pool,
+          settings.wrong_questions_only
+        );
+        setQuestionPool(pool);
         setNumTossups(settings.num_tossups);
         setPracticeSessionDifficulties(
           normalizePracticeDifficulties(settings.practice_session_difficulty)
@@ -325,12 +360,14 @@ export function SettingsScreen({
         setReadingSpeed(clampReadingSpeedMultiplier(settings.reading_speed_multiplier));
       }
       
-      // Fetch wrong question count (only for authenticated users)
+      // Wrong / mastered pools drive the exact set-size max (only for signed-in users).
       if (!isGuestMode && user) {
-        const { data: wrongQuestions } = await getAllWrongQuestions(user.id, 1000);
-        if (wrongQuestions) {
-          setWrongQuestionCount(wrongQuestions.length);
-        }
+        const [wrongRes, masteredRes] = await Promise.all([
+          fetchPracticePoolQuestions(user.id, 'wrong'),
+          fetchPracticePoolQuestions(user.id, 'mastered'),
+        ]);
+        setWrongPool(wrongRes.error ? null : (wrongRes.data ?? []));
+        setMasteredPool(masteredRes.error ? null : (masteredRes.data ?? []));
       }
     }
     setIsLoading(false);
@@ -343,38 +380,101 @@ export function SettingsScreen({
     loadSettingsData();
   }, [loadSettingsData]);
 
-  // Handle toggle change and save to database
-  const handleWrongQuestionsToggle = async (value: boolean) => {
-    // A wrong-questions-only session needs at least one wrong question, otherwise
-    // the game would load an empty set. Block enabling it and explain why.
-    if (value && wrongQuestionCount === 0) {
+  const poolQuestionsFor = (pool: PracticeQuestionPool): PracticePoolQuestion[] | null =>
+    pool === 'wrong' ? wrongPool : pool === 'mastered' ? masteredPool : null;
+
+  /** Questions this pool can actually serve at the checked difficulties. */
+  const availableFor = (
+    pool: PracticeQuestionPool,
+    difficulties: PracticeSessionDifficulty[]
+  ): number | null => {
+    const questions = poolQuestionsFor(pool);
+    if (!questions) return null;
+    return countPoolAtDifficulties(questions, difficulties);
+  };
+
+  const setSizeBoundsFor = (
+    pool: PracticeQuestionPool,
+    difficulties: PracticeSessionDifficulty[]
+  ) => {
+    const available = availableFor(pool, difficulties);
+    if (available === null) return { min: 5, max: 50 };
+    const max = Math.min(available, 50);
+    return { min: Math.min(5, max), max };
+  };
+
+  /** The pool matters here but its contents never arrived — don't report zero. */
+  const poolLoadFailed =
+    !isGuestMode && questionPool !== 'all' && poolQuestionsFor(questionPool) === null;
+
+  const poolAvailable = availableFor(questionPool, practiceSessionDifficulties);
+  const { max: setSizeMax } = setSizeBoundsFor(questionPool, practiceSessionDifficulties);
+  const shortCategories = categoriesShortOfSetSize(
+    poolQuestionsFor(questionPool),
+    practiceSessionDifficulties,
+    numTossups
+  );
+
+  const persistSetSize = async (value: number) => {
+    setNumTossups(value);
+    if (userId) {
+      await updateSetting(userId, 'num_tossups', value);
+    }
+  };
+
+  /**
+   * Keep the size the user picked; only move it when the pool genuinely can't
+   * serve it. A pool with nothing at these difficulties is left alone, since the
+   * helper text and the load popup already explain that case.
+   */
+  const clampSetSize = async (
+    pool: PracticeQuestionPool,
+    difficulties: PracticeSessionDifficulty[]
+  ) => {
+    const { min, max } = setSizeBoundsFor(pool, difficulties);
+    if (max <= 0) return;
+    if (numTossups > max) await persistSetSize(max);
+    else if (numTossups < min) await persistSetSize(min);
+  };
+
+  const applyPoolChange = async (pool: PracticeQuestionPool) => {
+    setQuestionPool(pool);
+    if (userId) {
+      await updateUserSettings(userId, {
+        practice_question_pool: pool,
+        wrong_questions_only: pool === 'wrong',
+      });
+    }
+    await clampSetSize(pool, practiceSessionDifficulties);
+  };
+
+  const handleQuestionPoolSelect = async (pool: PracticeQuestionPool) => {
+    if (pool === questionPool) return;
+    const requested = pool === 'wrong' ? wrongPool : pool === 'mastered' ? masteredPool : null;
+    if (pool !== 'all' && requested === null) {
       Alert.alert(
-        'No wrong questions yet',
-        'You have no wrong questions to review right now. Practice or take a Challenge set first.'
+        'Couldn’t load your questions',
+        'Your ' +
+          pool +
+          ' questions didn’t load, so this pool isn’t available yet. Check your connection and reopen Settings.'
       );
       return;
     }
-    setWrongQuestionsOnly(value);
-    
-    if (userId) {
-      await updateSetting(userId, 'wrong_questions_only', value);
+    if (pool === 'wrong' && requested?.length === 0) {
+      Alert.alert(
+        'No wrong questions yet',
+        'You have no wrong questions to review right now. Take a Challenge set first.'
+      );
+      return;
     }
-
-    // Auto-adjust number of questions when toggling
-    if (value && wrongQuestionCount > 0) {
-      // When toggling ON: set to wrong question count (capped at 50)
-      const newNumQuestions = Math.min(wrongQuestionCount, 50);
-      setNumTossups(newNumQuestions);
-      if (userId) {
-        await updateSetting(userId, 'num_tossups', newNumQuestions);
-      }
-    } else if (!value && numTossups < 5) {
-      // When toggling OFF: ensure minimum is 5
-      setNumTossups(5);
-      if (userId) {
-        await updateSetting(userId, 'num_tossups', 5);
-      }
+    if (pool === 'mastered' && requested?.length === 0) {
+      Alert.alert(
+        'No mastered questions yet',
+        'Master questions in Challenge or Review first, then you can drill them here.'
+      );
+      return;
     }
+    await applyPoolChange(pool);
   };
 
   // Multi-select difficulties; never allow zero checked.
@@ -390,20 +490,15 @@ export function SettingsScreen({
     const next = PRACTICE_DIFFICULTY_OPTIONS.filter((d) => selected.has(d));
     setPracticeSessionDifficulties(next);
     await updateSetting(userId, 'practice_session_difficulty', next);
+
+    // Narrowing difficulty can strand a set size the pool can no longer fill.
+    await clampSetSize(questionPool, next);
   };
 
   const handleNumTossupsChange = async (newValue: number) => {
-    const minQuestions =
-      wrongQuestionsOnly ? Math.min(5, wrongQuestionCount || 1) : 5;
-    const maxQuestions =
-      wrongQuestionsOnly ? Math.min(wrongQuestionCount, 50) : 50;
-    // Clamp between minQuestions and maxQuestions
-    const clampedValue = Math.max(minQuestions, Math.min(maxQuestions, newValue));
-    setNumTossups(clampedValue);
-    
-    if (userId) {
-      await updateSetting(userId, 'num_tossups', clampedValue);
-    }
+    const { min, max } = setSizeBoundsFor(questionPool, practiceSessionDifficulties);
+    if (max <= 0) return;
+    await persistSetSize(Math.max(min, Math.min(max, newValue)));
   };
 
   const handlePreBuzzSecondsChange = async (newValue: number) => {
@@ -512,32 +607,83 @@ export function SettingsScreen({
             </TouchableOpacity>
           </View>
         </View>
-        {wrongQuestionsOnly && (
+        {poolLoadFailed && (
+          <TouchableOpacity
+            style={styles.poolWarningRow}
+            onPress={loadSettingsData}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+          >
+            <WarningTriangleIcon />
+            <Text style={styles.poolWarningText}>
+              Couldn’t load your {questionPool} questions, so the limit below may be off. Tap to
+              retry.
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {!poolLoadFailed && poolAvailable !== null && (
           <Text style={styles.helperText}>
-            Max: {Math.min(wrongQuestionCount, 50)} (based on your wrong questions)
+            {poolAvailable === 0
+              ? `No ${questionPool} questions at these difficulties`
+              : `Max: ${setSizeMax} of ${poolAvailable} ${questionPool} at these difficulties`}
           </Text>
         )}
 
-        <>
-          <View style={styles.toggleRow}>
-            <Text style={[styles.optionText, isGuestMode && styles.disabledText]}>
-              Wrong questions only
+        {shortCategories.length > 0 && (
+          <View style={styles.poolWarningRow}>
+            <WarningTriangleIcon />
+            <Text style={styles.poolWarningText}>
+              {shortCategories.length === PRACTICE_POOL_CATEGORIES.length
+                ? `No category has ${numTossups} ${questionPool} questions at these difficulties. Change the settings to practice a category.`
+                : `${shortCategories.length} of ${PRACTICE_POOL_CATEGORIES.length} categories have fewer than ${numTossups} ${questionPool} questions at these difficulties. Change the settings to practice those categories.`}
             </Text>
-            <Switch
-              value={wrongQuestionsOnly}
-              onValueChange={handleWrongQuestionsToggle}
-              trackColor={{ false: '#d4d4d4', true: '#c9a961' }}
-              thumbColor={wrongQuestionsOnly ? '#d4b76a' : '#f4f3f4'}
-              ios_backgroundColor="#d4d4d4"
-              disabled={isGuestMode}
-            />
+          </View>
+        )}
+
+        <View style={styles.poolSection}>
+          <Text style={[styles.sectionTitle, isGuestMode && styles.disabledText]}>
+            Question pool
+          </Text>
+          <Text style={styles.difficultyHint}>Choose one</Text>
+          <View style={styles.poolRow}>
+            {(
+              [
+                { id: 'all' as const, label: 'All' },
+                { id: 'wrong' as const, label: 'Wrong' },
+                { id: 'mastered' as const, label: 'Mastered' },
+              ] as const
+            ).map(({ id, label }) => {
+              const selected = questionPool === id;
+              return (
+                <TouchableOpacity
+                  key={id}
+                  style={[styles.poolChip, selected && styles.poolChipSelected]}
+                  onPress={() => handleQuestionPoolSelect(id)}
+                  activeOpacity={0.75}
+                  disabled={isGuestMode}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected, disabled: isGuestMode }}
+                >
+                  <Text
+                    style={[
+                      styles.poolChipLabel,
+                      selected && styles.poolChipLabelSelected,
+                      isGuestMode && styles.disabledText,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
           {isGuestMode && (
             <Text style={styles.guestHelperText}>
-              Sign in to save missed questions and use Wrong questions only
+              Sign in to practice from Wrong or Mastered lists
             </Text>
           )}
-        </>
+        </View>
 
         <View style={styles.difficultySection}>
             <Text style={styles.sectionTitle}>Difficulty</Text>
@@ -944,6 +1090,60 @@ const baseStyles = StyleSheet.create({
     marginTop: 28,
     alignItems: 'center',
     paddingBottom: 8,
+  },
+  poolWarningRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: -4,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(168, 104, 31, 0.35)',
+    backgroundColor: 'rgba(201, 169, 97, 0.14)',
+  },
+  poolWarningText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#7a5320',
+    letterSpacing: 0.1,
+  },
+  poolSection: {
+    gap: 8,
+    marginTop: 4,
+  },
+  poolRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  poolChip: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(120, 120, 120, 0.35)',
+    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+  },
+  poolChipSelected: {
+    borderColor: '#b8954a',
+    backgroundColor: 'rgba(201, 169, 97, 0.35)',
+  },
+  poolChipLabel: {
+    fontSize: 15,
+    color: '#3a3a3a',
+    letterSpacing: 0.15,
+    fontWeight: '500',
+  },
+  poolChipLabelSelected: {
+    fontWeight: '600',
+    color: '#5a4a28',
   },
   difficultySection: {
     gap: 12,
