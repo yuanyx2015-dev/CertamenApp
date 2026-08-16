@@ -52,6 +52,14 @@ import { useIPadScaledStyles } from '../lib/layout';
 /** Half thumb width — insets the rail so end thumbs aren't clipped. */
 const READING_SPEED_THUMB_INSET = 10;
 
+/** Main Practice Settings defaults (set size / pool / difficulty). */
+const PRACTICE_SESSION_DEFAULTS = {
+  num_tossups: 5,
+  practice_question_pool: 'all' as const,
+  practice_session_difficulty: ['easy'] as PracticeSessionDifficulty[],
+  wrong_questions_only: false,
+};
+
 /** Crisp checkbox mark — SVG so Spectral doesn’t shrink/offset a text “✓”. */
 function DifficultyCheckMark() {
   return (
@@ -556,6 +564,15 @@ export function SettingsScreen({
     }, 120);
   };
 
+  const handleResetPracticeSession = async () => {
+    setNumTossups(PRACTICE_SESSION_DEFAULTS.num_tossups);
+    setQuestionPool(PRACTICE_SESSION_DEFAULTS.practice_question_pool);
+    setPracticeSessionDifficulties(PRACTICE_SESSION_DEFAULTS.practice_session_difficulty);
+    if (userId) {
+      await updateUserSettings(userId, { ...PRACTICE_SESSION_DEFAULTS });
+    }
+  };
+
   const handleResetFurtherAdjustments = async () => {
     setPreBuzzSeconds(FURTHER_ADJUSTMENT_DEFAULTS.pre_buzz_seconds);
     setAnswerSeconds(FURTHER_ADJUSTMENT_DEFAULTS.answer_seconds);
@@ -566,6 +583,12 @@ export function SettingsScreen({
       await updateUserSettings(userId, { ...FURTHER_ADJUSTMENT_DEFAULTS });
     }
   };
+
+  const practiceSessionAtDefaults =
+    numTossups === PRACTICE_SESSION_DEFAULTS.num_tossups &&
+    questionPool === PRACTICE_SESSION_DEFAULTS.practice_question_pool &&
+    practiceSessionDifficulties.length === 1 &&
+    practiceSessionDifficulties[0] === 'easy';
 
   const furtherAtDefaults =
     preBuzzSeconds === FURTHER_ADJUSTMENT_DEFAULTS.pre_buzz_seconds &&
@@ -718,6 +741,28 @@ export function SettingsScreen({
                   </TouchableOpacity>
                 );
               })}
+            </View>
+            <View style={styles.resetPracticeWrap}>
+              <TouchableOpacity
+                style={[
+                  styles.resetPracticeButton,
+                  practiceSessionAtDefaults && styles.resetFurtherButtonDisabled,
+                ]}
+                onPress={handleResetPracticeSession}
+                activeOpacity={0.7}
+                disabled={practiceSessionAtDefaults}
+                accessibilityRole="button"
+                accessibilityLabel="Reset practice settings to default"
+              >
+                <Text
+                  style={[
+                    styles.resetFurtherButtonText,
+                    practiceSessionAtDefaults && styles.resetFurtherButtonTextDisabled,
+                  ]}
+                >
+                  Reset to default
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -1144,6 +1189,18 @@ const baseStyles = StyleSheet.create({
   poolChipLabelSelected: {
     fontWeight: '600',
     color: '#5a4a28',
+  },
+  resetPracticeWrap: {
+    alignItems: 'flex-end',
+    marginTop: -4,
+  },
+  resetPracticeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.35)',
   },
   difficultySection: {
     gap: 12,
