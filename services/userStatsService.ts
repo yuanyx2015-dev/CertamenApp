@@ -8,6 +8,11 @@ export interface UserStats {
   profile_id?: string;
   email?: string;
   score: number;
+  /**
+   * Legacy column from the score-based rank ladder. The rank shown in the app comes
+   * from the Challenge pools instead (`get_rank_stats` + `MASTERY_RANKS`), so this
+   * string is not displayed anywhere and may hold a stale name on older rows.
+   */
   rank: string;
   win_streak: number;
   /** Challenge Mode daily streak. Bumped at most once per calendar day. */
@@ -275,13 +280,6 @@ export const getOrCreateUserStats = async (userId: string) => {
     // Other error occurred
     console.error('Error getting user stats:', error);
     return { data: null, error };
-  }
-
-  // Fix old rank names (convert "Novice" or any invalid rank to "Miles")
-  if (data && (data.rank === 'Novice' || !['Miles', 'Decanus', 'Optio', 'Centurio', 'Primus Pilus', 'Praefectus Castrorum', 'Legatus Legionis'].includes(data.rank))) {
-    console.log('Fixing old rank name:', data.rank, '-> Miles');
-    await updateUserScore(userId, data.score, 'Miles');
-    data.rank = 'Miles';
   }
 
   return { data, error: null };
