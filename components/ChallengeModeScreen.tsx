@@ -43,12 +43,6 @@ function RankInfoIcon() {
   );
 }
 
-/**
- * Trial polish for the All-ranks list (current emphasized; done/locked quieter).
- * Set to false to restore the previous flat list with zero other changes.
- */
-const USE_RANK_HIERARCHY_UI = true;
-
 export function ChallengeModeScreen({
   isAuthenticated,
   isGuestMode,
@@ -240,14 +234,13 @@ export function ChallengeModeScreen({
           const p = rankProgressFromStats(s);
           const isCurrentRank = idx === rankIdx;
           const isCompletedRank = idx < rankIdx;
-          const hierarchy = USE_RANK_HIERARCHY_UI;
 
           return (
             <View
               key={name}
               style={[
                 styles.rankRow,
-                hierarchy && isCurrentRank && styles.rankRowCurrent,
+                isCurrentRank && styles.rankRowCurrent,
               ]}
             >
               <View style={styles.rankRowHead}>
@@ -256,7 +249,7 @@ export function ChallengeModeScreen({
                     style={[
                       styles.rankRowName,
                       isCurrentRank && styles.rankRowNameCurrent,
-                      hierarchy && isCurrentRank && styles.rankRowNameCurrentHero,
+                      isCurrentRank && styles.rankRowNameCurrentHero,
                     ]}
                     numberOfLines={1}
                   >
@@ -272,17 +265,17 @@ export function ChallengeModeScreen({
                   >
                     <RankInfoIcon />
                   </TouchableOpacity>
-                  {hierarchy && isCurrentRank && (
+                  {isCurrentRank && (
                     <Text style={styles.rankRowBadge}>Current</Text>
                   )}
-                  {hierarchy && isCompletedRank && (
+                  {isCompletedRank && (
                     <Text style={styles.rankRowBadgeCompleted}>Completed</Text>
                   )}
                 </View>
                 <Text
                   style={[
                     styles.rankRowCaption,
-                    hierarchy && isCurrentRank && styles.rankRowCaptionCurrent,
+                    isCurrentRank && styles.rankRowCaptionCurrent,
                   ]}
                 >
                   {s ? `${inRank}/${total}` : '—'}
@@ -291,7 +284,7 @@ export function ChallengeModeScreen({
               <View
                 style={[
                   styles.progressTrackSmall,
-                  hierarchy && isCurrentRank && styles.progressTrackCurrent,
+                  isCurrentRank && styles.progressTrackCurrent,
                 ]}
               >
                 <View style={[styles.progressFill, { width: `${Math.round(p * 100)}%` }]} />
@@ -536,7 +529,6 @@ const baseStyles = StyleSheet.create({
   rankRow: {
     gap: 2,
   },
-  // Hierarchy trial styles — unused when USE_RANK_HIERARCHY_UI is false.
   rankRowCurrent: {
     marginVertical: 2,
     paddingHorizontal: 10,
