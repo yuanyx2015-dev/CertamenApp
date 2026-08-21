@@ -158,7 +158,19 @@ export function ChallengeModeScreen({
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.card, styles.rankCard]}>
-        <Text style={styles.rankLabel}>Current Rank</Text>
+        <View style={styles.rankCardTop}>
+          <Text style={styles.rankLabel}>Current Rank</Text>
+          <TouchableOpacity
+            style={styles.rankInfoBtn}
+            onPress={() => setInfoRankIdx(rankIdx)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel={`About ${rankName}`}
+            activeOpacity={0.7}
+          >
+            <RankInfoIcon />
+          </TouchableOpacity>
+        </View>
         <Text style={styles.rankName}>{rankName}</Text>
         <View style={styles.progressRow}>
           <View style={[styles.progressTrack, { flex: 1 }]}>
@@ -391,6 +403,11 @@ const baseStyles = StyleSheet.create({
   },
   rankCard: {
     gap: 8,
+  },
+  rankCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   rankLabel: {
     fontSize: 12,
