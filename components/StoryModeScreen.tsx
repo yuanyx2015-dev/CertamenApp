@@ -4,10 +4,23 @@ import {
   TouchableOpacity,
   StyleSheet
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { Text } from '../lib/AppText';
 import { PracticeCategorySessionPicker } from './PracticeCategorySessionPicker';
 import { FitScrollView } from './FitScrollView';
 import { useIPadScaledStyles } from '../lib/layout';
+
+/** Tiny gear for the Practice Settings button. */
+function SettingsGearIcon() {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24">
+      <Path
+        fill="#3a3a3a"
+        d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.3.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.04.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"
+      />
+    </Svg>
+  );
+}
 
 /**
  * Practice Mode hub: pick a category, then timed session using Practice settings.
@@ -36,6 +49,7 @@ export function StoryModeScreen({
             style={styles.settingsButton}
             onPress={() => onNavigate?.('settings-practice')}
           >
+            <SettingsGearIcon />
             <Text style={styles.settingsButtonText}>Settings</Text>
           </TouchableOpacity>
         </View>
@@ -80,6 +94,9 @@ const baseStyles = StyleSheet.create({
     zIndex: 2,
   },
   settingsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 20,
     paddingVertical: 11,
     backgroundColor: 'rgba(201, 169, 97, 0.12)',
