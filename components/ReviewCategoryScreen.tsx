@@ -61,7 +61,7 @@ function AnimatedCategoryButton({
   const backgroundColor = bgColorAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [
-      isEnabled ? 'rgba(201, 169, 97, 0.12)' : 'rgba(200, 200, 200, 0.3)',
+      isEnabled ? '#f0e6d3' : 'rgba(200, 200, 200, 0.3)',
       isEnabled ? 'rgba(201, 169, 97, 0.25)' : 'rgba(200, 200, 200, 0.3)'
     ],
   });
@@ -249,7 +249,7 @@ const baseStyles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 12,
@@ -294,7 +294,7 @@ const baseStyles = StyleSheet.create({
     marginTop: 24,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
+    backgroundColor: '#f0e6d3',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
     borderRadius: 12,

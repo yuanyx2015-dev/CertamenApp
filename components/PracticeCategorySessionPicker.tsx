@@ -57,7 +57,7 @@ function CategoryBox({
 
   const backgroundColor = bgColorAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(201, 169, 97, 0.12)', 'rgba(201, 169, 97, 0.25)'],
+    outputRange: ['#f0e6d3', 'rgba(201, 169, 97, 0.25)'],
   });
 
   return (
@@ -163,7 +163,7 @@ const baseStyles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 12,

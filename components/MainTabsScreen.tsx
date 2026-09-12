@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: 'rgba(201, 169, 97, 0.35)',
-    backgroundColor: 'rgba(245, 239, 227, 0.95)',
+    backgroundColor: '#f5efe3',
     paddingBottom: 6,
     paddingTop: 6,
     gap: 4,

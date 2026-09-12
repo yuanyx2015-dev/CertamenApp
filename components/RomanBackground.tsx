@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Text } from '../lib/AppText';
 import { LaurelBranches } from './LaurelBranches';
+import { ClothBands } from './ClothBands';
 import { MeanderBorder } from './MeanderBorder';
 import { LoginScreen } from './LoginScreen';
 import { MainTabsScreen, type MainTabId } from './MainTabsScreen';
@@ -343,6 +344,9 @@ export function RomanBackground() {
     <StreakConfettiProvider>
     <View style={styles.container}>
       <View style={styles.parchment} pointerEvents="none" />
+      <ClothBands
+        bottomInset={isReviewGame ? 164 : isGameScreen ? 128 : 118}
+      />
 
       {currentScreen !== 'login' && (
         <View
@@ -559,10 +563,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   contentContainerGame: {
-    paddingBottom: 64,
+    paddingBottom: 48,
+    paddingHorizontal: 0,
   },
   contentContainerReviewGame: {
-    paddingBottom: 72,
+    paddingBottom: 52,
+    paddingHorizontal: 0,
   },
   footerContainer: {
     position: 'absolute',

@@ -196,7 +196,7 @@ const baseStyles = StyleSheet.create({
   },
   signInBtn: {
     marginTop: 12,
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
+    backgroundColor: '#f0e6d3',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.55)',
     paddingHorizontal: 24,
@@ -210,7 +210,7 @@ const baseStyles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
     borderRadius: 12,

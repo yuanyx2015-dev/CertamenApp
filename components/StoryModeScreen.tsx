@@ -99,7 +99,7 @@ const baseStyles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 20,
     paddingVertical: 11,
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
+    backgroundColor: '#f0e6d3',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 16,

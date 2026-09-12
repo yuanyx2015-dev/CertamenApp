@@ -67,7 +67,7 @@ function AnimatedCardButton({
 
   const backgroundColor = bgColorAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(201, 169, 97, 0.12)', 'rgba(201, 169, 97, 0.25)'],
+    outputRange: ['#f0e6d3', 'rgba(201, 169, 97, 0.25)'],
   });
 
   return (
@@ -537,7 +537,7 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
     borderRadius: 12,
@@ -569,7 +569,7 @@ const baseStyles = StyleSheet.create({
   guestSignInBtn: {
     marginTop: 8,
     alignSelf: 'stretch',
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
+    backgroundColor: '#f0e6d3',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.55)',
     paddingHorizontal: 14,
@@ -619,7 +619,7 @@ const baseStyles = StyleSheet.create({
   progressTrack: {
     height: 9,
     borderRadius: 4.5,
-    backgroundColor: 'rgba(201, 169, 97, 0.18)',
+    backgroundColor: '#eedfc8',
     overflow: 'hidden',
   },
   progressFill: {
@@ -710,7 +710,7 @@ const baseStyles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
+    backgroundColor: '#f0e6d3',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
     alignItems: 'center',
@@ -760,7 +760,7 @@ const baseStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
+    backgroundColor: '#f0e6d3',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
     alignItems: 'center',
@@ -775,7 +775,7 @@ const baseStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(160, 31, 79, 0.08)',
+    backgroundColor: '#eeded7',
     borderWidth: 1,
     borderColor: 'rgba(160, 31, 79, 0.4)',
     alignItems: 'center',

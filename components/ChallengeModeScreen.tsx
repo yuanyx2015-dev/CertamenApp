@@ -375,7 +375,7 @@ const baseStyles = StyleSheet.create({
   },
   signInBtn: {
     marginTop: 12,
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
+    backgroundColor: '#f0e6d3',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.55)',
     paddingHorizontal: 24,
@@ -389,7 +389,7 @@ const baseStyles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
     borderRadius: 12,
@@ -437,13 +437,13 @@ const baseStyles = StyleSheet.create({
   progressTrack: {
     height: 10,
     borderRadius: 5,
-    backgroundColor: 'rgba(201, 169, 97, 0.18)',
+    backgroundColor: '#eedfc8',
     overflow: 'hidden',
   },
   progressTrackSmall: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(201, 169, 97, 0.18)',
+    backgroundColor: '#eedfc8',
     overflow: 'hidden',
     marginTop: 2,
   },
@@ -496,7 +496,7 @@ const baseStyles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
+    backgroundColor: '#f0e6d3',
     minWidth: 72,
     alignItems: 'center',
   },
@@ -553,7 +553,7 @@ const baseStyles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.65)',
-    backgroundColor: 'rgba(201, 169, 97, 0.16)',
+    backgroundColor: '#eee2ca',
     gap: 4,
   },
   rankRowHead: {
@@ -609,7 +609,7 @@ const baseStyles = StyleSheet.create({
     borderColor: 'rgba(138, 106, 58, 0.55)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    backgroundColor: '#faf6ef',
   },
   rankRowCaption: {
     fontSize: 12,

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
+import { GameHeaderFade } from './GameHeaderFade';
 import { getCurrentUser } from '../services/authService';
 import {
   bumpUserStreak,
@@ -728,6 +729,7 @@ export function ChallengeGameScreen({
   // ----- ACTIVE QUESTION -----
   const gameBody = (
     <>
+      <GameHeaderFade />
       <View style={styles.header}>
         <View style={styles.headerColLeft}>
           <Text style={styles.headerText}>{headerLabel}</Text>
@@ -909,37 +911,37 @@ export function ChallengeGameScreen({
   );
 
   return (
-    <View style={[styles.container, isIPad && styles.containerIPad]}>
+    <View style={styles.screen}>
       {isIPad ? (
         <IPadScaledPhoneColumn extraShrink={1.15}>
           <View style={styles.scaledGameBody}>
             {gameBody}
             <FeedbackOverlay ref={feedbackRef} />
           </View>
-          {exitFooter}
         </IPadScaledPhoneColumn>
       ) : (
-        <>
+        <View style={styles.container}>
           <View style={styles.scaledGameBody}>
             {gameBody}
             <FeedbackOverlay ref={feedbackRef} />
           </View>
-          {exitFooter}
-        </>
+        </View>
       )}
+      {exitFooter}
     </View>
   );
 }
 
 const baseStyles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
     flex: 1,
     width: '100%',
     maxWidth: 448,
     alignSelf: 'center',
-  },
-  containerIPad: {
-    maxWidth: '100%',
   },
   scaledGameBody: {
     flex: 1,
@@ -977,7 +979,7 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: 'rgba(245, 239, 227, 0.85)',
+    backgroundColor: '#f5efe3',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(201, 169, 97, 0.3)',
   },
@@ -1049,7 +1051,7 @@ const baseStyles = StyleSheet.create({
     width: 136,
     height: 136,
     borderRadius: 68,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: '#fdfcf9',
     borderWidth: 3,
     borderColor: '#c9a961',
     shadowColor: '#c9a961',
@@ -1077,7 +1079,7 @@ const baseStyles = StyleSheet.create({
     gap: 10,
   },
   questionBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
     borderRadius: 12,
@@ -1098,7 +1100,7 @@ const baseStyles = StyleSheet.create({
   },
   optionCard: {
     width: '48%',
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1.5,
     borderColor: 'rgba(201, 169, 97, 0.45)',
     borderRadius: 10,
@@ -1114,7 +1116,7 @@ const baseStyles = StyleSheet.create({
     lineHeight: 21,
   },
   optionCorrect: {
-    backgroundColor: 'rgba(72, 130, 88, 0.18)',
+    backgroundColor: '#d6dbca',
     borderColor: 'rgba(52, 120, 72, 0.75)',
     borderWidth: 2,
   },
@@ -1188,16 +1190,17 @@ const baseStyles = StyleSheet.create({
     letterSpacing: 0.1,
   },
   footer: {
-    paddingTop: 10,
-    paddingBottom: 12,
+    width: '100%',
+    paddingTop: 8,
+    paddingBottom: 10,
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: 'rgba(201, 169, 97, 0.25)',
-    backgroundColor: 'rgba(245, 239, 227, 0.85)',
+    backgroundColor: '#f5efe3',
   },
   footerReview: {
-    paddingTop: 10,
-    paddingBottom: 14,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
   footerChallengeWrap: {
     alignItems: 'center',
@@ -1214,7 +1217,7 @@ const baseStyles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: 'rgba(201, 169, 97, 0.14)',
+    backgroundColor: '#efe4cf',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.28)',
   },
@@ -1254,7 +1257,7 @@ const baseStyles = StyleSheet.create({
     marginBottom: 8,
   },
   summaryCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
     borderRadius: 12,
@@ -1296,7 +1299,7 @@ const baseStyles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
-    backgroundColor: 'rgba(201, 169, 97, 0.12)',
+    backgroundColor: '#f0e6d3',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.45)',
   },

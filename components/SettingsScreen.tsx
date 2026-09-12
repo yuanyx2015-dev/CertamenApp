@@ -291,7 +291,7 @@ function AnimatedButton({ label, onPress }: { label: string; onPress: () => void
 
   const backgroundColor = bgColorAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(255, 255, 255, 0.6)', 'rgba(201, 169, 97, 0.25)'],
+    outputRange: ['#fbf8f4', 'rgba(201, 169, 97, 0.25)'],
   });
 
   return (
@@ -993,7 +993,7 @@ const baseStyles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     justifyContent: 'center',
@@ -1021,7 +1021,7 @@ const baseStyles = StyleSheet.create({
     width: 46,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
     shadowColor: '#000',
@@ -1063,7 +1063,7 @@ const baseStyles = StyleSheet.create({
     paddingHorizontal: 28,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    backgroundColor: '#faf6ef',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
   },
@@ -1088,7 +1088,7 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 12,
@@ -1146,7 +1146,7 @@ const baseStyles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(168, 104, 31, 0.35)',
-    backgroundColor: 'rgba(201, 169, 97, 0.14)',
+    backgroundColor: '#efe4cf',
   },
   poolWarningText: {
     flex: 1,
@@ -1170,7 +1170,7 @@ const baseStyles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: 'rgba(120, 120, 120, 0.35)',
-    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    backgroundColor: '#faf6ef',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
@@ -1198,7 +1198,7 @@ const baseStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    backgroundColor: '#faf6ef',
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.35)',
   },
@@ -1234,7 +1234,7 @@ const baseStyles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 2,
     borderColor: 'rgba(120, 120, 120, 0.45)',
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#fbf8f4',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1293,7 +1293,7 @@ const readingSpeedSliderStyles = StyleSheet.create({
   track: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(201, 169, 97, 0.22)',
+    backgroundColor: '#ecd9be',
     position: 'relative',
     justifyContent: 'center',
     overflow: 'visible',
