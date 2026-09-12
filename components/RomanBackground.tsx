@@ -1,12 +1,9 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   AppState,
-  Animated,
-  Dimensions,
-  Image,
   type AppStateStatus
 } from 'react-native';
 import { Text } from '../lib/AppText';
@@ -28,7 +25,6 @@ import { StreakConfettiProvider } from './StreakConfetti';
 import { BrandIntroOverlay } from './BrandIntroOverlay';
 import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
 import { isIPad, isIPhone } from '../lib/layout';
-import { playHomeLogoTransition } from '../lib/playHomeLogoTransition';
 
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
@@ -48,14 +44,6 @@ export function RomanBackground() {
   const [logoPressed, setLogoPressed] = useState(false);
   /** Brand intro after login, cold start, or return from background. */
   const [showBrandIntro, setShowBrandIntro] = useState(false);
-  /** Header logo is mid-flight to Home — block every other tap until it lands. */
-  const [homeTransitioning, setHomeTransitioning] = useState(false);
-  const homeTransitioningRef = useRef(false);
-  const logoScale = useRef(new Animated.Value(1)).current;
-  const logoTranslateY = useRef(new Animated.Value(0)).current;
-  const appIconTranslateY = useRef(new Animated.Value(0)).current;
-  const restOpacity = useRef(new Animated.Value(1)).current;
-  const containerHeightRef = useRef(0);
   const pendingBrandIntroRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const isAuthenticatedRef = useRef(false);
@@ -146,44 +134,15 @@ export function RomanBackground() {
     }
   };
 
-  /** Logo tap: switch to Home immediately; the lockup animation covers the load. */
+  /** Logo / wreath tap: jump straight to Home. */
   const handleNavigateToHome = () => {
-    if (homeTransitioningRef.current) return;
-    homeTransitioningRef.current = true;
     setLogoPressed(false);
     if (currentScreen !== 'settings-practice') {
       previousScreen.current = currentScreen;
     }
     setMainTab('profile');
     setCurrentScreen('main');
-    setHomeTransitioning(true);
   };
-
-  useLayoutEffect(() => {
-    if (!homeTransitioning) return;
-
-    const containerH =
-      containerHeightRef.current || Dimensions.get('window').height;
-    // Aim the combined title + laurel lockup at the vertical center.
-    const brandFlyTop = isIPad ? 34 : 45;
-    const headerTop = isIPad ? 66 : 58;
-    const headerHeight = isIPad ? 160 : 128;
-    const flyHeight = headerTop - brandFlyTop + headerHeight;
-    const brandCenterY = brandFlyTop + flyHeight / 2;
-    const translateYToCenter = containerH / 2 - brandCenterY;
-
-    return playHomeLogoTransition({
-      logoScale,
-      logoTranslateY,
-      appIconTranslateY,
-      restOpacity,
-      translateYToCenter,
-      onComplete: () => {
-        homeTransitioningRef.current = false;
-        setHomeTransitioning(false);
-      },
-    });
-  }, [homeTransitioning, logoScale, logoTranslateY, appIconTranslateY, restOpacity]);
 
   const handleNavigate = (
     screen: string,
@@ -372,7 +331,7 @@ export function RomanBackground() {
       style={[
         styles.titleText,
         isIPad && styles.titleTextIPad,
-        logoPressed && !homeTransitioning && styles.logoPressed,
+        logoPressed && styles.logoPressed,
       ]}
       numberOfLines={1}
     >
@@ -382,12 +341,7 @@ export function RomanBackground() {
 
   return (
     <StreakConfettiProvider>
-    <View
-      style={styles.container}
-      onLayout={(e) => {
-        containerHeightRef.current = e.nativeEvent.layout.height;
-      }}
-    >
+    <View style={styles.container}>
       <View style={styles.parchment} pointerEvents="none" />
 
       {currentScreen !== 'login' && (
@@ -395,9 +349,8 @@ export function RomanBackground() {
           style={[
             styles.logoHomeWrap,
             isIPad && styles.logoHomeWrapIPad,
-            homeTransitioning && styles.logoHomeWrapHidden,
           ]}
-          pointerEvents={homeTransitioning ? 'none' : 'box-none'}
+          pointerEvents="box-none"
         >
           <TouchableOpacity
             style={styles.logoTitleHit}
@@ -405,7 +358,6 @@ export function RomanBackground() {
             onPressIn={() => setLogoPressed(true)}
             onPressOut={() => setLogoPressed(false)}
             activeOpacity={1}
-            disabled={homeTransitioning}
             accessibilityRole="button"
             accessibilityLabel="Home"
           >
@@ -418,7 +370,6 @@ export function RomanBackground() {
         style={[
           styles.headerContainer,
           isIPad && styles.headerContainerIPad,
-          homeTransitioning && styles.logoHomeWrapHidden,
         ]}
         pointerEvents="box-none"
       >
@@ -439,12 +390,11 @@ export function RomanBackground() {
             activeOpacity={1}
             accessibilityRole="button"
             accessibilityLabel="Home"
-            disabled={homeTransitioning}
           />
         )}
       </View>
 
-      <Animated.View
+      <View
         style={[
           styles.contentContainer,
           useCompactContentInset && styles.contentContainerCompact,
@@ -464,9 +414,7 @@ export function RomanBackground() {
             (isIPad
               ? styles.contentContainerCategoryQuestionsIPad
               : styles.contentContainerCategoryQuestions),
-          { opacity: restOpacity },
         ]}
-        pointerEvents={homeTransitioning ? 'none' : 'auto'}
       >
         {/* Main tabs / games manage their own iPad scale so footers & tabs stay visible. */}
         {isMainTabScreen || isGameScreen ? (
@@ -478,82 +426,18 @@ export function RomanBackground() {
             {renderScreen()}
           </IPadScaledPhoneColumn>
         )}
-      </Animated.View>
+      </View>
 
-      <Animated.View
+      <View
         style={[
           styles.footerContainer,
           isGameScreen && styles.footerContainerGame,
           isReviewGame && styles.footerContainerReviewGame,
-          { opacity: restOpacity },
         ]}
         pointerEvents="box-none"
       >
         <MeanderBorder />
-      </Animated.View>
-
-      {homeTransitioning && (
-        <View
-          style={styles.homeTransitionLayer}
-          pointerEvents="auto"
-          accessibilityViewIsModal
-          accessibilityLabel="Going to Home"
-        >
-          {/* App icon: opposite of screen fade — in as content leaves, out as Home returns. */}
-          <Animated.View
-            style={[
-              styles.appIconWrap,
-              {
-                opacity: restOpacity.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.38, 0],
-                }),
-                transform: [{ translateY: appIconTranslateY }],
-              },
-            ]}
-            pointerEvents="none"
-          >
-            <Image
-              source={require('../assets/icon.png')}
-              style={[styles.appIcon, isIPad && styles.appIconIPad]}
-              accessibilityIgnoresInvertColors
-            />
-          </Animated.View>
-
-          {/* Title + laurel fly together so the wreath stays part of the lockup. */}
-          <Animated.View
-            style={[
-              styles.brandFlyWrap,
-              isIPad && styles.brandFlyWrapIPad,
-              {
-                transform: [
-                  { translateY: logoTranslateY },
-                  { scale: logoScale },
-                ],
-              },
-            ]}
-            pointerEvents="none"
-          >
-            <View style={[styles.logoTitleHit, styles.brandFlyTitle]}>
-              <Text
-                face="brand"
-                style={[styles.titleText, isIPad && styles.titleTextIPad]}
-                numberOfLines={1}
-              >
-                CertamenPrep
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.brandFlyLaurel,
-                isIPad && styles.brandFlyLaurelIPad,
-              ]}
-            >
-              <LaurelBranches />
-            </View>
-          </Animated.View>
-        </View>
-      )}
+      </View>
 
       <BrandIntroOverlay
         visible={showBrandIntro}
@@ -584,62 +468,6 @@ const styles = StyleSheet.create({
   },
   logoHomeWrapIPad: {
     top: 34,
-  },
-  logoHomeWrapHidden: {
-    opacity: 0,
-  },
-  homeTransitionLayer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
-    elevation: 100,
-    overflow: 'visible',
-  },
-  appIconWrap: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 100,
-  },
-  appIcon: {
-    width: 220,
-    height: 220,
-    borderRadius: 48,
-  },
-  appIconIPad: {
-    width: 280,
-    height: 280,
-    borderRadius: 60,
-  },
-  /** Combined title + laurel lockup used only during the home transition. */
-  brandFlyWrap: {
-    position: 'absolute',
-    top: 45,
-    left: 0,
-    right: 0,
-    height: 141,
-    alignItems: 'center',
-    zIndex: 101,
-  },
-  brandFlyWrapIPad: {
-    top: 34,
-    height: 192,
-  },
-  brandFlyLaurel: {
-    position: 'absolute',
-    top: 13,
-    left: 0,
-    right: 0,
-    height: 128,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brandFlyLaurelIPad: {
-    top: 32,
-    height: 160,
-    transform: [{ scale: 1.35 }],
-  },
-  brandFlyTitle: {
-    zIndex: 2,
   },
   logoTitleHit: {
     paddingTop: 6,
