@@ -218,6 +218,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       return;
     }
 
+    setCustomAnswer(null);
     setIsLoadingCustom(true);
 
     const contextualQuestion = buildContextualTutorPrompt(
@@ -363,13 +364,21 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
                     </View>
                   ) : aiExplanation ? (
                     <>
-                      <ScrollView
+                      <View
                         style={styles.explanationScroll}
-                        contentContainerStyle={styles.explanationScrollContent}
-                        nestedScrollEnabled
+                        onStartShouldSetResponder={() => true}
                       >
-                        <Text style={styles.explanationText}>{aiExplanation}</Text>
-                      </ScrollView>
+                        <ScrollView
+                          style={styles.explanationScrollInner}
+                          contentContainerStyle={styles.explanationScrollContent}
+                          nestedScrollEnabled
+                          showsVerticalScrollIndicator
+                          persistentScrollbar
+                          scrollEventThrottle={16}
+                        >
+                          <Text style={styles.explanationText}>{aiExplanation}</Text>
+                        </ScrollView>
+                      </View>
                       
                       {/* Custom Question Input */}
                       <View style={styles.customQuestionContainer}>
@@ -414,25 +423,38 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
                               followUpMax <= 0
                             }
                           >
-                            <Text style={styles.askButtonText}>Ask</Text>
+                            {isLoadingCustom ? (
+                              <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                              <Text style={styles.askButtonText}>Ask</Text>
+                            )}
                           </TouchableOpacity>
                         </View>
                         
-                        {/* Custom Answer */}
                         {isLoadingCustom && (
                           <View style={styles.customAnswerLoading}>
                             <ActivityIndicator size="small" color="#c9a961" />
-                            <Text style={styles.customAnswerLoadingText}>Getting answer...</Text>
+                            <Text style={styles.customAnswerLoadingText}>
+                              AI tutor is thinking…
+                            </Text>
                           </View>
                         )}
-                        {customAnswer && (
+                        {!isLoadingCustom && customAnswer && (
                           <View style={styles.customAnswerBox}>
-                            <ScrollView
+                            <View
                               style={styles.customAnswerScroll}
-                              nestedScrollEnabled
+                              onStartShouldSetResponder={() => true}
                             >
-                              <Text style={styles.customAnswerText}>{customAnswer}</Text>
-                            </ScrollView>
+                              <ScrollView
+                                style={styles.customAnswerScrollInner}
+                                nestedScrollEnabled
+                                showsVerticalScrollIndicator
+                                persistentScrollbar
+                                scrollEventThrottle={16}
+                              >
+                                <Text style={styles.customAnswerText}>{customAnswer}</Text>
+                              </ScrollView>
+                            </View>
                           </View>
                         )}
                       </View>
@@ -626,13 +648,15 @@ const baseStyles = StyleSheet.create({
     color: '#6a6a6a',
     fontStyle: 'italic',
   },
-  /** Caps a long explanation so the card stays readable; the text scrolls inside. */
   explanationScroll: {
     maxHeight: 140,
     marginBottom: 10,
   },
+  explanationScrollInner: {
+    maxHeight: 140,
+  },
   explanationScrollContent: {
-    paddingRight: 4,
+    paddingRight: 8,
   },
   explanationText: {
     fontSize: 15,
@@ -667,6 +691,7 @@ const baseStyles = StyleSheet.create({
     color: '#3a3a3a',
   },
   askButton: {
+    minWidth: 64,
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: '#c9a961',
@@ -685,8 +710,14 @@ const baseStyles = StyleSheet.create({
   customAnswerLoading: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
+    gap: 10,
+    marginTop: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: '#c9a961',
   },
   customAnswerLoadingText: {
     fontSize: 14,
@@ -702,6 +733,9 @@ const baseStyles = StyleSheet.create({
     borderRadius: 6,
   },
   customAnswerScroll: {
+    maxHeight: 180,
+  },
+  customAnswerScrollInner: {
     maxHeight: 180,
   },
   customAnswerText: {

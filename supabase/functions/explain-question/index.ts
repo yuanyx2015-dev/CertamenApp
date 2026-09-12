@@ -29,6 +29,25 @@ function extractGeminiExplanation(aiResponse: Record<string, unknown>): string {
     : "Sorry, I could not generate an explanation."
 }
 
+function geminiFinishReason(aiResponse: Record<string, unknown>): string {
+  const candidates = aiResponse.candidates as
+    | Array<{ finishReason?: string }>
+    | undefined
+  return (candidates?.[0]?.finishReason ?? "").toUpperCase()
+}
+
+/** True when the paragraph looks like it ended on a sentence, not mid-thought. */
+function looksCompleteExplanation(text: string): boolean {
+  const t = text.trim()
+  if (t.length < 40) return false
+  return /[.!?]["'")\]]*$/.test(t)
+}
+
+function isTruncatedExplanation(finishReason: string, text: string): boolean {
+  if (finishReason === "MAX_TOKENS") return true
+  return !looksCompleteExplanation(text)
+}
+
 function countClues(questionText: string): number {
   const clues = questionText.split(/,(?![^(]*\))/).filter((c: string) =>
     c.trim().length > 0
@@ -61,6 +80,25 @@ function getGeminiModelChain(): string[] {
   return defaults
 }
 
+/** Gemini 3 defaults to HIGH thinking, which can eat the output budget and cut the paragraph off. */
+function bodyForGeminiModel(
+  body: Record<string, unknown>,
+  model: string
+): Record<string, unknown> {
+  const m = model.toLowerCase()
+  const thinkingConfig = m.includes("gemini-3")
+    ? { thinkingLevel: "MINIMAL" }
+    : m.includes("2.5")
+      ? { thinkingBudget: 0 }
+      : undefined
+  if (!thinkingConfig) return body
+  const generationConfig = {
+    ...((body.generationConfig as Record<string, unknown> | undefined) ?? {}),
+    thinkingConfig,
+  }
+  return { ...body, generationConfig }
+}
+
 async function geminiGenerateContentWithFallback(
   geminiKey: string,
   body: Record<string, unknown>
@@ -86,7 +124,7 @@ async function geminiGenerateContentWithFallback(
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(bodyForGeminiModel(body, model)),
     })
 
     if (response.ok) {
@@ -150,7 +188,7 @@ async function geminiGenerateSingleModel(
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(bodyForGeminiModel(body, model)),
   })
   if (response.ok) {
     return { ok: true, json: (await response.json()) as Record<string, unknown> }
@@ -233,7 +271,7 @@ Keep the explanation concise (3-5 sentences total), engaging, and educational. F
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.5,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,
       },
     }
 
@@ -247,8 +285,13 @@ Keep the explanation concise (3-5 sentences total), engaging, and educational. F
       console.error("Cache read error:", cacheReadError)
     }
 
+    /** Cached row: skip incomplete leftovers so we regenerate instead of replaying a cutoff. */
+    const cachedUsable =
+      typeof cachedRow?.explanation_text === "string" &&
+      looksCompleteExplanation(cachedRow.explanation_text)
+
     /** Cached row: optionally upgrade to `bestModel` only (no chain fallback on upgrade failure). */
-    if (cachedRow?.explanation_text) {
+    if (cachedUsable) {
       const storedModel = (cachedRow.gemini_model as string | null | undefined)?.trim() ?? ""
       const alreadyBest =
         storedModel.length > 0 &&
@@ -306,34 +349,42 @@ Keep the explanation concise (3-5 sentences total), engaging, and educational. F
         const candList = upgrade.json.candidates as unknown[] | undefined
         if (candList?.length) {
           const explanation = extractGeminiExplanation(upgrade.json)
-          const { error: updErr } = await supabaseAdmin
-            .from("question_ai_explanations")
-            .update({
-              explanation_text: explanation,
-              gemini_model: bestModel,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("question_id", questionId)
+          const upgradeReason = geminiFinishReason(upgrade.json)
+          const upgradeTruncated = isTruncatedExplanation(upgradeReason, explanation)
+          if (upgradeTruncated) {
+            console.warn(
+              "explain-question: upgrade was truncated — keeping prior cache"
+            )
+          } else {
+            const { error: updErr } = await supabaseAdmin
+              .from("question_ai_explanations")
+              .update({
+                explanation_text: explanation,
+                gemini_model: bestModel,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("question_id", questionId)
 
-          if (updErr) {
-            console.error("Cache upgrade update error:", updErr)
-          }
-
-          await bumpUsage()
-
-          return new Response(
-            JSON.stringify({
-              explanation,
-              clueCount,
-              cached: false,
-              upgraded: true,
-              geminiModelUsed: bestModel,
-              persistError: updErr?.message ?? null,
-            }),
-            {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            if (updErr) {
+              console.error("Cache upgrade update error:", updErr)
             }
-          )
+
+            await bumpUsage()
+
+            return new Response(
+              JSON.stringify({
+                explanation,
+                clueCount,
+                cached: false,
+                upgraded: true,
+                geminiModelUsed: bestModel,
+                persistError: updErr?.message ?? null,
+              }),
+              {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              }
+            )
+          }
         }
       }
 
@@ -375,7 +426,7 @@ Keep the explanation concise (3-5 sentences total), engaging, and educational. F
       )
     }
 
-    const geminiResult = await geminiGenerateContentWithFallback(
+    let geminiResult = await geminiGenerateContentWithFallback(
       geminiKey,
       geminiBody
     )
@@ -408,11 +459,15 @@ Keep the explanation concise (3-5 sentences total), engaging, and educational. F
       )
     }
 
-    const aiResponse = geminiResult.json
-    const geminiModelUsed = geminiResult.modelUsed
+    let aiResponse = geminiResult.json
+    let geminiModelUsed = geminiResult.modelUsed
 
-    const candList = aiResponse.candidates as unknown[] | undefined
-    if (!candList?.length) {
+    const noCandidates = (response: Record<string, unknown>) => {
+      const list = response.candidates as unknown[] | undefined
+      return !list?.length
+    }
+
+    if (noCandidates(aiResponse)) {
       console.error("Gemini returned no candidates:", JSON.stringify(aiResponse).slice(0, 2000))
       return new Response(
         JSON.stringify({
@@ -426,64 +481,138 @@ Keep the explanation concise (3-5 sentences total), engaging, and educational. F
         }
       )
     }
-    const finishReason = (aiResponse.candidates as Array<{ finishReason?: string }> | undefined)?.[0]
-      ?.finishReason
-    if (finishReason === "MAX_TOKENS") {
-      console.warn("Gemini finished with MAX_TOKENS — reply may be truncated")
+
+    let finishReason = geminiFinishReason(aiResponse)
+    let explanation = extractGeminiExplanation(aiResponse)
+    let truncated = isTruncatedExplanation(finishReason, explanation)
+
+    if (truncated) {
+      console.warn(
+        `explain-question: first reply truncated (finishReason=${finishReason || "unknown"}) — retrying once`
+      )
+      const retry = await geminiGenerateContentWithFallback(geminiKey, geminiBody)
+      if (retry.ok && !noCandidates(retry.json)) {
+        geminiResult = retry
+        aiResponse = retry.json
+        geminiModelUsed = retry.modelUsed
+        finishReason = geminiFinishReason(aiResponse)
+        explanation = extractGeminiExplanation(aiResponse)
+        truncated = isTruncatedExplanation(finishReason, explanation)
+      }
     }
 
-    const explanation = extractGeminiExplanation(aiResponse)
+    if (truncated) {
+      console.warn(
+        `explain-question: not caching truncated reply (finishReason=${finishReason || "unknown"})`
+      )
+      return new Response(
+        JSON.stringify({
+          explanation,
+          clueCount,
+          cached: false,
+          truncated: true,
+          geminiModelUsed,
+          persistError: null,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      )
+    }
 
-    const insertPayloadFull: Record<string, unknown> = {
-      question_id: questionId,
-      explanation_text: explanation,
-      explain_count: 1,
+    const snapshotFields = {
       question_text: effectiveQuestionText,
       correct_answer: effectiveCorrectAnswer,
       category: questionRow?.category ?? null,
       difficulty: questionRow?.difficulty ?? null,
       gemini_model: geminiModelUsed,
     }
+    const replaceExisting = Boolean(cachedRow)
 
-    let insertErr = (
-      await supabaseAdmin
-        .from("question_ai_explanations")
-        .insert(insertPayloadFull)
-    ).error
+    let persistErr = replaceExisting
+      ? (
+          await supabaseAdmin
+            .from("question_ai_explanations")
+            .update({
+              explanation_text: explanation,
+              updated_at: new Date().toISOString(),
+              ...snapshotFields,
+            })
+            .eq("question_id", questionId)
+        ).error
+      : (
+          await supabaseAdmin
+            .from("question_ai_explanations")
+            .insert({
+              question_id: questionId,
+              explanation_text: explanation,
+              explain_count: 1,
+              ...snapshotFields,
+            })
+        ).error
 
-    if (insertErr && isMissingDbColumnError(insertErr)) {
+    if (persistErr && isMissingDbColumnError(persistErr)) {
       console.warn(
-        "explain-question: full insert failed (missing columns?), retrying without snapshot fields — run migration 20260505120000_question_ai_explanations_metadata.sql",
+        "explain-question: full persist failed (missing columns?), retrying without snapshot fields — run migration 20260505120000_question_ai_explanations_metadata.sql",
       )
-      insertErr = (
-        await supabaseAdmin
-          .from("question_ai_explanations")
-          .insert({
-            question_id: questionId,
-            explanation_text: explanation,
-            explain_count: 1,
-            gemini_model: geminiModelUsed,
-          })
-      ).error
+      persistErr = replaceExisting
+        ? (
+            await supabaseAdmin
+              .from("question_ai_explanations")
+              .update({
+                explanation_text: explanation,
+                gemini_model: geminiModelUsed,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("question_id", questionId)
+          ).error
+        : (
+            await supabaseAdmin
+              .from("question_ai_explanations")
+              .insert({
+                question_id: questionId,
+                explanation_text: explanation,
+                explain_count: 1,
+                gemini_model: geminiModelUsed,
+              })
+          ).error
     }
 
-    if (insertErr && isMissingDbColumnError(insertErr)) {
+    if (persistErr && isMissingDbColumnError(persistErr)) {
       console.warn(
         "explain-question: retry without gemini_model — run migration 20260505200000_question_ai_explanations_gemini_model.sql",
       )
-      insertErr = (
-        await supabaseAdmin
-          .from("question_ai_explanations")
-          .insert({
-            question_id: questionId,
-            explanation_text: explanation,
-            explain_count: 1,
-          })
-      ).error
+      persistErr = replaceExisting
+        ? (
+            await supabaseAdmin
+              .from("question_ai_explanations")
+              .update({
+                explanation_text: explanation,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("question_id", questionId)
+          ).error
+        : (
+            await supabaseAdmin
+              .from("question_ai_explanations")
+              .insert({
+                question_id: questionId,
+                explanation_text: explanation,
+                explain_count: 1,
+              })
+          ).error
     }
 
-    if (insertErr) {
-      console.error("Cache insert error:", insertErr)
+    if (persistErr) {
+      console.error("Cache persist error:", persistErr)
+    } else if (replaceExisting) {
+      const { error: incErr } = await supabaseAdmin.rpc(
+        "increment_ai_explanation_usage",
+        { p_question_id: questionId }
+      )
+      if (incErr) {
+        console.error("increment_ai_explanation_usage error:", incErr)
+      }
     }
 
     return new Response(
@@ -492,7 +621,7 @@ Keep the explanation concise (3-5 sentences total), engaging, and educational. F
         clueCount,
         cached: false,
         geminiModelUsed,
-        persistError: insertErr?.message ?? null,
+        persistError: persistErr?.message ?? null,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
