@@ -28,6 +28,7 @@ import {
 import { getQuestionExplanation } from '../services/aiExplanationService';
 import { askAITutor, getAITutorUsage } from '../services/aiTutorService';
 import { useIPadScaledStyles } from '../lib/layout';
+import { fonts } from '../lib/fonts';
 
 interface CategoryQuestionsScreenProps {
   onNavigate?: (screen: string) => void;
@@ -237,6 +238,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [customQuestion, setCustomQuestion] = useState('');
+  const [askedFollowUp, setAskedFollowUp] = useState<string | null>(null);
   const [customAnswer, setCustomAnswer] = useState<string | null>(null);
   const [isLoadingCustom, setIsLoadingCustom] = useState(false);
   const [remainingQuestions, setRemainingQuestions] = useState(AI_TUTOR_DAILY_LIMIT);
@@ -311,6 +313,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       setExpandedQuestionId(null);
       setAiExplanation(null);
       setCustomQuestion('');
+      setAskedFollowUp(null);
       setCustomAnswer(null);
       return;
     }
@@ -319,6 +322,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
     setIsLoadingExplanation(true);
     setAiExplanation(null);
     setCustomQuestion('');
+    setAskedFollowUp(null);
     setCustomAnswer(null);
 
     const { data, error } = await getQuestionExplanation(
@@ -365,6 +369,8 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       return;
     }
 
+    setAskedFollowUp(trimmed);
+    setCustomQuestion('');
     setCustomAnswer(null);
     setIsLoadingCustom(true);
 
@@ -402,9 +408,11 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       return;
     }
 
-    setCustomAnswer(data.answer);
+    const reply = (data.answer ?? '').trim();
+    setCustomAnswer(
+      reply || 'Sorry, I could not generate an answer. Please try again.'
+    );
     setRemainingQuestions(data.remainingQuestions);
-    setCustomQuestion('');
   };
 
   const categoryNames: Record<string, string> = {
@@ -570,6 +578,12 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
                           </TouchableOpacity>
                         </View>
                         
+                        {askedFollowUp ? (
+                          <View style={styles.askedFollowUpBox}>
+                            <Text style={styles.askedFollowUpLabel}>You asked</Text>
+                            <Text style={styles.askedFollowUpText}>{askedFollowUp}</Text>
+                          </View>
+                        ) : null}
                         {isLoadingCustom && (
                           <View style={styles.customAnswerLoading}>
                             <ActivityIndicator size="small" color="#c9a961" />
@@ -826,8 +840,29 @@ const baseStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 8,
-    fontSize: 14,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    lineHeight: 23,
     color: '#3a3a3a',
+  },
+  askedFollowUpBox: {
+    marginTop: 10,
+    paddingTop: 2,
+    alignSelf: 'flex-end',
+    maxWidth: '88%',
+  },
+  askedFollowUpLabel: {
+    fontSize: 13,
+    color: '#6a6a6a',
+    fontWeight: '500',
+    marginBottom: 4,
+    textAlign: 'right',
+  },
+  askedFollowUpText: {
+    fontSize: 15,
+    color: '#3a3a3a',
+    lineHeight: 23,
+    textAlign: 'right',
   },
   askButton: {
     minWidth: 64,
@@ -853,7 +888,7 @@ const baseStyles = StyleSheet.create({
     marginTop: 10,
     paddingVertical: 14,
     paddingHorizontal: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#fbf8f2',
     borderRadius: 6,
     borderLeftWidth: 3,
     borderLeftColor: '#c9a961',
@@ -866,7 +901,7 @@ const baseStyles = StyleSheet.create({
   customAnswerBox: {
     marginTop: 8,
     padding: 10,
-    backgroundColor: '#fff',
+    backgroundColor: '#fbf8f2',
     borderLeftWidth: 3,
     borderLeftColor: '#c9a961',
     borderRadius: 6,
@@ -878,8 +913,9 @@ const baseStyles = StyleSheet.create({
     maxHeight: 180,
   },
   customAnswerText: {
+    fontFamily: fonts.body,
     fontSize: 15,
-    color: '#3a3a3a',
+    color: '#4d4a46',
     lineHeight: 23,
   },
   buttonRow: {

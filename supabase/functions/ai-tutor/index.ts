@@ -25,6 +25,24 @@ function getGeminiModelChain(): string[] {
   return defaults
 }
 
+function bodyForGeminiModel(
+  body: Record<string, unknown>,
+  model: string
+): Record<string, unknown> {
+  const m = model.toLowerCase()
+  const thinkingConfig = m.includes('gemini-3')
+    ? { thinkingLevel: 'MINIMAL' }
+    : m.includes('2.5')
+      ? { thinkingBudget: 0 }
+      : undefined
+  if (!thinkingConfig) return body
+  const generationConfig = {
+    ...((body.generationConfig as Record<string, unknown> | undefined) ?? {}),
+    thinkingConfig,
+  }
+  return { ...body, generationConfig }
+}
+
 async function geminiGenerateContentWithFallback(
   geminiKey: string,
   body: Record<string, unknown>
@@ -45,7 +63,7 @@ async function geminiGenerateContentWithFallback(
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(bodyForGeminiModel(body, model)),
     })
 
     if (response.ok) {
@@ -184,7 +202,7 @@ Keep your answers clear, concise (2-4 sentences), and educational. If a question
       contents: [{ parts: [{ text: fullPrompt }] }],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 300,
+        maxOutputTokens: 1024,
       },
     }
 
