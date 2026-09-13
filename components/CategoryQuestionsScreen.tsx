@@ -6,7 +6,9 @@ import {
   ActivityIndicator,
   TextInput,
   ScrollView,
-  Alert
+  Alert,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { Text } from '../lib/AppText';
@@ -31,6 +33,151 @@ interface CategoryQuestionsScreenProps {
   onNavigate?: (screen: string) => void;
   category: string;
 }
+
+const SCROLL_DOWN_PX_PER_SEC = 100;
+const SCROLL_UP_PX_PER_SEC = 200;
+
+function ScrollCarrot({ up }: { up: boolean }) {
+  return (
+    <Svg width={11} height={8} viewBox="0 0 11 8">
+      <Path
+        d={up ? 'M1.2 6.4 L5.5 1.6 L9.8 6.4' : 'M1.2 1.6 L5.5 6.4 L9.8 1.6'}
+        stroke="#8a7040"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
+function HoldScrollPane({
+  wrapStyle,
+  innerStyle,
+  contentContainerStyle,
+  children,
+}: {
+  wrapStyle?: StyleProp<ViewStyle>;
+  innerStyle?: StyleProp<ViewStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  children: React.ReactNode;
+}) {
+  const scrollRef = useRef<ScrollView>(null);
+  const offsetY = useRef(0);
+  const contentH = useRef(0);
+  const viewH = useRef(0);
+  const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdingRef = useRef(false);
+  const [overflows, setOverflows] = useState(false);
+
+  const measure = () => {
+    setOverflows(contentH.current > viewH.current + 4);
+  };
+
+  const stopHold = () => {
+    holdingRef.current = false;
+    if (holdTimerRef.current != null) {
+      clearInterval(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+
+  const startHold = (dir: 'up' | 'down') => {
+    stopHold();
+    holdingRef.current = true;
+    const speed = dir === 'down' ? SCROLL_DOWN_PX_PER_SEC : SCROLL_UP_PX_PER_SEC;
+    let last = Date.now();
+    holdTimerRef.current = setInterval(() => {
+      const now = Date.now();
+      const dt = (now - last) / 1000;
+      last = now;
+      const maxY = Math.max(0, contentH.current - viewH.current);
+      const next = Math.min(
+        maxY,
+        Math.max(0, offsetY.current + (dir === 'down' ? 1 : -1) * speed * dt)
+      );
+      offsetY.current = next;
+      scrollRef.current?.scrollTo({ y: next, animated: false });
+    }, 16);
+  };
+
+  useEffect(() => () => stopHold(), []);
+
+  const carrotResponder = (dir: 'up' | 'down') => ({
+    onStartShouldSetResponder: () => true,
+    onMoveShouldSetResponder: () => true,
+    onResponderTerminationRequest: () => false,
+    onResponderGrant: () => startHold(dir),
+    onResponderRelease: stopHold,
+    onResponderTerminate: stopHold,
+  });
+
+  return (
+    <View style={[wrapStyle, { position: 'relative' }]}>
+      {overflows ? (
+        <View
+          style={holdScrollStyles.carrotTop}
+          accessibilityRole="button"
+          accessibilityLabel="Scroll up"
+          {...carrotResponder('up')}
+        >
+          <ScrollCarrot up />
+        </View>
+      ) : null}
+      <ScrollView
+        ref={scrollRef}
+        style={innerStyle}
+        contentContainerStyle={contentContainerStyle}
+        nestedScrollEnabled
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          if (!holdingRef.current) {
+            offsetY.current = e.nativeEvent.contentOffset.y;
+          }
+        }}
+        onContentSizeChange={(_w, h) => {
+          contentH.current = h;
+          measure();
+        }}
+        onLayout={(e) => {
+          viewH.current = e.nativeEvent.layout.height;
+          measure();
+        }}
+      >
+        {children}
+      </ScrollView>
+      {overflows ? (
+        <View
+          style={holdScrollStyles.carrotBottom}
+          accessibilityRole="button"
+          accessibilityLabel="Scroll down"
+          {...carrotResponder('down')}
+        >
+          <ScrollCarrot up={false} />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const holdScrollStyles = StyleSheet.create({
+  carrotTop: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 4,
+    padding: 8,
+  },
+  carrotBottom: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    zIndex: 4,
+    padding: 8,
+  },
+});
 
 /** Neutral “[?]” mark — avoid Gemini/third-party brand marks in the button. */
 function ExplainAiIcon() {
@@ -364,21 +511,13 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
                     </View>
                   ) : aiExplanation ? (
                     <>
-                      <View
-                        style={styles.explanationScroll}
-                        onStartShouldSetResponder={() => true}
+                      <HoldScrollPane
+                        wrapStyle={styles.explanationScroll}
+                        innerStyle={styles.explanationScrollInner}
+                        contentContainerStyle={styles.explanationScrollContent}
                       >
-                        <ScrollView
-                          style={styles.explanationScrollInner}
-                          contentContainerStyle={styles.explanationScrollContent}
-                          nestedScrollEnabled
-                          showsVerticalScrollIndicator
-                          persistentScrollbar
-                          scrollEventThrottle={16}
-                        >
-                          <Text style={styles.explanationText}>{aiExplanation}</Text>
-                        </ScrollView>
-                      </View>
+                        <Text style={styles.explanationText}>{aiExplanation}</Text>
+                      </HoldScrollPane>
                       
                       {/* Custom Question Input */}
                       <View style={styles.customQuestionContainer}>
@@ -656,7 +795,7 @@ const baseStyles = StyleSheet.create({
     maxHeight: 140,
   },
   explanationScrollContent: {
-    paddingRight: 8,
+    paddingRight: 22,
   },
   explanationText: {
     fontSize: 15,
