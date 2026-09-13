@@ -25,6 +25,7 @@ import {
 import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
 import { useIPadScaledStyles } from '../lib/layout';
+import { showDataLoadErrorAlert } from '../lib/dataLoadErrorAlert';
 
 const SET_SIZES = [10, 20, 30, 40, 50] as const;
 
@@ -75,10 +76,12 @@ export function ChallengeModeScreen({
     setIsLoading(true);
     const user = await getCurrentUser();
     if (!user) {
+      showDataLoadErrorAlert();
       setIsLoading(false);
       return;
     }
-    const { data: rankData } = await getRankStats(user.id);
+    const { data: rankData, error: rankError } = await getRankStats(user.id);
+    if (rankError) showDataLoadErrorAlert();
     setRankStats(rankData ?? []);
     setIsLoading(false);
   }, [isAuthenticated, isGuestMode]);

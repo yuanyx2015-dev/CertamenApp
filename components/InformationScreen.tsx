@@ -32,6 +32,7 @@ import {
 } from '../lib/masteryRanks';
 import type { MainTabId } from './MainTabsScreen';
 import { useIPadScaledStyles } from '../lib/layout';
+import { showDataLoadErrorAlert } from '../lib/dataLoadErrorAlert';
 import { PRIVACY_POLICY_URL } from '../constants/urls';
 
 function AnimatedCardButton({
@@ -228,6 +229,7 @@ export function InformationScreen({
       const user = await getCurrentUser();
       if (!user) {
         setLoadError(true);
+        showDataLoadErrorAlert();
         setIsLoading(false);
         return;
       }
@@ -292,9 +294,11 @@ export function InformationScreen({
       }
 
       setLoadError(hadError);
+      if (hadError) showDataLoadErrorAlert();
     } catch (e) {
       console.error('[InformationScreen] loadData error:', e);
       setLoadError(true);
+      showDataLoadErrorAlert();
     } finally {
       setIsLoading(false);
     }

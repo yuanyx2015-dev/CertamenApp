@@ -22,6 +22,7 @@ import {
   type ChallengeGameMode,
 } from './ChallengeGameScreen';
 import { getSession, signOut, onAuthStateChange } from '../services/authService';
+import { alertIfSignedInDataUnreachable } from '../lib/dataLoadErrorAlert';
 import { StreakConfettiProvider } from './StreakConfetti';
 import { BrandIntroOverlay } from './BrandIntroOverlay';
 import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
@@ -83,6 +84,15 @@ export function RomanBackground() {
           return prev;
         });
       } else {
+        if (
+          isAuthenticatedRef.current &&
+          !isGuestModeRef.current &&
+          event !== 'INITIAL_SESSION' &&
+          event !== 'SIGNED_OUT' &&
+          event !== 'USER_DELETED'
+        ) {
+          alertIfSignedInDataUnreachable();
+        }
         setIsAuthenticated(false);
         // Avoid sending guest users (no Supabase session) back to login on INITIAL_SESSION.
         if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
@@ -112,6 +122,15 @@ export function RomanBackground() {
         currentScreenRef.current === 'main'
       ) {
         setShowBrandIntro(true);
+      }
+
+      if (
+        wasBackground &&
+        nextState === 'active' &&
+        isAuthenticatedRef.current &&
+        !isGuestModeRef.current
+      ) {
+        void alertIfSignedInDataUnreachable();
       }
     });
 
