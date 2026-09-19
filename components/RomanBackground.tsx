@@ -329,6 +329,7 @@ export function RomanBackground() {
             isAuthenticated={isAuthenticated}
             onStartChallengeGame={handleStartChallengeGame}
             onLogout={handleLogout}
+            progressFillReady={!showBrandIntro}
           />
         );
     }

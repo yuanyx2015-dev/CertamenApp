@@ -36,6 +36,7 @@ export function MainTabsScreen({
   isAuthenticated,
   onStartChallengeGame,
   onLogout,
+  progressFillReady = true,
 }: {
   activeTab: MainTabId;
   onTabChange: (tab: MainTabId) => void;
@@ -52,6 +53,7 @@ export function MainTabsScreen({
     rankIndex?: number
   ) => void;
   onLogout?: () => void;
+  progressFillReady?: boolean;
 }) {
   const handleTabPress = (tab: MainTabId) => {
     onTabChange(tab);
@@ -97,6 +99,7 @@ export function MainTabsScreen({
             isGuestMode={isGuestMode}
             isAuthenticated={isAuthenticated}
             onLogout={onLogout}
+            progressFillReady={progressFillReady}
           />
         );
       case 'challenge':

@@ -34,6 +34,7 @@ import type { MainTabId } from './MainTabsScreen';
 import { useIPadScaledStyles } from '../lib/layout';
 import { showDataLoadErrorAlert } from '../lib/dataLoadErrorAlert';
 import { PRIVACY_POLICY_URL } from '../constants/urls';
+import { FillUpProgressFill } from './FillUpProgressFill';
 
 function AnimatedCardButton({
   label,
@@ -114,7 +115,15 @@ function StatBox({
   );
 }
 
-function ProgressBar({ progress, label }: { progress: number; label: string }) {
+function ProgressBar({
+  progress,
+  label,
+  fillReady = true,
+}: {
+  progress: number;
+  label: string;
+  fillReady?: boolean;
+}) {
   const styles = useIPadScaledStyles(baseStyles);
   const pct = Math.round(progress * 100);
   return (
@@ -124,7 +133,11 @@ function ProgressBar({ progress, label }: { progress: number; label: string }) {
         <Text style={styles.progressLabelValue}>{pct}%</Text>
       </View>
       <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${pct}%` }]} />
+        <FillUpProgressFill
+          progress={progress}
+          ready={fillReady}
+          style={styles.progressFill}
+        />
       </View>
     </View>
   );
@@ -136,12 +149,14 @@ export function InformationScreen({
   isGuestMode,
   isAuthenticated,
   onLogout,
+  progressFillReady = true,
 }: {
   onNavigate?: (screen: string) => void;
   onTabChange?: (tab: MainTabId) => void;
   isGuestMode?: boolean;
   isAuthenticated?: boolean;
   onLogout?: () => void;
+  progressFillReady?: boolean;
 }) {
   const styles = useIPadScaledStyles(baseStyles);
   const [userName, setUserName] = useState('—');
@@ -359,7 +374,11 @@ export function InformationScreen({
         <Text style={styles.userRankText}>
           Rank: <Text style={styles.userMetaValue}>{rankName}</Text>
         </Text>
-        <ProgressBar progress={progress} label="Progress through this rank" />
+        <ProgressBar
+          progress={progress}
+          label="Progress through this rank"
+          fillReady={progressFillReady}
+        />
         {isGuestMode && (
           <TouchableOpacity
             style={styles.guestSignInBtn}
