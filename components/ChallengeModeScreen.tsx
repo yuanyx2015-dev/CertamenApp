@@ -14,6 +14,13 @@ import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { getRankStats } from '../services/userMasteredService';
 import {
+  CHALLENGE_SET_SIZES,
+  DEFAULT_CHALLENGE_SET_SIZE,
+  getChallengeSetSize,
+  isChallengeSetSize,
+  setChallengeSetSize,
+} from '../services/challengeSetSizeService';
+import {
   MASTERY_RANKS,
   MASTERY_RANK_BLURBS,
   MASTERY_RANK_COUNT,
@@ -26,8 +33,9 @@ import type { MainTabId } from './MainTabsScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
 import { useIPadScaledStyles } from '../lib/layout';
 import { showDataLoadErrorAlert } from '../lib/dataLoadErrorAlert';
+import { FillUpProgressFill } from './FillUpProgressFill';
 
-const SET_SIZES = [10, 20, 30, 40, 50] as const;
+const SET_SIZES = CHALLENGE_SET_SIZES;
 
 /** Drawn mark — avoids Spectral “i” metrics looking like a mis-centered 1. */
 function RankInfoIcon() {
@@ -64,7 +72,7 @@ export function ChallengeModeScreen({
   const styles = useIPadScaledStyles(baseStyles);
   const [isLoading, setIsLoading] = useState(true);
   const [rankStats, setRankStats] = useState<RankStats[]>([]);
-  const [setSize, setSetSize] = useState<number>(10);
+  const [setSize, setSetSize] = useState<number>(DEFAULT_CHALLENGE_SET_SIZE);
   /** Index of rank whose info popover is open; null when closed. */
   const [infoRankIdx, setInfoRankIdx] = useState<number | null>(null);
 
@@ -80,9 +88,13 @@ export function ChallengeModeScreen({
       setIsLoading(false);
       return;
     }
-    const { data: rankData, error: rankError } = await getRankStats(user.id);
+    const [{ data: rankData, error: rankError }, savedSetSize] = await Promise.all([
+      getRankStats(user.id),
+      getChallengeSetSize(user.id),
+    ]);
     if (rankError) showDataLoadErrorAlert();
     setRankStats(rankData ?? []);
+    setSetSize(savedSetSize);
     setIsLoading(false);
   }, [isAuthenticated, isGuestMode]);
 
@@ -124,6 +136,14 @@ export function ChallengeModeScreen({
   const allDone = allRanksComplete(rankStats);
 
   const effectiveSetSize = Math.min(setSize, Math.max(unmasteredHere, 0));
+
+  const handlePickSetSize = (n: number) => {
+    if (!isChallengeSetSize(n)) return;
+    setSetSize(n);
+    void getCurrentUser().then((user) => {
+      if (user) void setChallengeSetSize(user.id, n);
+    });
+  };
 
   const handleStart = () => {
     if (allDone) {
@@ -177,7 +197,7 @@ export function ChallengeModeScreen({
         <Text style={styles.rankName}>{rankName}</Text>
         <View style={styles.progressRow}>
           <View style={[styles.progressTrack, { flex: 1 }]}>
-            <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
+            <FillUpProgressFill progress={progress} style={styles.progressFill} />
           </View>
           <Text style={styles.progressPct}>{Math.round(progress * 100)}%</Text>
         </View>
@@ -209,7 +229,7 @@ export function ChallengeModeScreen({
                 <TouchableOpacity
                   key={n}
                   style={[styles.pickerChip, selected && styles.pickerChipSelected]}
-                  onPress={() => setSetSize(n)}
+                  onPress={() => handlePickSetSize(n)}
                   activeOpacity={0.7}
                 >
                   <Text

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearAppReviewState } from '../lib/appReview';
 import { clearPracticeLocalData } from './practiceClearedService';
+import { clearChallengeSetSize } from './challengeSetSizeService';
 
 export type PracticeSessionDifficulty = 'easy' | 'medium' | 'hard';
 
@@ -164,6 +165,7 @@ export async function clearAllLocalAccountData(userId: string): Promise<void> {
     clearAllLocalUserSettings(userId),
     clearAppReviewState(),
     clearPracticeLocalData(userId),
+    clearChallengeSetSize(userId),
   ]);
 }
 
