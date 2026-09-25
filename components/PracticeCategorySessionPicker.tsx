@@ -3,7 +3,7 @@ import {
   View,
   TouchableOpacity,
   StyleSheet,
-  Animated
+  Animated,
 } from 'react-native';
 import { Text } from '../lib/AppText';
 import { useIPadScaledStyles } from '../lib/layout';
@@ -26,6 +26,31 @@ const PRACTICE_CATEGORIES: { key: string; label: string }[] = [
   { key: 'culture-life', label: 'Culture & Life' },
   { key: 'living-latin', label: 'Living Latin' },
 ];
+
+/** Four short L-corners — a simple picture frame, not an icon. */
+function CornerTicks() {
+  const styles = useIPadScaledStyles(baseStyles);
+  return (
+    <View pointerEvents="none" style={styles.ticks}>
+      <View style={[styles.corner, styles.cornerTL]}>
+        <View style={[styles.tickH, styles.tickTop, styles.tickLeft]} />
+        <View style={[styles.tickV, styles.tickTop, styles.tickLeft]} />
+      </View>
+      <View style={[styles.corner, styles.cornerTR]}>
+        <View style={[styles.tickH, styles.tickTop, styles.tickRight]} />
+        <View style={[styles.tickV, styles.tickTop, styles.tickRight]} />
+      </View>
+      <View style={[styles.corner, styles.cornerBL]}>
+        <View style={[styles.tickH, styles.tickBottom, styles.tickLeft]} />
+        <View style={[styles.tickV, styles.tickBottom, styles.tickLeft]} />
+      </View>
+      <View style={[styles.corner, styles.cornerBR]}>
+        <View style={[styles.tickH, styles.tickBottom, styles.tickRight]} />
+        <View style={[styles.tickV, styles.tickBottom, styles.tickRight]} />
+      </View>
+    </View>
+  );
+}
 
 function CategoryBox({
   label,
@@ -69,6 +94,7 @@ function CategoryBox({
         activeOpacity={1}
       >
         <Animated.View style={[styles.categoryButton, { backgroundColor }]}>
+          <CornerTicks />
           <Text style={styles.categoryLabel}>{label}</Text>
           {count !== null && (
             <Text style={[styles.categoryCount, count === 0 && styles.categoryCountEmpty]}>
@@ -167,12 +193,41 @@ const baseStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.3)',
     borderRadius: 12,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
+  ticks: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  corner: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+  },
+  cornerTL: { top: 8, left: 8 },
+  cornerTR: { top: 8, right: 8 },
+  cornerBL: { bottom: 8, left: 8 },
+  cornerBR: { bottom: 8, right: 8 },
+  tickH: {
+    position: 'absolute',
+    width: 12,
+    height: 1.5,
+    backgroundColor: 'rgba(201, 169, 97, 0.7)',
+  },
+  tickV: {
+    position: 'absolute',
+    width: 1.5,
+    height: 12,
+    backgroundColor: 'rgba(201, 169, 97, 0.7)',
+  },
+  tickTop: { top: 0 },
+  tickBottom: { bottom: 0 },
+  tickLeft: { left: 0 },
+  tickRight: { right: 0 },
   categoryLabel: {
     fontSize: 17,
     color: '#3a3a3a',
