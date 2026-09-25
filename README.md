@@ -8,7 +8,7 @@ A mobile learning app for Certamen-style practice with a Roman-themed UI. Master
 
 **[Dev log](DEVLOG.md)** — day-to-day notes for the team (newest entry at the top).
 
-**Current release:** iOS **1.1.1** (see `app.json`). Privacy: https://certamenprep.org/privacy/
+**Current release:** iOS **1.2** (see `app.json`). Privacy: https://certamenprep.org/privacy/
 
 ---
 

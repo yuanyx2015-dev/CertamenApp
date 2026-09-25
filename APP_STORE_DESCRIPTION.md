@@ -2,7 +2,7 @@
 
 Draft listing copy for App Store Connect. Paste into the store listing; the app does not load this file at runtime. Keep this aligned with the live product when features change.
 
-**Current app version (see `app.json`):** 1.1.1
+**Current app version (see `app.json`):** 1.2
 
 **Privacy Policy URL (App Store Connect):** https://certamenprep.org/privacy/
 
@@ -10,9 +10,9 @@ Draft listing copy for App Store Connect. Paste into the store listing; the app 
 
 ## Promotional Text (170 characters max — appears at top)
 
-Practice like it's real. Certamen-style toss-ups, 11 Roman ranks from Miles to Legatus Legionis, and review for what you miss.
+Practice Mode, rebuilt: choose your question pool, pick difficulties, and drill any of six categories. Buzz-in toss-ups and 11 ranks, from Miles to Legatus Legionis.
 
-*(Character count: 118)*
+*(Character count: 165)*
 
 ---
 
@@ -68,9 +68,43 @@ Latin,Certamen,quiz,Roman,mythology,history,language,literature,study,competitio
 
 ## What's New (paste when shipping an update)
 
-Version 1.1.1
-• Privacy and compliance updates for AI explanations and the AI Tutor
-• App Store readiness fixes (permissions, version sync, export compliance)
+Version 1.2
+The biggest update since launch — Practice Mode has been rebuilt, and Challenge, Review, and the AI tutor all got sharper.
+
+PRACTICE MODE, REBUILT
+• New Settings on the Practice hub — tap the gear to set everything up before you start
+• Choose your question pool: all questions, only ones you've missed, or only ones you've mastered
+• Pick any mix of Easy, Medium, and Hard
+• Session lengths now match what's actually in your pool, so you never get a short set by surprise
+• Each category tile shows how many questions are available in the pool you picked
+• Hold to clear a question instead of mastering it
+• Reset every Practice setting back to default in one tap
+
+CHALLENGE MODE
+• Tap the info button on any rank to see what that rank covers — on your current rank and in All ranks
+• Your set size (10–50) is now remembered between sessions
+• Rank progress bars fill in as the screen opens
+
+REVIEW & AI
+• Press and hold the arrows to scroll through long AI explanations
+• Cut-off explanations are no longer saved, so you never reopen a half-finished answer
+• The AI Tutor keeps your question on screen with its reply, in a warmer tone
+• Clearer counts for remaining questions and follow-ups
+
+LOOK & FEEL
+• New opening animation with the CertamenPrep motto
+• Refreshed fonts, Home stats layout, and category tiles
+• Splash screen now matches the app icon
+• Soft drifting cloth texture behind the parchment
+
+STABILITY & POLISH
+• If your data fails to load, you now get a clear reload prompt instead of an empty screen
+• Official Google and Apple sign-in buttons
+• Clearer prompts about what Guest Mode can and can't do
+• Better iPad scaling, plus an exit button during sets
+• Deleting your account now wipes everything, on device and in the cloud
+
+Good luck climbing the ranks. Vale!
 
 Version 1.1.0
 • Eleven mastery ranks from Miles to Legatus Legionis

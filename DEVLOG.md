@@ -2,7 +2,7 @@
 
 App Store version history for [CertamenPrep](https://apps.apple.com/us/app/certamenprep/id6761233176). Newest shipped version at the top. What’s New text matches the public listing.
 
-This file only covers versions that actually shipped. Unsubmitted work (including **1.1.1** in `app.json`) stays out until it is live.
+This file only covers versions submitted to the App Store. Unsubmitted work stays out until it has a store version.
 
 ## How to add the next version
 
@@ -11,7 +11,7 @@ This file only covers versions that actually shipped. Unsubmitted work (includin
 3. Use one heading per public App Store version, then the official What’s New:
 
 ```markdown
-## 1.2 — Month D, YYYY
+## 1.3 — Month D, YYYY
 
 Official What’s New text here.
 ```
@@ -20,9 +20,50 @@ That’s it. Older versions stay below; you never reorder past versions.
 
 ---
 
+## 1.2 — September 24, 2026
+
+Submitted as version **1.2**, build **60**. The binary still reports 1.1.1 internally; the store version is 1.2. Live on the store once Apple approves it.
+
+The biggest update since launch — Practice Mode has been rebuilt, and Challenge, Review, and the AI tutor all got sharper.
+
+**PRACTICE MODE, REBUILT**
+- New Settings on the Practice hub — tap the gear to set everything up before you start
+- Choose your question pool: all questions, only ones you've missed, or only ones you've mastered
+- Pick any mix of Easy, Medium, and Hard
+- Session lengths now match what's actually in your pool, so you never get a short set by surprise
+- Each category tile shows how many questions are available in the pool you picked
+- Hold to clear a question instead of mastering it
+- Reset every Practice setting back to default in one tap
+
+**CHALLENGE MODE**
+- Tap the info button on any rank to see what that rank covers — on your current rank and in All ranks
+- Your set size (10–50) is now remembered between sessions
+- Rank progress bars fill in as the screen opens
+
+**REVIEW & AI**
+- Press and hold the arrows to scroll through long AI explanations
+- Cut-off explanations are no longer saved, so you never reopen a half-finished answer
+- The AI Tutor keeps your question on screen with its reply, in a warmer tone
+- Clearer counts for remaining questions and follow-ups
+
+**LOOK & FEEL**
+- New opening animation with the CertamenPrep motto
+- Refreshed fonts, Home stats layout, and category tiles
+- Splash screen now matches the app icon
+- Soft drifting cloth texture behind the parchment
+
+**STABILITY & POLISH**
+- If your data fails to load, you now get a clear reload prompt instead of an empty screen
+- Official Google and Apple sign-in buttons
+- Clearer prompts about what Guest Mode can and can't do
+- Better iPad scaling, plus an exit button during sets
+- Deleting your account now wipes everything, on device and in the cloud
+
+Good luck climbing the ranks. Vale!
+
 ## 1.1 — July 11, 2026
 
-Current live version.
+Previous live version.
 
 A major update to CertamenPrep — how you study for Certamen has been rebuilt from the ground up.
 
