@@ -33,7 +33,7 @@ export const getRandomQuestions = async (
   category?: string,
   difficulty?: string,
   limit: number = 10
-) => {
+): Promise<{ data: Question[] | null; error: unknown }> => {
   const { data, error } = await supabase.rpc('get_random_questions', {
     p_category: category || null,
     p_difficulty: difficulty || null,
@@ -45,5 +45,5 @@ export const getRandomQuestions = async (
     return { data: null, error };
   }
 
-  return { data, error: null };
+  return { data: (data ?? []) as Question[], error: null };
 };
