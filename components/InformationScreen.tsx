@@ -35,6 +35,7 @@ import { useIPadScaledStyles } from '../lib/layout';
 import { showDataLoadErrorAlert } from '../lib/dataLoadErrorAlert';
 import { PRIVACY_POLICY_URL } from '../constants/urls';
 import { FillUpProgressFill } from './FillUpProgressFill';
+import { playButtonSound } from '../lib/buttonSound';
 
 function AnimatedCardButton({
   label,
@@ -78,7 +79,10 @@ function AnimatedCardButton({
         style={{ flex: 1 }}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        onPress={onPress}
+        onPress={() => {
+          playButtonSound();
+          onPress();
+        }}
         activeOpacity={1}
       >
         <Animated.View style={[styles.card, styles.dailyChallengeCard, innerStyle, { backgroundColor }]}>
@@ -219,8 +223,15 @@ export function InformationScreen({
 
   const handleLogoutPress = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: () => onLogout?.() },
+      { text: 'Cancel', style: 'cancel', onPress: playButtonSound },
+      {
+        text: 'Log Out',
+        style: 'destructive',
+        onPress: () => {
+          playButtonSound();
+          onLogout?.();
+        },
+      },
     ]);
   };
 
@@ -362,7 +373,14 @@ export function InformationScreen({
       showsVerticalScrollIndicator={false}
     >
       {loadError && (
-        <TouchableOpacity style={styles.errorBanner} onPress={loadData} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.errorBanner}
+          onPress={() => {
+            playButtonSound();
+            void loadData();
+          }}
+          activeOpacity={0.85}
+        >
           <Text style={styles.errorBannerText}>
             Couldn't load your latest stats. Tap to retry.
           </Text>
@@ -382,7 +400,10 @@ export function InformationScreen({
         {isGuestMode && (
           <TouchableOpacity
             style={styles.guestSignInBtn}
-            onPress={() => onNavigate?.('login')}
+            onPress={() => {
+              playButtonSound();
+              onNavigate?.('login');
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.guestSignInBtnText}>
@@ -439,7 +460,10 @@ export function InformationScreen({
 
       <TouchableOpacity
         style={styles.wrongQuestionsBtn}
-        onPress={handleWrongQuestions}
+        onPress={() => {
+          playButtonSound();
+          handleWrongQuestions();
+        }}
         activeOpacity={0.85}
       >
         <Text style={styles.wrongQuestionsBtnText}>Your Wrong Questions</Text>
@@ -455,7 +479,10 @@ export function InformationScreen({
         <View style={styles.accountSection}>
           <TouchableOpacity
             style={styles.accountBtn}
-            onPress={handleLogoutPress}
+            onPress={() => {
+              playButtonSound();
+              handleLogoutPress();
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.accountBtnText}>Log Out</Text>
@@ -463,7 +490,10 @@ export function InformationScreen({
 
           <TouchableOpacity
             style={styles.deleteBtn}
-            onPress={() => setShowDeleteModal(true)}
+            onPress={() => {
+              playButtonSound();
+              setShowDeleteModal(true);
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.deleteBtnText}>Delete Account</Text>
@@ -473,7 +503,10 @@ export function InformationScreen({
 
       <TouchableOpacity
         style={styles.privacyLinkWrap}
-        onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+        onPress={() => {
+          playButtonSound();
+          void Linking.openURL(PRIVACY_POLICY_URL);
+        }}
         activeOpacity={0.7}
         accessibilityRole="link"
         accessibilityLabel="Privacy Policy"
@@ -498,7 +531,10 @@ export function InformationScreen({
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowDeleteModal(false)}
+                onPress={() => {
+                  playButtonSound();
+                  setShowDeleteModal(false);
+                }}
                 disabled={isDeleting}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -506,7 +542,10 @@ export function InformationScreen({
 
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmDeleteButton]}
-                onPress={handleDeleteAccount}
+                onPress={() => {
+                  playButtonSound();
+                  void handleDeleteAccount();
+                }}
                 disabled={isDeleting}
               >
                 {isDeleting ? (
