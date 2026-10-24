@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer, type AudioPlayer } from 'expo-audio';
+import { isSoundMuted, subscribeSoundMuted } from '../lib/buttonSound';
 import { ClothBands } from './ClothBands';
 import { Text } from '../lib/AppText';
 
@@ -53,6 +54,7 @@ function arm(player: AudioPlayer) {
 }
 
 function playArmed(player: AudioPlayer) {
+  if (isSoundMuted()) return;
   player.play();
 }
 
@@ -82,6 +84,15 @@ export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProp
 
   const players = useRef({ ticks, ring, ding });
   players.current = { ticks, ring, ding };
+
+  useEffect(() => {
+    return subscribeSoundMuted((next) => {
+      if (!next) return;
+      players.current.ticks.pause();
+      players.current.ring.pause();
+      players.current.ding.pause();
+    });
+  }, []);
 
   useEffect(() => {
     ticks.volume = 0.14;

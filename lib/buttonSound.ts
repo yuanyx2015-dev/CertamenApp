@@ -1,4 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+
+const MUTE_KEY = 'sound_muted';
 
 type SoundId = 'button' | 'logo' | 'profile' | 'challenge' | 'review' | 'practice';
 
@@ -23,7 +26,46 @@ const VOLUMES: Record<SoundId, number> = {
 const players = new Map<SoundId, AudioPlayer>();
 let audioModeReady: Promise<void> | null = null;
 
+let muted = false;
+let muteTouched = false;
+const muteListeners = new Set<(muted: boolean) => void>();
+
+void AsyncStorage.getItem(MUTE_KEY)
+  .then((value) => {
+    if (muteTouched || value !== '1') return;
+    muted = true;
+    pauseUiSounds();
+    muteListeners.forEach((listener) => listener(true));
+  })
+  .catch(() => undefined);
+
+export function isSoundMuted() {
+  return muted;
+}
+
+export function subscribeSoundMuted(listener: (muted: boolean) => void) {
+  muteListeners.add(listener);
+  return () => {
+    muteListeners.delete(listener);
+  };
+}
+
+export function setSoundMuted(next: boolean) {
+  muteTouched = true;
+  muted = next;
+  if (next) pauseUiSounds();
+  muteListeners.forEach((listener) => listener(next));
+  void AsyncStorage.setItem(MUTE_KEY, next ? '1' : '0').catch(() => undefined);
+}
+
+function pauseUiSounds() {
+  for (const player of players.values()) {
+    player.pause();
+  }
+}
+
 function play(id: SoundId) {
+  if (muted) return;
   if (!audioModeReady) {
     audioModeReady = setAudioModeAsync({
       playsInSilentMode: true,
@@ -38,6 +80,7 @@ function play(id: SoundId) {
   }
   current.pause();
   void current.seekTo(0).then(() => {
+    if (muted) return;
     current.play();
   });
 }

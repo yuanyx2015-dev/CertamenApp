@@ -28,6 +28,7 @@ import { BrandIntroOverlay } from './BrandIntroOverlay';
 import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
 import { isIPad, isIPhone } from '../lib/layout';
 import { playLogoSound } from '../lib/buttonSound';
+import { MuteButton } from './MuteButton';
 
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
@@ -470,6 +471,7 @@ export function RomanBackground() {
         visible={showBrandIntro}
         onFinished={() => setShowBrandIntro(false)}
       />
+      <MuteButton />
     </View>
     </StreakConfettiProvider>
   );
@@ -487,14 +489,14 @@ const styles = StyleSheet.create({
   },
   logoHomeWrap: {
     position: 'absolute',
-    top: 45,
+    top: 50,
     left: 0,
     right: 0,
     alignItems: 'center',
     zIndex: 20,
   },
   logoHomeWrapIPad: {
-    top: 34,
+    top: 39,
   },
   logoTitleHit: {
     paddingTop: 6,
@@ -506,7 +508,7 @@ const styles = StyleSheet.create({
   },
   titleText: {
     // Cormorant Garamond has a small x-height — needs more px than a UI sans.
-    fontSize: 27,
+    fontSize: 28,
     fontWeight: '600',
     color: '#c9a569',
     letterSpacing: 0.9,
@@ -516,7 +518,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 0.2,
   },
   titleTextIPad: {
-    fontSize: 44,
+    fontSize: 45,
     letterSpacing: 1.4,
   },
   headerContainer: {
