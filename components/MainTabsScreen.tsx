@@ -13,6 +13,7 @@ import { StoryModeScreen } from './StoryModeScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
 import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
 import { isIPad } from '../lib/layout';
+import { playTabSound } from '../lib/buttonSound';
 
 export type MainTabId = 'profile' | 'challenge' | 'review' | 'practice';
 
@@ -56,6 +57,7 @@ export function MainTabsScreen({
   progressFillReady?: boolean;
 }) {
   const handleTabPress = (tab: MainTabId) => {
+    if (tab !== activeTab) playTabSound(tab);
     onTabChange(tab);
   };
 

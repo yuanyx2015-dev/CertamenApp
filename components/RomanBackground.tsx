@@ -27,6 +27,7 @@ import { StreakConfettiProvider } from './StreakConfetti';
 import { BrandIntroOverlay } from './BrandIntroOverlay';
 import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
 import { isIPad, isIPhone } from '../lib/layout';
+import { playLogoSound } from '../lib/buttonSound';
 
 export function RomanBackground() {
   const [currentScreen, setCurrentScreen] = useState('login');
@@ -156,6 +157,8 @@ export function RomanBackground() {
 
   /** Logo / wreath tap: jump straight to Home. */
   const handleNavigateToHome = () => {
+    const alreadyHome = currentScreen === 'main' && mainTab === 'profile';
+    if (!alreadyHome) playLogoSound();
     setLogoPressed(false);
     if (currentScreen !== 'settings-practice') {
       previousScreen.current = currentScreen;
