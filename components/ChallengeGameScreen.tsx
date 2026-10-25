@@ -9,7 +9,7 @@ import {
   Modal
 } from 'react-native';
 import { Text } from '../lib/AppText';
-import { playBuzzSound, playTickSound } from '../lib/buttonSound';
+import { playBuzzSound, playMasterSound, playNextSound, playTickSound, stopMasterSound } from '../lib/buttonSound';
 import { FitScrollView } from './FitScrollView';
 import { GameHeaderFade } from './GameHeaderFade';
 import { getCurrentUser } from '../services/authService';
@@ -39,7 +39,7 @@ import { StarIcon, MASTERED_CONFIRM_MS } from './StarIcon';
 import { useStreakConfetti } from './StreakConfetti';
 import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
 import { isIPad, useIPadColumnScale, useIPadScaledStyles } from '../lib/layout';
-const HOLD_TO_MASTER_MS = 500;
+const HOLD_TO_MASTER_MS = 800;
 /** After the tossup finishes typing, the player must buzz within this many seconds or the tossup is scored incorrect. */
 const PRE_BUZZ_SECONDS = 10;
 /** After buzzing, the player has this many seconds to pick an answer. */
@@ -499,6 +499,7 @@ export function ChallengeGameScreen({
   // ----- ADVANCE AFTER WRONG -----
   const handleNextAfterWrong = useCallback(() => {
     if (!current) return;
+    playNextSound();
     // Wrong → remove from queue entirely.
     advanceToNext(queue.slice(1));
   }, [advanceToNext, current, queue]);
@@ -506,6 +507,7 @@ export function ChallengeGameScreen({
   // ----- PASS (Continue after correct) -----
   const handlePass = useCallback(async () => {
     if (!current || !userId) return;
+    playNextSound();
     await recordPassedQuestion(userId, current.question.id);
     setPassedCount((n) => n + 1);
     // Correct-but-not-mastered still consumes the question for this set.
@@ -524,6 +526,7 @@ export function ChallengeGameScreen({
 
   const handleStarPressIn = useCallback(() => {
     if (!isCorrect || starMasteredRef.current) return;
+    playMasterSound();
     holdAnim.setValue(0);
     Animated.timing(holdAnim, {
       toValue: 1,
@@ -543,6 +546,7 @@ export function ChallengeGameScreen({
   const handleStarPressOut = useCallback(() => {
     // Hold finished — keep the filled star until we advance.
     if (starMasteredRef.current) return;
+    stopMasterSound();
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;

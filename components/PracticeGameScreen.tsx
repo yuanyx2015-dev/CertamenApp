@@ -8,7 +8,7 @@ import {
   Easing
 } from 'react-native';
 import { Text } from '../lib/AppText';
-import { playBuzzSound, playTickSound } from '../lib/buttonSound';
+import { playBuzzSound, playNextSound, playTickSound } from '../lib/buttonSound';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { FitScrollView } from './FitScrollView';
@@ -875,7 +875,13 @@ export function PracticeGameScreen({
         {/* Action Buttons */}
         {isAnswered && (
           <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.nextBtn} onPress={nextQuestion}>
+            <TouchableOpacity
+              style={styles.nextBtn}
+              onPress={() => {
+                playNextSound();
+                nextQuestion();
+              }}
+            >
               <Text style={styles.nextBtnText}>Next Question →</Text>
             </TouchableOpacity>
 

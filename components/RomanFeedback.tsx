@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { playCorrectSound, playWrongSound } from '../lib/buttonSound';
 import { useIPadScale } from '../lib/layout';
 
 const CHECK_SIZE = 340;
@@ -95,6 +96,8 @@ export const FeedbackOverlay = React.forwardRef<FeedbackOverlayHandle, {}>(
     const show = useCallback(
       (next: 'correct' | 'wrong') => {
         if (sequenceRef.current) sequenceRef.current.stop();
+        if (next === 'correct') playCorrectSound();
+        else playWrongSound();
         setKind(next);
         setVisible(true);
         scaleAnim.setValue(0);

@@ -7,6 +7,10 @@ type SoundId =
   | 'button'
   | 'tick'
   | 'buzz'
+  | 'correct'
+  | 'wrong'
+  | 'next'
+  | 'master'
   | 'unmute'
   | 'cancel'
   | 'daily'
@@ -26,6 +30,10 @@ const SOURCES: Record<SoundId, number> = {
   button: require('../assets/ui/button.wav'),
   tick: require('../assets/ui/tick.wav'),
   buzz: require('../assets/ui/buzz.wav'),
+  correct: require('../assets/ui/correct.wav'),
+  wrong: require('../assets/ui/wrong.wav'),
+  next: require('../assets/ui/next.wav'),
+  master: require('../assets/ui/master-reed.wav'),
   unmute: require('../assets/ui/unmute.wav'),
   cancel: require('../assets/ui/cancel.wav'),
   daily: require('../assets/ui/daily.wav'),
@@ -46,6 +54,10 @@ const VOLUMES: Record<SoundId, number> = {
   button: 0.46,
   tick: 0.28,
   buzz: 0.48,
+  correct: 0.42,
+  wrong: 0.4,
+  next: 0.4,
+  master: 0.42,
   unmute: 0.46,
   cancel: 0.5,
   daily: 0.46,
@@ -64,6 +76,8 @@ const VOLUMES: Record<SoundId, number> = {
 
 const players = new Map<SoundId, AudioPlayer>();
 let audioModeReady: Promise<void> | null = null;
+let masterToken = 0;
+let masterFade: ReturnType<typeof setInterval> | null = null;
 
 let muted = false;
 let muteTouched = false;
@@ -137,6 +151,75 @@ export function playTickSound() {
 /** Intro ring with a shorter fade, for the BUZZ button. */
 export function playBuzzSound() {
   play('buzz');
+}
+
+/** Rising chime when an answer is correct. */
+export function playCorrectSound() {
+  play('correct');
+}
+
+/** Falling chime when an answer is wrong. */
+export function playWrongSound() {
+  play('wrong');
+}
+
+/** Short step up for Next and Continue. */
+export function playNextSound() {
+  play('next');
+}
+
+function masterPlayer() {
+  let current = players.get('master');
+  if (!current) {
+    current = createAudioPlayer(SOURCES.master);
+    players.set('master', current);
+  }
+  return current;
+}
+
+/**
+ * Reed slide for Hold to master. A softer fifth below G4, through G4,
+ * to a softer fourth above. Runs from the press until release or mastery.
+ */
+export function playMasterSound() {
+  if (muted) return;
+  if (!audioModeReady) {
+    audioModeReady = setAudioModeAsync({
+      playsInSilentMode: true,
+      interruptionMode: 'mixWithOthers',
+    }).catch(() => undefined);
+  }
+  if (masterFade) {
+    clearInterval(masterFade);
+    masterFade = null;
+  }
+  const token = ++masterToken;
+  const current = masterPlayer();
+  current.volume = VOLUMES.master;
+  current.pause();
+  void current.seekTo(0).then(() => {
+    if (muted || token !== masterToken) return;
+    current.play();
+  });
+}
+
+/** Stops the hold slide when the finger lifts before the star is mastered. */
+export function stopMasterSound() {
+  masterToken += 1;
+  const current = players.get('master');
+  if (!current) return;
+  if (masterFade) clearInterval(masterFade);
+  const start = current.volume;
+  let step = 0;
+  masterFade = setInterval(() => {
+    step += 1;
+    current.volume = start * (1 - step / 4);
+    if (step < 4) return;
+    if (masterFade) clearInterval(masterFade);
+    masterFade = null;
+    current.pause();
+    current.volume = VOLUMES.master;
+  }, 8);
 }
 
 /** The Home click, lowered two semitones. Used when sound is turned back on. */
