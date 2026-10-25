@@ -3,10 +3,34 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 
 const MUTE_KEY = 'sound_muted';
 
-type SoundId = 'button' | 'logo' | 'profile' | 'challenge' | 'review' | 'practice';
+type SoundId =
+  | 'button'
+  | 'unmute'
+  | 'cancel'
+  | 'daily'
+  | 'set10'
+  | 'set20'
+  | 'set30'
+  | 'set40'
+  | 'set50'
+  | 'setStart'
+  | 'logo'
+  | 'profile'
+  | 'challenge'
+  | 'review'
+  | 'practice';
 
 const SOURCES: Record<SoundId, number> = {
   button: require('../assets/ui/button.wav'),
+  unmute: require('../assets/ui/unmute.wav'),
+  cancel: require('../assets/ui/cancel.wav'),
+  daily: require('../assets/ui/daily.wav'),
+  set10: require('../assets/ui/set-10.wav'),
+  set20: require('../assets/ui/set-20.wav'),
+  set30: require('../assets/ui/set-30.wav'),
+  set40: require('../assets/ui/set-40.wav'),
+  set50: require('../assets/ui/set-50.wav'),
+  setStart: require('../assets/ui/set-start.wav'),
   logo: require('../assets/ui/logo.wav'),
   profile: require('../assets/ui/tab-home.wav'),
   challenge: require('../assets/ui/tab-challenge.wav'),
@@ -16,6 +40,15 @@ const SOURCES: Record<SoundId, number> = {
 
 const VOLUMES: Record<SoundId, number> = {
   button: 0.46,
+  unmute: 0.46,
+  cancel: 0.5,
+  daily: 0.46,
+  set10: 0.34,
+  set20: 0.34,
+  set30: 0.34,
+  set40: 0.32,
+  set50: 0.32,
+  setStart: 0.36,
   logo: 0.4,
   profile: 0.42,
   challenge: 0.42,
@@ -88,6 +121,39 @@ function play(id: SoundId) {
 /** One short click for Home screen buttons. */
 export function playButtonSound() {
   play('button');
+}
+
+/** The Home click, lowered two semitones. Used when sound is turned back on. */
+export function playUnmuteSound() {
+  play('unmute');
+}
+
+/** Deeper pop for Cancel on Log Out and Delete Account. */
+export function playCancelSound() {
+  play('cancel');
+}
+
+/** Daily Challenge click, centered on E with softer notes beside it. */
+export function playDailySound() {
+  play('daily');
+}
+
+const SET_SIZE_SOUNDS = {
+  10: 'set10',
+  20: 'set20',
+  30: 'set30',
+  40: 'set40',
+  50: 'set50',
+} as const;
+
+/** Questions-per-set clicks: 10 C5, 20 D5, 30 E5, 40 F5, 50 G5, each with a soft 7th, dim 4th, and 5th. */
+export function playSetSizeSound(size: keyof typeof SET_SIZE_SOUNDS) {
+  play(SET_SIZE_SOUNDS[size]);
+}
+
+/** A5, C#6, E5, D5 arpeggio for Start #-question set. */
+export function playStartSetArpeggio() {
+  play('setStart');
 }
 
 /** E5 chime for the CertamenPrep logo and laurel, with a faint fourth below and major third above. */

@@ -1,15 +1,18 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   View,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
   Modal,
-  Pressable
+  Pressable,
+  Easing,
 } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Text } from '../lib/AppText';
+import { playDailySound, playSetSizeSound, playStartSetArpeggio } from '../lib/buttonSound';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { getRankStats } from '../services/userMasteredService';
@@ -75,6 +78,8 @@ export function ChallengeModeScreen({
   const [setSize, setSetSize] = useState<number>(DEFAULT_CHALLENGE_SET_SIZE);
   /** Index of rank whose info popover is open; null when closed. */
   const [infoRankIdx, setInfoRankIdx] = useState<number | null>(null);
+  const startScale = useRef(new Animated.Value(1)).current;
+  const startLeavingRef = useRef(false);
 
   const load = useCallback(async () => {
     if (!isAuthenticated || isGuestMode) {
@@ -139,6 +144,7 @@ export function ChallengeModeScreen({
 
   const handlePickSetSize = (n: number) => {
     if (!isChallengeSetSize(n)) return;
+    playSetSizeSound(n);
     setSetSize(n);
     void getCurrentUser().then((user) => {
       if (user) void setChallengeSetSize(user.id, n);
@@ -168,7 +174,30 @@ export function ChallengeModeScreen({
       );
       return;
     }
-    onStartChallengeGame?.('challenge', effectiveSetSize, rankIdx);
+    if (startLeavingRef.current) return;
+    startLeavingRef.current = true;
+    playStartSetArpeggio();
+    startScale.setValue(1);
+    Animated.sequence([
+      Animated.timing(startScale, {
+        toValue: 0.96,
+        duration: 90,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(startScale, {
+        toValue: 1.06,
+        duration: 170,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (!finished) {
+        startLeavingRef.current = false;
+        return;
+      }
+      onStartChallengeGame?.('challenge', effectiveSetSize, rankIdx);
+    });
   };
 
   const infoName = infoRankIdx !== null ? MASTERY_RANKS[infoRankIdx] : null;
@@ -185,7 +214,10 @@ export function ChallengeModeScreen({
           <Text style={styles.rankLabel}>Current Rank</Text>
           <TouchableOpacity
             style={styles.rankInfoBtn}
-            onPress={() => setInfoRankIdx(rankIdx)}
+            onPress={() => {
+              playDailySound();
+              setInfoRankIdx(rankIdx);
+            }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
             accessibilityLabel={`About ${rankName}`}
@@ -249,15 +281,17 @@ export function ChallengeModeScreen({
         )}
       </View>
 
-      <TouchableOpacity
-        style={styles.startBtn}
-        onPress={handleStart}
-        activeOpacity={0.85}
-      >
+      <Animated.View style={{ transform: [{ scale: startScale }] }}>
+        <TouchableOpacity
+          style={styles.startBtn}
+          onPress={handleStart}
+          activeOpacity={0.85}
+        >
           <Text style={styles.startBtnText}>
             {unmasteredHere === 0 ? 'Rank Complete' : `Start ${effectiveSetSize}-question set`}
           </Text>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </Animated.View>
 
       <View style={[styles.card, styles.allRanksCard]}>
         <Text style={styles.allRanksTitle}>All ranks</Text>
@@ -292,7 +326,10 @@ export function ChallengeModeScreen({
                   </Text>
                   <TouchableOpacity
                     style={styles.rankInfoBtn}
-                    onPress={() => setInfoRankIdx(idx)}
+                    onPress={() => {
+                      playDailySound();
+                      setInfoRankIdx(idx);
+                    }}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     accessibilityRole="button"
                     accessibilityLabel={`About ${name}`}

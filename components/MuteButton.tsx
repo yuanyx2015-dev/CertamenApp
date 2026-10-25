@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, G, Path } from 'react-native-svg';
 import { isIPad } from '../lib/layout';
-import { isSoundMuted, playButtonSound, setSoundMuted, subscribeSoundMuted } from '../lib/buttonSound';
+import { isSoundMuted, playUnmuteSound, setSoundMuted, subscribeSoundMuted } from '../lib/buttonSound';
 
 const GOLD = '#c9a569';
 const SHADOW = 'rgba(55, 40, 18, 0.4)';
+const SEAL_FILL = 'rgba(255, 246, 220, 0.62)';
 
 function SpeakerMark({ muted, color }: { muted: boolean; color: string }) {
   return (
@@ -43,14 +44,26 @@ function SpeakerMark({ muted, color }: { muted: boolean; color: string }) {
   );
 }
 
+function Seal({ muted, color, fill }: { muted: boolean; color: string; fill?: string }) {
+  return (
+    <>
+      {fill ? <Circle cx={14} cy={14} r={11.5} fill={fill} /> : null}
+      <Circle cx={14} cy={14} r={12.15} stroke={color} strokeWidth={1.25} fill="none" />
+      <G transform="translate(5.04 5.12) scale(0.74)">
+        <SpeakerMark muted={muted} color={color} />
+      </G>
+    </>
+  );
+}
+
 function SpeakerIcon({ muted, size }: { muted: boolean; size: number }) {
   return (
     <View style={{ width: size, height: size }}>
-      <Svg width={size} height={size} viewBox="0 0 24 24" style={styles.shadow}>
-        <SpeakerMark muted={muted} color={SHADOW} />
+      <Svg width={size} height={size} viewBox="0 0 28 28" style={styles.shadow}>
+        <Seal muted={muted} color={SHADOW} />
       </Svg>
-      <Svg width={size} height={size} viewBox="0 0 24 24">
-        <SpeakerMark muted={muted} color={GOLD} />
+      <Svg width={size} height={size} viewBox="0 0 28 28">
+        <Seal muted={muted} color={GOLD} fill={SEAL_FILL} />
       </Svg>
     </View>
   );
@@ -68,7 +81,7 @@ export function MuteButton() {
       onPress={() => {
         if (muted) {
           setSoundMuted(false);
-          playButtonSound();
+          playUnmuteSound();
         } else {
           setSoundMuted(true);
         }
@@ -79,7 +92,7 @@ export function MuteButton() {
       accessibilityLabel={muted ? 'Unmute' : 'Mute'}
       accessibilityState={{ selected: muted }}
     >
-      <SpeakerIcon muted={muted} size={isIPad ? 44 : 34} />
+      <SpeakerIcon muted={muted} size={isIPad ? 54 : 42} />
     </TouchableOpacity>
   );
 }

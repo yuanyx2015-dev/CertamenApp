@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
+  Animated,
   View,
   StyleSheet,
   TouchableOpacity,
   AppState,
+  Easing,
   type AppStateStatus
 } from 'react-native';
 import { Text } from '../lib/AppText';
@@ -48,11 +50,28 @@ export function RomanBackground() {
   const [logoPressed, setLogoPressed] = useState(false);
   /** Brand intro after login, cold start, or return from background. */
   const [showBrandIntro, setShowBrandIntro] = useState(false);
+  const muteOpacity = useRef(new Animated.Value(1)).current;
   const pendingBrandIntroRef = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const isAuthenticatedRef = useRef(false);
   const isGuestModeRef = useRef(false);
   const currentScreenRef = useRef(currentScreen);
+
+  useEffect(() => {
+    if (!showBrandIntro) return;
+    muteOpacity.setValue(0);
+  }, [showBrandIntro, muteOpacity]);
+
+  const finishBrandIntro = () => {
+    muteOpacity.setValue(0);
+    Animated.timing(muteOpacity, {
+      toValue: 1,
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    setShowBrandIntro(false);
+  };
 
   useEffect(() => {
     isAuthenticatedRef.current = isAuthenticated;
@@ -469,9 +488,14 @@ export function RomanBackground() {
 
       <BrandIntroOverlay
         visible={showBrandIntro}
-        onFinished={() => setShowBrandIntro(false)}
+        onFinished={finishBrandIntro}
       />
-      <MuteButton />
+      <Animated.View
+        pointerEvents={showBrandIntro ? 'none' : 'box-none'}
+        style={[styles.muteFade, { opacity: muteOpacity }]}
+      >
+        <MuteButton />
+      </Animated.View>
     </View>
     </StreakConfettiProvider>
   );
@@ -594,6 +618,10 @@ const styles = StyleSheet.create({
   contentContainerReviewGame: {
     paddingBottom: 52,
     paddingHorizontal: 0,
+  },
+  muteFade: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 120,
   },
   footerContainer: {
     position: 'absolute',

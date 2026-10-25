@@ -35,7 +35,7 @@ import { useIPadScaledStyles } from '../lib/layout';
 import { showDataLoadErrorAlert } from '../lib/dataLoadErrorAlert';
 import { PRIVACY_POLICY_URL } from '../constants/urls';
 import { FillUpProgressFill } from './FillUpProgressFill';
-import { playButtonSound } from '../lib/buttonSound';
+import { playButtonSound, playCancelSound, playDailySound } from '../lib/buttonSound';
 
 function AnimatedCardButton({
   label,
@@ -80,7 +80,7 @@ function AnimatedCardButton({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={() => {
-          playButtonSound();
+          playDailySound();
           onPress();
         }}
         activeOpacity={1}
@@ -174,6 +174,7 @@ export function InformationScreen({
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteAccount = async () => {
@@ -222,17 +223,7 @@ export function InformationScreen({
   };
 
   const handleLogoutPress = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel', onPress: playButtonSound },
-      {
-        text: 'Log Out',
-        style: 'destructive',
-        onPress: () => {
-          playButtonSound();
-          onLogout?.();
-        },
-      },
-    ]);
+    setShowLogoutModal(true);
   };
 
   const loadData = useCallback(async () => {
@@ -515,6 +506,41 @@ export function InformationScreen({
       </TouchableOpacity>
 
       <Modal
+        visible={showLogoutModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Log Out</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to log out?</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  playCancelSound();
+                  setShowLogoutModal(false);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmDeleteButton]}
+                onPress={() => {
+                  playButtonSound();
+                  setShowLogoutModal(false);
+                  onLogout?.();
+                }}
+              >
+                <Text style={styles.confirmDeleteButtonText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={showDeleteModal}
         transparent
         animationType="fade"
@@ -532,7 +558,7 @@ export function InformationScreen({
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
-                  playButtonSound();
+                  playCancelSound();
                   setShowDeleteModal(false);
                 }}
                 disabled={isDeleting}
