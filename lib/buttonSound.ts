@@ -5,6 +5,8 @@ const MUTE_KEY = 'sound_muted';
 
 type SoundId =
   | 'button'
+  | 'tick'
+  | 'buzz'
   | 'unmute'
   | 'cancel'
   | 'daily'
@@ -22,6 +24,8 @@ type SoundId =
 
 const SOURCES: Record<SoundId, number> = {
   button: require('../assets/ui/button.wav'),
+  tick: require('../assets/ui/tick.wav'),
+  buzz: require('../assets/ui/buzz.wav'),
   unmute: require('../assets/ui/unmute.wav'),
   cancel: require('../assets/ui/cancel.wav'),
   daily: require('../assets/ui/daily.wav'),
@@ -40,6 +44,8 @@ const SOURCES: Record<SoundId, number> = {
 
 const VOLUMES: Record<SoundId, number> = {
   button: 0.46,
+  tick: 0.28,
+  buzz: 0.48,
   unmute: 0.46,
   cancel: 0.5,
   daily: 0.46,
@@ -108,9 +114,9 @@ function play(id: SoundId) {
   let current = players.get(id);
   if (!current) {
     current = createAudioPlayer(SOURCES[id]);
-    current.volume = VOLUMES[id];
     players.set(id, current);
   }
+  current.volume = VOLUMES[id];
   current.pause();
   void current.seekTo(0).then(() => {
     if (muted) return;
@@ -121,6 +127,16 @@ function play(id: SoundId) {
 /** One short click for Home screen buttons. */
 export function playButtonSound() {
   play('button');
+}
+
+/** The Home click, a fourth lower, for the pre-buzz and answer timers. */
+export function playTickSound() {
+  play('tick');
+}
+
+/** Intro ring with a shorter fade, for the BUZZ button. */
+export function playBuzzSound() {
+  play('buzz');
 }
 
 /** The Home click, lowered two semitones. Used when sound is turned back on. */

@@ -61,6 +61,7 @@ function playArmed(player: AudioPlayer) {
 export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProps) {
   const { width } = useWindowDimensions();
   const ticks = useAudioPlayer(require('../assets/cac/tick.wav'));
+  // Ring continues past the old cutoff and fades to silence.
   const ring = useAudioPlayer(require('../assets/cac/ring.wav'));
   const ding = useAudioPlayer(require('../assets/cac/ding.wav'));
 

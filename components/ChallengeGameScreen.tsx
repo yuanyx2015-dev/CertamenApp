@@ -9,6 +9,7 @@ import {
   Modal
 } from 'react-native';
 import { Text } from '../lib/AppText';
+import { playBuzzSound, playTickSound } from '../lib/buttonSound';
 import { FitScrollView } from './FitScrollView';
 import { GameHeaderFade } from './GameHeaderFade';
 import { getCurrentUser } from '../services/authService';
@@ -372,6 +373,7 @@ export function ChallengeGameScreen({
     clearPreBuzzTimer();
     preBuzzRemainingRef.current = PRE_BUZZ_SECONDS;
     setPreBuzzSecondsRemaining(PRE_BUZZ_SECONDS);
+    playTickSound();
     // Decrement and fire the timeout handler from the timer callback (not from
     // inside a setState updater), so FeedbackOverlay's state isn't updated
     // during this component's render.
@@ -385,6 +387,7 @@ export function ChallengeGameScreen({
       } else {
         preBuzzRemainingRef.current = next;
         setPreBuzzSecondsRemaining(next);
+        playTickSound();
       }
     }, 1000);
   };
@@ -393,6 +396,7 @@ export function ChallengeGameScreen({
   const handleBuzz = () => {
     if (isBuzzedRef.current || isAnsweredRef.current) return;
     isBuzzedRef.current = true;
+    playBuzzSound();
 
     clearStreamTimer();
     clearPreBuzzTimer();
@@ -401,6 +405,7 @@ export function ChallengeGameScreen({
     setStatusText('Buzzed! Select your answer...');
     answerRemainingRef.current = ANSWER_SECONDS;
     setTimeRemaining(ANSWER_SECONDS);
+    playTickSound();
 
     // Decrement and fire the timeout handler from the timer callback (not from
     // inside a setState updater), so FeedbackOverlay's state isn't updated
@@ -415,6 +420,7 @@ export function ChallengeGameScreen({
       } else {
         answerRemainingRef.current = next;
         setTimeRemaining(next);
+        playTickSound();
       }
     }, 1000);
   };

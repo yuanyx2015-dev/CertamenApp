@@ -8,6 +8,7 @@ import {
   Easing
 } from 'react-native';
 import { Text } from '../lib/AppText';
+import { playBuzzSound, playTickSound } from '../lib/buttonSound';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { FitScrollView } from './FitScrollView';
@@ -350,6 +351,7 @@ export function PracticeGameScreen({
     const seconds = preBuzzSecondsRef.current;
     preBuzzRemainingRef.current = seconds;
     setPreBuzzSecondsRemaining(seconds);
+    playTickSound();
     // Decrement and fire the timeout handler from the timer callback (not from
     // inside a setState updater), so FeedbackOverlay's state isn't updated
     // during this component's render.
@@ -363,6 +365,7 @@ export function PracticeGameScreen({
       } else {
         preBuzzRemainingRef.current = next;
         setPreBuzzSecondsRemaining(next);
+        playTickSound();
       }
     }, 1000);
   };
@@ -441,6 +444,7 @@ export function PracticeGameScreen({
   const handleBuzz = () => {
     if (isBuzzedRef.current || isAnsweredRef.current) return;
     isBuzzedRef.current = true;
+    playBuzzSound();
 
     // Stop streaming immediately
     if (streamIntervalRef.current) {
@@ -454,6 +458,7 @@ export function PracticeGameScreen({
     const seconds = answerSecondsRef.current;
     answerRemainingRef.current = seconds;
     setTimeRemaining(seconds);
+    playTickSound();
 
     // Decrement and fire the timeout handler from the timer callback (not from
     // inside a setState updater), so FeedbackOverlay's state isn't updated
@@ -471,6 +476,7 @@ export function PracticeGameScreen({
       } else {
         answerRemainingRef.current = next;
         setTimeRemaining(next);
+        playTickSound();
       }
     }, 1000);
   };
