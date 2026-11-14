@@ -26,7 +26,8 @@ type SoundId =
   | 'ascendChallenge'
   | 'review'
   | 'practice'
-  | 'arena';
+  | 'arena'
+  | 'type';
 
 const SOURCES: Record<SoundId, number> = {
   button: require('../assets/ui/button.wav'),
@@ -52,6 +53,7 @@ const SOURCES: Record<SoundId, number> = {
   review: require('../assets/ui/tab-review.wav'),
   practice: require('../assets/ui/tab-practice.wav'),
   arena: require('../assets/ui/tab-arena.wav'),
+  type: require('../assets/ui/type.wav'),
 };
 
 const VOLUMES: Record<SoundId, number> = {
@@ -78,9 +80,17 @@ const VOLUMES: Record<SoundId, number> = {
   review: 0.4,
   practice: 0.38,
   arena: 0.4,
+  type: 0.22,
 };
 
 const players = new Map<SoundId, AudioPlayer>();
+/** One intro tick is 3175 samples. The file is 250 of them, end to end. */
+const TYPE_MS = (250 * 3175 / 44100) * 1000;
+const typePlayers: AudioPlayer[] = [];
+let typeActive = 0;
+let typeOn = false;
+let typeToken = 0;
+let typeHandoff: ReturnType<typeof setTimeout> | null = null;
 let audioModeReady: Promise<void> | null = null;
 let masterToken = 0;
 let masterFade: ReturnType<typeof setInterval> | null = null;
@@ -117,20 +127,35 @@ export function setSoundMuted(next: boolean) {
   void AsyncStorage.setItem(MUTE_KEY, next ? '1' : '0').catch(() => undefined);
 }
 
+function clearTypeHandoff() {
+  if (typeHandoff) clearTimeout(typeHandoff);
+  typeHandoff = null;
+}
+
 function pauseUiSounds() {
+  typeOn = false;
+  typeToken += 1;
+  clearTypeHandoff();
   for (const player of players.values()) {
+    player.pause();
+  }
+  for (const player of typePlayers) {
     player.pause();
   }
 }
 
-function play(id: SoundId) {
-  if (muted) return;
+function ensureAudioMode() {
   if (!audioModeReady) {
     audioModeReady = setAudioModeAsync({
       playsInSilentMode: true,
       interruptionMode: 'mixWithOthers',
     }).catch(() => undefined);
   }
+}
+
+function play(id: SoundId) {
+  if (muted) return;
+  ensureAudioMode();
   let current = players.get(id);
   if (!current) {
     current = createAudioPlayer(SOURCES[id]);
@@ -147,6 +172,71 @@ function play(id: SoundId) {
 /** One short click for Home screen buttons. */
 export function playButtonSound() {
   play('button');
+}
+
+function typePlayer(index: number) {
+  let current = typePlayers[index];
+  if (!current) {
+    current = createAudioPlayer(SOURCES.type);
+    current.loop = false;
+    current.volume = VOLUMES.type;
+    typePlayers[index] = current;
+  }
+  return current;
+}
+
+/**
+ * The player restarts by seeking to the beginning when a clip ends, and that seek
+ * leaves a gap. A second player is already waiting at the start, and takes over
+ * in the silence after a tick so the run never breaks.
+ */
+function scheduleTypeHandoff(token: number) {
+  clearTypeHandoff();
+  typeHandoff = setTimeout(() => {
+    if (!typeOn || token !== typeToken) return;
+    const prev = typePlayer(typeActive);
+    typeActive = 1 - typeActive;
+    const next = typePlayer(typeActive);
+    next.volume = VOLUMES.type;
+    next.play();
+    prev.pause();
+    void prev.seekTo(0);
+    scheduleTypeHandoff(token);
+  }, TYPE_MS - 30);
+}
+
+/** Starts the typing loop. Extra calls while it is already going do nothing. */
+export function startTypewriter() {
+  if (muted) return;
+  ensureAudioMode();
+  if (typeOn) {
+    typePlayer(0).volume = VOLUMES.type;
+    typePlayer(1).volume = VOLUMES.type;
+    return;
+  }
+  typeOn = true;
+  const token = ++typeToken;
+  typeActive = 0;
+  const first = typePlayer(0);
+  const second = typePlayer(1);
+  first.volume = VOLUMES.type;
+  second.volume = VOLUMES.type;
+  first.pause();
+  second.pause();
+  void Promise.all([first.seekTo(0), second.seekTo(0)]).then(() => {
+    if (!typeOn || token !== typeToken) return;
+    first.play();
+    scheduleTypeHandoff(token);
+  });
+}
+
+/** Stops the typing loop. */
+export function stopTypewriter() {
+  if (!typeOn && typePlayers.length === 0) return;
+  typeOn = false;
+  typeToken += 1;
+  clearTypeHandoff();
+  for (const player of typePlayers) player.pause();
 }
 
 /** The Home click, a fourth lower, for the pre-buzz and answer timers. */

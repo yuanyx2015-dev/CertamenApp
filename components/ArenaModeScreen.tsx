@@ -495,9 +495,8 @@ export function ArenaModeScreen({
             placeholderTextColor="#a89880"
             style={styles.input}
           />
-          <Text style={styles.hint}>A seven-character Roman numeral.</Text>
           <TouchableOpacity
-            style={styles.primaryBtn}
+            style={styles.goldBtn}
             disabled={busy}
             onPress={() => {
               const trimmed = requireName();
@@ -514,7 +513,7 @@ export function ArenaModeScreen({
               });
             }}
           >
-            <Text style={styles.primaryBtnText}>Enter</Text>
+            <Text style={styles.goldBtnText}>Enter</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.textBtn} onPress={() => setPane('home')}>
             <Text style={styles.textBtnLabel}>Back</Text>
@@ -525,7 +524,7 @@ export function ArenaModeScreen({
       {pane === 'create' && (
         <View style={styles.actions}>
           <TouchableOpacity
-            style={styles.primaryBtn}
+            style={styles.goldBtn}
             disabled={busy}
             onPress={() => {
               const trimmed = requireName();
@@ -545,7 +544,7 @@ export function ArenaModeScreen({
             {busy ? (
               <ActivityIndicator color="#f5efe3" />
             ) : (
-              <Text style={styles.primaryBtnText}>Open the room</Text>
+              <Text style={styles.goldBtnText}>Open the room</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity style={styles.textBtn} onPress={() => setPane('home')}>
@@ -650,7 +649,6 @@ const styles = StyleSheet.create({
   },
   label: { color: '#3a3a3a', fontSize: 17, marginBottom: 0, marginTop: 0, letterSpacing: 0.2 },
   nameLabel: { marginLeft: 1 },
-  hint: { color: '#a89880', fontSize: 12, marginBottom: 8 },
   input: {
     borderWidth: 1,
     borderColor: 'rgba(201, 169, 97, 0.7)',
@@ -716,15 +714,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryBtnText: { color: '#f5efe3', fontSize: 20, fontWeight: '600' },
+  goldBtn: {
+    backgroundColor: '#c9a961',
+    borderRadius: 11,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  goldBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.26,
+  },
   secondaryBtn: {
     borderWidth: 1,
     borderColor: 'rgba(138, 106, 58, 0.7)',
-    borderRadius: 14,
-    paddingVertical: 16,
+    borderRadius: 11,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.28)',
   },
-  secondaryBtnText: { color: '#4a3728', fontSize: 20, fontWeight: '600' },
+  secondaryBtnText: {
+    color: '#4a3728',
+    fontSize: 16,
+    fontWeight: '400',
+    letterSpacing: 0.26,
+  },
   textBtn: { alignItems: 'center', paddingVertical: 8 },
   textBtnLabel: { color: '#8a6a3a', fontSize: 14 },
   legionClip: {

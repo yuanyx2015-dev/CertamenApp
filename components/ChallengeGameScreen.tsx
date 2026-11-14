@@ -9,7 +9,7 @@ import {
   Modal
 } from 'react-native';
 import { Text } from '../lib/AppText';
-import { playBuzzSound, playMasterSound, playNextSound, playTickSound, stopMasterSound } from '../lib/buttonSound';
+import { playBuzzSound, playMasterSound, playNextSound, playTickSound, startTypewriter, stopMasterSound, stopTypewriter } from '../lib/buttonSound';
 import { FitScrollView } from './FitScrollView';
 import { GameHeaderFade } from './GameHeaderFade';
 import { getCurrentUser } from '../services/authService';
@@ -286,6 +286,7 @@ export function ChallengeGameScreen({
       clearInterval(streamIntervalRef.current);
       streamIntervalRef.current = null;
     }
+    stopTypewriter();
   };
   const clearAnswerTimer = () => {
     if (answerTimerRef.current) {
@@ -440,6 +441,7 @@ export function ChallengeGameScreen({
     charIndexRef.current = 0;
     fullTextRef.current = text;
 
+    startTypewriter();
     streamIntervalRef.current = setInterval(() => {
       if (charIndexRef.current < fullTextRef.current.length) {
         setDisplayedText(fullTextRef.current.substring(0, charIndexRef.current + 1));

@@ -16,6 +16,8 @@ import {
   playCorrectSound,
   playNextSound,
   playWrongSound,
+  startTypewriter,
+  stopTypewriter,
 } from '../lib/buttonSound';
 import {
   arenaAnswer,
@@ -77,6 +79,13 @@ export function ArenaMatchScreen({
   const fade = useRef(new Animated.Value(0)).current;
   const lastQuestion = useRef(0);
 
+  useEffect(() => {
+    const len = view?.question_text?.length ?? 0;
+    const reading = view?.phase === 'reading' || view?.phase === 'rebound';
+    if (view && reading && shown < len) startTypewriter();
+    else stopTypewriter();
+  }, [shown, view]);
+
   const refresh = useCallback(async () => {
     const next = await arenaView(matchId);
     if (!next.ok) return;
@@ -96,6 +105,7 @@ export function ArenaMatchScreen({
       });
     }, 5000);
     return () => {
+      stopTypewriter();
       unsub();
       clearInterval(poll);
       clearInterval(beat);

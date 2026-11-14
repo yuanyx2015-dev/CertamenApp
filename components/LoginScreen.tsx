@@ -16,6 +16,7 @@ import { signInWithGoogle, signInWithApple, type AuthResponse } from '../service
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
 import { getOrCreateProfile } from '../services/profileService';
+import { startTypewriter, stopTypewriter } from '../lib/buttonSound';
 import { useIPadScaledStyles } from '../lib/layout';
 import { PRIVACY_POLICY_URL } from '../constants/urls';
 
@@ -32,9 +33,15 @@ function LoopingTossup() {
   const [count, setCount] = useState(0);
   const hold = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => () => stopTypewriter(), []);
+
   useEffect(() => {
     const stem = TOSSUP_STEMS[line];
-    if (count < stem.length) {
+    const typing = count < stem.length;
+    if (count === 0) startTypewriter();
+    if (!typing) stopTypewriter();
+
+    if (typing) {
       const id = setTimeout(() => setCount((n) => n + 1), 32);
       return () => clearTimeout(id);
     }

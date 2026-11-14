@@ -8,7 +8,7 @@ import {
   Easing
 } from 'react-native';
 import { Text } from '../lib/AppText';
-import { playBuzzSound, playNextSound, playTickSound } from '../lib/buttonSound';
+import { playBuzzSound, playNextSound, playTickSound, startTypewriter, stopTypewriter } from '../lib/buttonSound';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { FitScrollView } from './FitScrollView';
@@ -424,6 +424,7 @@ export function PracticeGameScreen({
 
     // Start streaming text (pace from Further adjustments → Reading speed)
     const streamMs = streamIntervalMsForReadingSpeed(readingSpeedRef.current);
+    startTypewriter();
     streamIntervalRef.current = setInterval(() => {
       if (charIndexRef.current < fullTextRef.current.length) {
         setDisplayedText(fullTextRef.current.substring(0, charIndexRef.current + 1));
@@ -435,6 +436,7 @@ export function PracticeGameScreen({
       if (!streamIntervalRef.current) return;
       clearInterval(streamIntervalRef.current);
       streamIntervalRef.current = null;
+      stopTypewriter();
       setStatusText('Waiting for buzz...');
       startPreBuzzCountdown();
     }, streamMs);
@@ -450,6 +452,7 @@ export function PracticeGameScreen({
     if (streamIntervalRef.current) {
       clearInterval(streamIntervalRef.current);
     }
+    stopTypewriter();
     clearPreBuzzTimer();
     setPreBuzzSecondsRemaining(null);
 
@@ -600,6 +603,7 @@ export function PracticeGameScreen({
     }
 
     return () => {
+      stopTypewriter();
       if (streamIntervalRef.current) {
         clearInterval(streamIntervalRef.current);
         streamIntervalRef.current = null;
