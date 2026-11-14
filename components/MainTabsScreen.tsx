@@ -10,19 +10,25 @@ import { InformationScreen } from './InformationScreen';
 import { ChallengeModeScreen } from './ChallengeModeScreen';
 import { ReviewWrongScreen } from './ReviewWrongScreen';
 import { StoryModeScreen } from './StoryModeScreen';
+import { ArenaModeScreen } from './ArenaModeScreen';
 import type { ChallengeGameMode } from './ChallengeGameScreen';
 import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
 import { isIPad } from '../lib/layout';
-import { playTabSound } from '../lib/buttonSound';
+import { playAscendPaneSound, playTabSound } from '../lib/buttonSound';
 
-export type MainTabId = 'profile' | 'challenge' | 'review' | 'practice';
+export type MainTabId = 'profile' | 'challenge' | 'review' | 'arena' | 'practice';
 
-const TABS: { id: MainTabId; label: string }[] = [
+/** Bottom bar. Review lives inside Ascend, not as its own stop. */
+const BAR_TABS: { id: MainTabId; label: string }[] = [
   { id: 'profile', label: 'Home' },
-  { id: 'challenge', label: 'Challenge' },
-  { id: 'review', label: 'Review' },
-  { id: 'practice', label: 'Practice' },
+  { id: 'challenge', label: 'Ascend' },
+  { id: 'arena', label: 'Arena' },
+  { id: 'practice', label: 'Training' },
 ];
+
+function sectionOf(tab: MainTabId): MainTabId {
+  return tab === 'review' ? 'challenge' : tab;
+}
 
 /** Minimum horizontal travel (px) to register a deliberate tab swipe. */
 const SWIPE_DISTANCE_THRESHOLD = 60;
@@ -38,6 +44,7 @@ export function MainTabsScreen({
   onStartChallengeGame,
   onLogout,
   progressFillReady = true,
+  onStartArenaMatch,
 }: {
   activeTab: MainTabId;
   onTabChange: (tab: MainTabId) => void;
@@ -55,21 +62,36 @@ export function MainTabsScreen({
   ) => void;
   onLogout?: () => void;
   progressFillReady?: boolean;
+  onStartArenaMatch?: (matchId: string) => void;
 }) {
+  const visibleTabs = isGuestMode
+    ? BAR_TABS.filter((tab) => tab.id === 'arena' || tab.id === 'practice')
+    : BAR_TABS;
+  const section = sectionOf(activeTab);
+  const shownTab = visibleTabs.some((tab) => tab.id === section) ? section : 'arena';
+  const rankPane = activeTab === 'review' ? 'review' : 'challenge';
+
   const handleTabPress = (tab: MainTabId) => {
-    if (tab !== activeTab) playTabSound(tab);
+    if (tab === shownTab) return;
+    playTabSound(tab);
     onTabChange(tab);
+  };
+
+  const handleRankPane = (pane: 'challenge' | 'review') => {
+    if (pane === rankPane && shownTab === 'challenge') return;
+    playAscendPaneSound(pane);
+    onTabChange(pane);
   };
 
   // Move to the adjacent tab. Kept in a ref so the (once-created)
   // PanResponder always sees fresh props.
   const swipeToAdjacentTabRef = useRef<(direction: 1 | -1) => void>(() => {});
   swipeToAdjacentTabRef.current = (direction) => {
-    const currentIndex = TABS.findIndex((t) => t.id === activeTab);
+    const currentIndex = visibleTabs.findIndex((t) => t.id === shownTab);
     if (currentIndex === -1) return;
     const nextIndex = currentIndex + direction;
-    if (nextIndex < 0 || nextIndex >= TABS.length) return;
-    handleTabPress(TABS[nextIndex].id);
+    if (nextIndex < 0 || nextIndex >= visibleTabs.length) return;
+    handleTabPress(visibleTabs[nextIndex].id);
   };
 
   const panResponder = useRef(
@@ -92,7 +114,7 @@ export function MainTabsScreen({
   ).current;
 
   const panel = (() => {
-    switch (activeTab) {
+    switch (shownTab) {
       case 'profile':
         return (
           <InformationScreen
@@ -106,21 +128,49 @@ export function MainTabsScreen({
         );
       case 'challenge':
         return (
-          <ChallengeModeScreen
-            isAuthenticated={isAuthenticated}
-            isGuestMode={isGuestMode}
-            onNavigate={onNavigate}
-            onTabChange={onTabChange}
-            onStartChallengeGame={onStartChallengeGame}
-          />
+          <View style={styles.rankUp}>
+            <View style={styles.rankSwitch}>
+              {(['challenge', 'review'] as const).map((pane) => {
+                const selected = rankPane === pane;
+                return (
+                  <TouchableOpacity
+                    key={pane}
+                    style={[styles.rankSwitchItem, selected && styles.rankSwitchItemSelected]}
+                    onPress={() => handleRankPane(pane)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.rankSwitchLabel, selected && styles.rankSwitchLabelSelected]}>
+                      {pane === 'challenge' ? 'Challenge' : 'Review'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View style={styles.rankPane}>
+              {rankPane === 'review' ? (
+                <ReviewWrongScreen
+                  isAuthenticated={isAuthenticated}
+                  isGuestMode={isGuestMode}
+                  onNavigate={onNavigate}
+                  onStartChallengeGame={onStartChallengeGame}
+                />
+              ) : (
+                <ChallengeModeScreen
+                  isAuthenticated={isAuthenticated}
+                  isGuestMode={isGuestMode}
+                  onNavigate={onNavigate}
+                  onTabChange={onTabChange}
+                  onStartChallengeGame={onStartChallengeGame}
+                />
+              )}
+            </View>
+          </View>
         );
-      case 'review':
+      case 'arena':
         return (
-          <ReviewWrongScreen
-            isAuthenticated={isAuthenticated}
+          <ArenaModeScreen
             isGuestMode={isGuestMode}
-            onNavigate={onNavigate}
-            onStartChallengeGame={onStartChallengeGame}
+            onStartMatch={(id) => onStartArenaMatch?.(id)}
           />
         );
       case 'practice':
@@ -139,16 +189,16 @@ export function MainTabsScreen({
   return (
     <View style={[styles.root, isIPad && styles.rootIPad]}>
       {/* iPad: scale only the page content — keep the tab bar visible and tappable. */}
-      {isIPad ? (
-        <IPadScaledPhoneColumn extraShrink={activeTab === 'practice' ? 1.15 : 1}>
+        {isIPad ? (
+        <IPadScaledPhoneColumn extraShrink={shownTab === 'practice' ? 1.15 : 1}>
           {panelBody}
         </IPadScaledPhoneColumn>
       ) : (
         panelBody
       )}
       <View style={[styles.tabBar, isIPad && styles.tabBarIPad]}>
-        {TABS.map((tab) => {
-          const selected = activeTab === tab.id;
+        {visibleTabs.map((tab) => {
+          const selected = shownTab === tab.id;
           return (
             <TouchableOpacity
               key={tab.id}
@@ -187,6 +237,42 @@ const styles = StyleSheet.create({
   panel: {
     flex: 1,
     minHeight: 0,
+  },
+  rankUp: {
+    flex: 1,
+    minHeight: 0,
+  },
+  rankPane: {
+    flex: 1,
+    minHeight: 0,
+  },
+  rankSwitch: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 6,
+    padding: 3,
+    borderRadius: 12,
+    backgroundColor: 'rgba(201, 169, 97, 0.16)',
+    gap: 3,
+  },
+  rankSwitchItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  rankSwitchItemSelected: {
+    backgroundColor: '#f5efe3',
+  },
+  rankSwitchLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#8a6a3a',
+  },
+  rankSwitchLabelSelected: {
+    color: '#4a3728',
   },
   tabBar: {
     flexDirection: 'row',

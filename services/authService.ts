@@ -307,6 +307,22 @@ export const getCurrentUser = async (): Promise<User | null> => {
   }
 };
 
+export function userIsAnonymous(user: { is_anonymous?: boolean } | null | undefined): boolean {
+  return user?.is_anonymous === true;
+}
+
+/** Guest Arena identity. Stats stay empty for these accounts. */
+export const signInAnonymously = async (): Promise<{ error?: AuthError }> => {
+  try {
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) return { error };
+    return {};
+  } catch (error) {
+    console.error('Anonymous sign-in error:', error);
+    return { error: { message: 'Could not continue as a guest.' } };
+  }
+};
+
 // Listen to auth state changes
 export const onAuthStateChange = (
   callback: (event: string, session: Session | null) => void

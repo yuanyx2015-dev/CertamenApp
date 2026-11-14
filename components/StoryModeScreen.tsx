@@ -54,7 +54,7 @@ export function StoryModeScreen({
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.titleText}>Practice Mode</Text>
+        <Text style={styles.titleText}>Training</Text>
         <Text style={styles.subtitle}>Choose a category to start</Text>
 
         <View style={styles.pickerWrap}>
@@ -63,7 +63,7 @@ export function StoryModeScreen({
 
         <View style={styles.footerNote}>
           <Text style={styles.footerText}>
-            Progress in Practice Mode does not affect Challenge Mode, Review, your rank, or anything else — at all.
+            Progress in Training does not affect Challenge Mode, Review, your rank, or anything else — at all.
           </Text>
         </View>
       </FitScrollView>

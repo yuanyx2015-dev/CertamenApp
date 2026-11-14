@@ -7,6 +7,7 @@ import {
   Alert,
   Platform,
   Linking,
+  Text as SystemText,
 } from 'react-native';
 import { Text } from '../lib/AppText';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -57,75 +58,66 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
   const handleAppleLogin = () => runLogin('Apple', signInWithApple);
 
   return (
-    <View style={[styles.container]}>
+    <View style={styles.container}>
       <View style={styles.welcomeSection}>
         <Text style={styles.welcomeText}>Welcome</Text>
-
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
           <Text style={styles.toText}>to</Text>
           <View style={styles.dividerLine} />
         </View>
-
         <Text face="brand" style={styles.appName}>
           CertamenPrep
         </Text>
         <Text style={styles.tagline}>Practice like it's real.</Text>
       </View>
 
-      <View style={styles.loginSection}>
+      <View style={styles.googleSlot}>
         <Text style={styles.loginPrompt}>Log in / Sign up</Text>
+        <LoginButton
+          icon={<Google />}
+          label={isLoading ? 'Signing in...' : 'Sign in with Google'}
+          onPress={handleGoogleLogin}
+          disabled={isLoading}
+        />
+      </View>
 
-        <View style={styles.buttonsContainer}>
-          <LoginButton
-            icon={<Google />}
-            label={isLoading ? 'Signing in...' : 'Sign in with Google'}
-            onPress={handleGoogleLogin}
-            disabled={isLoading}
-          />
+      <View style={styles.belowGoogle}>
+        {Platform.OS === 'ios' && (
+          <View
+            style={[styles.appleButtonWrap, isLoading && styles.appleButtonDisabled]}
+            pointerEvents={isLoading ? 'none' : 'auto'}
+          >
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={8}
+              style={styles.appleButton}
+              onPress={handleAppleLogin}
+            />
+          </View>
+        )}
 
-          {/* iOS only: App Store requires SIWA when offering Google; use Apple's system button. */}
-          {Platform.OS === 'ios' && (
-            <View
-              style={[styles.appleButtonWrap, isLoading && styles.appleButtonDisabled]}
-              pointerEvents={isLoading ? 'none' : 'auto'}
-            >
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                cornerRadius={8}
-                style={styles.appleButton}
-                onPress={handleAppleLogin}
-              />
-            </View>
-          )}
-
-          {onGuestMode && (
-            <>
-              <TouchableOpacity
-                style={styles.guestButton}
-                onPress={onGuestMode}
-                disabled={isLoading}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.guestButtonText}>Continue as Guest</Text>
-              </TouchableOpacity>
-              <Text style={styles.guestHint}>
-                Practice freely — sign in later for Challenge, Review, and saved progress.
-              </Text>
-            </>
-          )}
-
+        {onGuestMode && (
           <TouchableOpacity
-            onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+            style={[styles.guestButton, isLoading && styles.appleButtonDisabled]}
+            onPress={onGuestMode}
             disabled={isLoading}
             activeOpacity={0.7}
-            accessibilityRole="link"
-            accessibilityLabel="Privacy Policy"
           >
-            <Text style={styles.privacyLink}>Privacy Policy</Text>
+            <Text style={styles.guestButtonText}>Continue as Guest</Text>
           </TouchableOpacity>
-        </View>
+        )}
+
+        <TouchableOpacity
+          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+          disabled={isLoading}
+          activeOpacity={0.7}
+          accessibilityRole="link"
+          accessibilityLabel="Privacy Policy"
+        >
+          <Text style={styles.privacyLink}>Privacy Policy</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -199,7 +191,7 @@ function LoginButton({
       >
         <Animated.View style={[styles.button, { backgroundColor }]}>
           <View style={styles.iconContainer}>{icon}</View>
-          <Text style={styles.buttonText}>{label}</Text>
+          <SystemText style={styles.buttonText}>{label}</SystemText>
         </Animated.View>
       </TouchableOpacity>
     </Animated.View>
@@ -211,13 +203,21 @@ const baseStyles = StyleSheet.create({
     flex: 1,
     maxWidth: 448,
     alignSelf: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
     width: '100%',
+  },
+  googleSlot: {
+    flex: 0.62,
+    justifyContent: 'flex-end',
+  },
+  belowGoogle: {
+    flex: 1,
+    gap: 12,
+    paddingTop: 12,
   },
   welcomeSection: {
     alignItems: 'center',
-    marginBottom: 64,
+    marginTop: 22,
+    marginBottom: 0,
   },
   welcomeText: {
     fontSize: 38,
@@ -244,7 +244,6 @@ const baseStyles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   appName: {
-    // Cormorant Garamond runs small and narrow — the wordmark needs the extra px.
     fontSize: 38,
     letterSpacing: 1.2,
     color: '#3a3a3a',
@@ -266,7 +265,7 @@ const baseStyles = StyleSheet.create({
     fontSize: 16,
     color: '#5a5a5a',
     letterSpacing: 0.4,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   buttonsContainer: {
     gap: 12,
@@ -290,9 +289,9 @@ const baseStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 8,
     paddingHorizontal: 24,
-    paddingVertical: 14,
+    height: 48,
     borderWidth: 1,
     borderColor: 'rgba(60, 60, 60, 0.2)',
     borderRadius: 8,
@@ -301,44 +300,42 @@ const baseStyles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
-    minHeight: 48,
     width: '100%',
   },
   iconContainer: {
-    width: 20,
-    height: 20,
+    width: 16,
+    height: 16,
   },
   buttonText: {
     color: '#3c4043',
-    letterSpacing: 0.25,
-    fontSize: 16,
-    fontWeight: '500',
+    letterSpacing: -0.2,
+    fontSize: 18,
+    fontWeight: '400',
   },
   guestButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    marginTop: 8,
+    alignSelf: 'center',
+    width: '72%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minHeight: 42,
+    borderRadius: 8,
+    backgroundColor: '#e4d8c8',
+    borderWidth: 1,
+    borderColor: 'rgba(90, 74, 52, 0.16)',
   },
   guestButtonText: {
-    color: '#6a6a6a',
-    letterSpacing: 0.2,
-    fontSize: 15,
+    color: '#2c261f',
+    letterSpacing: 0.15,
+    fontSize: 17,
+    fontWeight: '400',
     textAlign: 'center',
-    textDecorationLine: 'underline',
-  },
-  guestHint: {
-    marginTop: 4,
-    paddingHorizontal: 24,
-    color: '#8a8a8a',
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: 'center',
-    letterSpacing: 0.1,
   },
   privacyLink: {
-    marginTop: 16,
+    marginTop: 0,
     color: '#6a6a6a',
-    fontSize: 13,
+    fontSize: 15,
     textAlign: 'center',
     textDecorationLine: 'underline',
     letterSpacing: 0.1,

@@ -422,7 +422,7 @@ export function InformationScreen({
             />
           </View>
           <AnimatedCardButton
-            label="Start your Daily Challenge!"
+            label="Start Your Daily Challenge!"
             onPress={handleDailyChallenge}
             style={styles.dailyChallengeWrap}
           />

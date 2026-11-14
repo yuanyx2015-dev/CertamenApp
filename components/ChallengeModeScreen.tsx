@@ -155,9 +155,9 @@ export function ChallengeModeScreen({
     if (allDone) {
       Alert.alert(
         'You have reached the pinnacle!',
-        'You have already mastered every question. Try Practice Mode to keep sharp.',
+        'You have already mastered every question. Try Training to keep sharp.',
         [
-          { text: 'Open Practice Mode', onPress: () => onNavigate?.('story') },
+          { text: 'Open Training', onPress: () => onNavigate?.('story') },
           { text: 'Close', style: 'cancel' },
         ]
       );
@@ -166,7 +166,7 @@ export function ChallengeModeScreen({
     if (unmasteredHere === 0) {
       Alert.alert(
         'No unmastered questions',
-        `You have nothing left to learn at ${rankName}. Master any wrong questions in the Review tab to finish this rank.`,
+        `You have nothing left to learn at ${rankName}. Master any wrong questions in Review to finish this rank.`,
         [
           { text: 'Open Review', onPress: () => onTabChange?.('review') },
           { text: 'Close', style: 'cancel' },

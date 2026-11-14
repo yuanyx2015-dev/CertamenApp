@@ -23,8 +23,10 @@ type SoundId =
   | 'logo'
   | 'profile'
   | 'challenge'
+  | 'ascendChallenge'
   | 'review'
-  | 'practice';
+  | 'practice'
+  | 'arena';
 
 const SOURCES: Record<SoundId, number> = {
   button: require('../assets/ui/button.wav'),
@@ -46,8 +48,10 @@ const SOURCES: Record<SoundId, number> = {
   logo: require('../assets/ui/logo.wav'),
   profile: require('../assets/ui/tab-home.wav'),
   challenge: require('../assets/ui/tab-challenge.wav'),
+  ascendChallenge: require('../assets/ui/tab-ascend-challenge.wav'),
   review: require('../assets/ui/tab-review.wav'),
   practice: require('../assets/ui/tab-practice.wav'),
+  arena: require('../assets/ui/tab-arena.wav'),
 };
 
 const VOLUMES: Record<SoundId, number> = {
@@ -70,8 +74,10 @@ const VOLUMES: Record<SoundId, number> = {
   logo: 0.4,
   profile: 0.42,
   challenge: 0.42,
+  ascendChallenge: 0.42,
   review: 0.4,
   practice: 0.38,
+  arena: 0.4,
 };
 
 const players = new Map<SoundId, AudioPlayer>();
@@ -260,7 +266,15 @@ export function playLogoSound() {
   play('logo');
 }
 
-/** Home F4, Challenge C5, Review G5, Practice D6. A faint fourth below and major third above colors each note. */
-export function playTabSound(tab: 'profile' | 'challenge' | 'review' | 'practice') {
+/** Home F4, Ascend C5, Arena G5, Training D6. Each is a fifth above the last. */
+export function playTabSound(tab: 'profile' | 'challenge' | 'review' | 'arena' | 'practice') {
   play(tab);
+}
+
+/**
+ * Challenge and Review inside Ascend share Ascend's C5.
+ * Challenge leans on the fourth below; Review leans on the third above.
+ */
+export function playAscendPaneSound(pane: 'challenge' | 'review') {
+  play(pane === 'challenge' ? 'ascendChallenge' : 'review');
 }

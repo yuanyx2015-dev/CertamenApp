@@ -140,7 +140,7 @@ export function ReviewWrongScreen({
           Once mastered here, a question stays mastered — it will not reappear in Challenge Mode.
         </Text>
         <Text style={styles.infoBodyMuted}>
-          Note: questions you miss in Practice Mode don't show up here — only Challenge Mode and Review
+          Note: questions you miss in Training don't show up here — only Challenge Mode and Review
           itself feed this list.
         </Text>
       </View>

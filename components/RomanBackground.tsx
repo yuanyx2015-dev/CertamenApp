@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Animated,
   View,
   StyleSheet,
   TouchableOpacity,
   AppState,
+  Alert,
   Easing,
   type AppStateStatus
 } from 'react-native';
@@ -18,12 +19,10 @@ import { PracticeGameScreen } from './PracticeGameScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { CategoryQuestionsScreen } from './CategoryQuestionsScreen';
 import { ReviewCategoryScreen } from './ReviewCategoryScreen';
-import {
-  ChallengeGameScreen,
-  type ChallengeGameConfig,
-  type ChallengeGameMode,
-} from './ChallengeGameScreen';
-import { getSession, signOut, onAuthStateChange } from '../services/authService';
+import { ChallengeGameScreen, type ChallengeGameConfig, type ChallengeGameMode } from './ChallengeGameScreen';
+import { ArenaMatchScreen } from './ArenaMatchScreen';
+import { getSession, signOut, onAuthStateChange, signInAnonymously, userIsAnonymous } from '../services/authService';
+import { arenaLeave } from '../services/arenaService';
 import { alertIfSignedInDataUnreachable } from '../lib/dataLoadErrorAlert';
 import { StreakConfettiProvider } from './StreakConfetti';
 import { BrandIntroOverlay } from './BrandIntroOverlay';
@@ -46,6 +45,7 @@ export function RomanBackground() {
   /** Challenge Mode game session config (mode + setSize + rankIndex). */
   const [challengeConfig, setChallengeConfig] = useState<ChallengeGameConfig | null>(null);
   const [challengeGameKey, setChallengeGameKey] = useState(0);
+  const [arenaMatchId, setArenaMatchId] = useState<string | null>(null);
   /** Title and wreath are separate hit areas that fade together. */
   const [logoPressed, setLogoPressed] = useState(false);
   /** Brand intro after login, cold start, or return from background. */
@@ -94,6 +94,19 @@ export function RomanBackground() {
 
     const { data: authListener } = onAuthStateChange((event, session) => {
       console.log('[RomanBackground] onAuthStateChange:', event, 'session:', !!session);
+      if (session && userIsAnonymous(session.user)) {
+        setIsAuthenticated(false);
+        setIsGuestMode(true);
+        setMainTab('arena');
+        setCurrentScreen((prev) => {
+          if (prev === 'login') {
+            pendingBrandIntroRef.current = true;
+            return 'main';
+          }
+          return prev;
+        });
+        return;
+      }
       if (session) {
         setIsAuthenticated(true);
         setIsGuestMode(false);
@@ -160,6 +173,16 @@ export function RomanBackground() {
 
   const checkSession = async () => {
     const session = await getSession();
+    if (session && userIsAnonymous(session.user)) {
+      setIsAuthenticated(false);
+      setIsGuestMode(true);
+      setMainTab('arena');
+      setCurrentScreen((prev) => {
+        if (prev === 'login') pendingBrandIntroRef.current = true;
+        return 'main';
+      });
+      return;
+    }
     if (session) {
       setIsAuthenticated(true);
       // Only queue intro when leaving login — avoids a double-queue race with onAuthStateChange.
@@ -177,6 +200,11 @@ export function RomanBackground() {
 
   /** Logo / wreath tap: jump straight to Home. */
   const handleNavigateToHome = () => {
+    if (isGuestModeRef.current) return;
+    if (currentScreenRef.current === 'arena-match' && arenaMatchId) {
+      void arenaLeave(arenaMatchId);
+      setArenaMatchId(null);
+    }
     const alreadyHome = currentScreen === 'main' && mainTab === 'profile';
     if (!alreadyHome) playLogoSound();
     setLogoPressed(false);
@@ -261,10 +289,31 @@ export function RomanBackground() {
     handleNavigate('main');
   };
 
-  const handleGuestMode = () => {
+  const handleGuestMode = async () => {
+    const { error } = await signInAnonymously();
+    if (error) {
+      Alert.alert('Guest', error.message);
+      return;
+    }
     setIsGuestMode(true);
-    setMainTab('profile');
+    setIsAuthenticated(false);
+    setMainTab('arena');
     pendingBrandIntroRef.current = true;
+    setCurrentScreen('main');
+  };
+
+  const handleReturnToLogin = async () => {
+    await signOut();
+  };
+
+  const handleStartArenaMatch = useCallback((matchId: string) => {
+    setArenaMatchId(matchId);
+    setCurrentScreen('arena-match');
+  }, []);
+
+  const handleExitArenaMatch = () => {
+    setArenaMatchId(null);
+    setMainTab(isGuestModeRef.current ? 'arena' : 'arena');
     setCurrentScreen('main');
   };
 
@@ -326,6 +375,18 @@ export function RomanBackground() {
         return (
           <LoginScreen onLoginSuccess={handleLoginSuccess} onGuestMode={handleGuestMode} />
         );
+      case 'arena-match':
+        if (!arenaMatchId) {
+          setCurrentScreen('main');
+          return null;
+        }
+        return (
+          <ArenaMatchScreen
+            key={arenaMatchId}
+            matchId={arenaMatchId}
+            onExit={handleExitArenaMatch}
+          />
+        );
       case 'challenge-game':
         if (!challengeConfig) {
           // Defensive fallback if we somehow got here without a config.
@@ -352,6 +413,7 @@ export function RomanBackground() {
             isAuthenticated={isAuthenticated}
             onStartChallengeGame={handleStartChallengeGame}
             onLogout={handleLogout}
+            onStartArenaMatch={handleStartArenaMatch}
             progressFillReady={!showBrandIntro}
           />
         );
@@ -365,7 +427,9 @@ export function RomanBackground() {
     currentScreen !== 'reviewCategories' &&
     currentScreen !== 'categoryQuestions';
   const isGameScreen =
-    currentScreen === 'practice-game' || currentScreen === 'challenge-game';
+    currentScreen === 'practice-game' ||
+    currentScreen === 'challenge-game' ||
+    currentScreen === 'arena-match';
   const isReviewGame =
     currentScreen === 'challenge-game' && challengeConfig?.mode === 'review';
 
@@ -391,14 +455,16 @@ export function RomanBackground() {
         bottomInset={isReviewGame ? 164 : isGameScreen ? 128 : 118}
       />
 
-      {currentScreen !== 'login' && (
-        <View
-          style={[
-            styles.logoHomeWrap,
-            isIPad && styles.logoHomeWrapIPad,
-          ]}
-          pointerEvents="box-none"
-        >
+      <View
+        style={[
+          styles.logoHomeWrap,
+          isIPad && styles.logoHomeWrapIPad,
+        ]}
+        pointerEvents="box-none"
+      >
+        {currentScreen === 'login' ? (
+          <View style={styles.logoTitleHit}>{brandTitle}</View>
+        ) : (
           <TouchableOpacity
             style={styles.logoTitleHit}
             onPress={handleNavigateToHome}
@@ -406,11 +472,22 @@ export function RomanBackground() {
             onPressOut={() => setLogoPressed(false)}
             activeOpacity={1}
             accessibilityRole="button"
-            accessibilityLabel="Home"
+            accessibilityLabel={isGuestMode ? 'CertamenPrep' : 'Home'}
           >
             {brandTitle}
           </TouchableOpacity>
-        </View>
+        )}
+      </View>
+
+      {isGuestMode && currentScreen !== 'login' && (
+        <TouchableOpacity
+          style={styles.guestLoginBtn}
+          onPress={() => void handleReturnToLogin()}
+          accessibilityRole="button"
+          accessibilityLabel="Return to log in"
+        >
+          <Text style={styles.guestLoginText}>Log in</Text>
+        </TouchableOpacity>
       )}
 
       <View
@@ -428,7 +505,7 @@ export function RomanBackground() {
         </View>
         {/* Separate hit areas, one shared press state: the wide SVG must not
             cover the Practice Settings button in the top-right. */}
-        {currentScreen !== 'login' && (
+        {currentScreen !== 'login' && !isGuestMode && (
           <TouchableOpacity
             style={[styles.laurelHomeHit, isIPad && styles.laurelHomeHitIPad]}
             onPress={handleNavigateToHome}
@@ -452,7 +529,7 @@ export function RomanBackground() {
           isIPhone && isMainTabScreen && styles.contentContainerMainIPhone,
           // Practice hub only: sit closer under the laurel (other tabs keep default inset).
           isMainTabScreen &&
-            mainTab === 'practice' &&
+            (mainTab === 'practice' || mainTab === 'arena') &&
             (isIPad
               ? styles.contentContainerMainPracticeIPad
               : styles.contentContainerMainPractice),
@@ -521,6 +598,23 @@ const styles = StyleSheet.create({
   },
   logoHomeWrapIPad: {
     top: 39,
+  },
+  guestLoginBtn: {
+    position: 'absolute',
+    top: 54,
+    right: 18,
+    zIndex: 25,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(138, 106, 58, 0.35)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(245, 239, 227, 0.45)',
+  },
+  guestLoginText: {
+    color: '#8a6a3a',
+    fontSize: 13,
+    fontWeight: '400',
   },
   logoTitleHit: {
     paddingTop: 6,

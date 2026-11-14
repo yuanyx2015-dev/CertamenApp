@@ -50,7 +50,7 @@ interface PracticeGameScreenProps {
   isGuestMode?: boolean;
   /** Practice tab: category slug from the six-tile picker. */
   storyPracticeCategory?: string | null;
-  onTabChange?: (tab: 'profile' | 'challenge' | 'review' | 'practice') => void;
+  onTabChange?: (tab: 'profile' | 'challenge' | 'review' | 'arena' | 'practice') => void;
 }
 
 export function PracticeGameScreen({
@@ -271,7 +271,7 @@ export function PracticeGameScreen({
             )
           ).slice(0, totalQuestions);
         } else {
-          setLoadError('Pick a category in Practice Mode to start.');
+          setLoadError('Pick a category in Training to start.');
           setIsLoading(false);
           return;
         }
@@ -279,7 +279,7 @@ export function PracticeGameScreen({
         if (loadedQuestions.length === 0) {
           setLoadError(
             clearedIds.size > 0
-              ? 'No Practice questions left in this category for your settings. Cleared questions stay out of Practice permanently.'
+              ? 'No Training questions left in this category for your settings. Cleared questions stay out of Training permanently.'
               : 'No questions found in database'
           );
           setIsLoading(false);
@@ -374,7 +374,7 @@ export function PracticeGameScreen({
   const startQuestion = async () => {
     if (currentQuestionIndex >= questions.length) {
       // Game over
-      setStatusText('Practice Complete!');
+      setStatusText('Training Complete!');
       return;
     }
 
@@ -665,7 +665,7 @@ export function PracticeGameScreen({
     return (
       <View style={[styles.container]}>
         <View style={styles.gameOverContainer}>
-          <Text style={styles.gameOverTitle}>Practice Complete!</Text>
+          <Text style={styles.gameOverTitle}>Training Complete!</Text>
 
           <View style={styles.statsRow}>
             {practicePool === 'all' && (
@@ -714,7 +714,7 @@ export function PracticeGameScreen({
             style={styles.backButton}
             onPress={() => onNavigate?.('main')}
           >
-            <Text style={styles.backButtonText}>Back to Practice selection</Text>
+            <Text style={styles.backButtonText}>Back to Training</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -893,16 +893,16 @@ export function PracticeGameScreen({
                   activeOpacity={1}
                   style={styles.starPress}
                   accessibilityRole="button"
-                  accessibilityLabel="Hold to clear this question from Practice permanently"
+                  accessibilityLabel="Hold to clear this question from Training permanently"
                 >
                   <StarIcon filled={0} progress={holdAnim} />
                 </TouchableOpacity>
                 <Text style={styles.starHint}>
-                  {starCleared ? 'Cleared!' : 'Hold to clear this question from Practice Mode'}
+                  {starCleared ? 'Cleared!' : 'Hold to clear this question from Training'}
                 </Text>
                 {clearTipEligible && !pastFirstQuestion && (
                   <Text style={styles.starTip}>
-                    Questions cleared from Practice are cleared permanently.
+                    Questions cleared from Training are cleared permanently.
                   </Text>
                 )}
               </View>
