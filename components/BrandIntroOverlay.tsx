@@ -3,9 +3,11 @@ import {
   Animated,
   Easing,
   Image,
+  PixelRatio,
   StyleSheet,
   useWindowDimensions,
   View,
+  type LayoutChangeEvent,
 } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer, type AudioPlayer } from 'expo-audio';
 import { isSoundMuted, subscribeSoundMuted } from '../lib/buttonSound';
@@ -29,6 +31,8 @@ const MOTTO = "Practice like it's real.";
 const LETTER_MS = 72;
 
 const LOGO = 170;
+/** Press settles here. icon-small.png is already drawn at this size. */
+const PRESS_SCALE = 0.9;
 const LOGO_AT = 280;
 const LOGO_MS = 760;
 const DING_AT = LOGO_AT + 140;
@@ -59,7 +63,7 @@ function playArmed(player: AudioPlayer) {
 }
 
 export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProps) {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const ticks = useAudioPlayer(require('../assets/cac/tick.wav'));
   // Ring continues past the old cutoff and fades to silence.
   const ring = useAudioPlayer(require('../assets/cac/ring.wav'));
@@ -67,10 +71,15 @@ export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProp
 
   const [nameCount, setNameCount] = useState(0);
   const [showCaret, setShowCaret] = useState(false);
+  const [blooming, setBlooming] = useState(false);
+  const [overlayBox, setOverlayBox] = useState({ width: 0, height: 0 });
+  const [lockupSize, setLockupSize] = useState({ width: 0, height: 0 });
+  const [slotBox, setSlotBox] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   const overlayOpacity = useRef(new Animated.Value(1)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.94)).current;
+  const sharpOpacity = useRef(new Animated.Value(0)).current;
   const sheen = useRef(new Animated.Value(0)).current;
   const rule = useRef(new Animated.Value(0)).current;
   const mottoOpacity = useRef(new Animated.Value(0)).current;
@@ -146,17 +155,14 @@ export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProp
       running.push(animation);
       animation.start();
     };
-    const finish = () => {
-      if (cancelled || finishedRef.current) return;
-      finishedRef.current = true;
-      onFinishedRef.current();
-    };
 
     setNameCount(0);
     setShowCaret(false);
+    setBlooming(false);
     overlayOpacity.setValue(1);
     logoOpacity.setValue(0);
     logoScale.setValue(0.94);
+    sharpOpacity.setValue(0);
     sheen.setValue(0);
     rule.setValue(0);
     mottoOpacity.setValue(0);
@@ -261,35 +267,28 @@ export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProp
             useNativeDriver: true,
           }),
           Animated.timing(logoScale, {
-            toValue: 0.9,
+            toValue: PRESS_SCALE,
             duration: PRESS_MS,
             easing: Easing.inOut(Easing.cubic),
             useNativeDriver: true,
           }),
-        ])
-      );
-    });
-
-    later(BLOOM_AT, () => {
-      start(
-        Animated.parallel([
-          Animated.timing(lockupScale, {
-            toValue: 3.05,
-            duration: BLOOM_MS,
-            easing: Easing.inOut(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.timing(overlayOpacity, {
+          Animated.timing(logoOpacity, {
             toValue: 0,
-            duration: BLOOM_MS,
-            easing: Easing.inOut(Easing.cubic),
+            duration: PRESS_MS,
+            easing: Easing.in(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(sharpOpacity, {
+            toValue: 1,
+            duration: PRESS_MS,
+            easing: Easing.in(Easing.cubic),
             useNativeDriver: true,
           }),
         ])
       );
     });
 
-    later(BLOOM_AT + BLOOM_MS, finish);
+    later(BLOOM_AT, () => setBlooming(true));
 
     return () => {
       cancelled = true;
@@ -304,6 +303,7 @@ export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProp
     overlayOpacity,
     logoOpacity,
     logoScale,
+    sharpOpacity,
     sheen,
     rule,
     mottoOpacity,
@@ -313,6 +313,34 @@ export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProp
     lockupScale,
   ]);
 
+  useEffect(() => {
+    if (!visible || !blooming) return;
+    const bloom = Animated.parallel([
+      Animated.timing(lockupScale, {
+        toValue: 3.05,
+        duration: BLOOM_MS,
+        easing: Easing.inOut(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: BLOOM_MS,
+        easing: Easing.inOut(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]);
+    bloom.start();
+    const timer = setTimeout(() => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      onFinishedRef.current();
+    }, BLOOM_MS);
+    return () => {
+      clearTimeout(timer);
+      bloom.stop();
+    };
+  }, [visible, blooming, lockupScale, overlayOpacity]);
+
   const sheenX = sheen.interpolate({
     inputRange: [0, 1],
     outputRange: [-LOGO * 1.35, LOGO * 2.4],
@@ -321,7 +349,27 @@ export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProp
     inputRange: [0, 0.82, 1],
     outputRange: [1, 1, 0],
   });
-  const fit = Math.min(1, (width - 40) / 430);
+  const boxW = overlayBox.width || width;
+  const boxH = overlayBox.height || height;
+  const fit = Math.min(1, (boxW - 40) / 430);
+  // icon-small.png must be drawn at its on-screen pixel size with no scale
+  // transform on it or any ancestor. A parent scale rasterizes the bitmap
+  // and resamples it, which is what was blurring the pressed icon.
+  const ratio = PixelRatio.get();
+  const sharpReady = lockupSize.width > 0 && slotBox.width > 0;
+  const slotDx = sharpReady ? slotBox.x + slotBox.width / 2 - lockupSize.width / 2 : 0;
+  const slotDy = sharpReady ? slotBox.y + slotBox.height / 2 - lockupSize.height / 2 : 0;
+  const sharpPx = Math.max(1, Math.round(LOGO * PRESS_SCALE * fit * ratio));
+  const sharpSize = sharpPx / ratio;
+  const sharpLeft = Math.round((boxW / 2 + slotDx * fit - sharpSize / 2) * ratio) / ratio;
+  const sharpTop = Math.round((boxH / 2 + slotDy * fit - sharpSize / 2) * ratio) / ratio;
+  const remember = (prev: { x: number; y: number; width: number; height: number }, next: typeof prev) =>
+    Math.abs(prev.x - next.x) < 0.25 &&
+    Math.abs(prev.y - next.y) < 0.25 &&
+    Math.abs(prev.width - next.width) < 0.25 &&
+    Math.abs(prev.height - next.height) < 0.25
+      ? prev
+      : next;
 
   if (!visible) return null;
 
@@ -331,13 +379,31 @@ export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProp
       pointerEvents="auto"
       accessibilityViewIsModal
       accessibilityLabel="CertamenPrep. Practice like it's real."
+      onLayout={(event: LayoutChangeEvent) => {
+        const { width: w, height: h } = event.nativeEvent.layout;
+        setOverlayBox((prev) =>
+          Math.abs(prev.width - w) < 0.25 && Math.abs(prev.height - h) < 0.25 ? prev : { width: w, height: h }
+        );
+      }}
     >
       <View pointerEvents="none" style={styles.stripes}>
         <ClothBands bottomInset={0} />
       </View>
       <View style={[styles.fit, { transform: [{ scale: fit }] }]} pointerEvents="none">
-        <Animated.View style={[styles.lockup, { transform: [{ scale: lockupScale }] }]}>
-          <View style={styles.logoSlot}>
+        <Animated.View
+          style={[styles.lockup, { transform: [{ scale: lockupScale }] }]}
+          onLayout={(event: LayoutChangeEvent) => {
+            const { width: w, height: h } = event.nativeEvent.layout;
+            setLockupSize((prev) => (Math.abs(prev.width - w) < 0.25 && Math.abs(prev.height - h) < 0.25 ? prev : { width: w, height: h }));
+          }}
+        >
+          <View
+            style={styles.logoSlot}
+            onLayout={(event: LayoutChangeEvent) => {
+              const next = event.nativeEvent.layout;
+              setSlotBox((prev) => remember(prev, next));
+            }}
+          >
             <Animated.View
               pointerEvents="none"
               style={[
@@ -394,6 +460,38 @@ export function BrandIntroOverlay({ visible, onFinished }: BrandIntroOverlayProp
           </Animated.View>
         </Animated.View>
       </View>
+      {sharpReady ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, blooming ? { transform: [{ scale: lockupScale }] } : null]}
+        >
+          <Animated.View
+            style={[
+              styles.logoSharp,
+              {
+                opacity: sharpOpacity,
+                left: sharpLeft,
+                top: sharpTop,
+                width: sharpSize,
+                height: sharpSize,
+                shadowOffset: { width: 0, height: 8 * PRESS_SCALE * fit },
+                shadowRadius: 16 * PRESS_SCALE * fit,
+              },
+            ]}
+          >
+            <Image
+              source={require('../assets/icon-small.png')}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+              style={{
+                width: sharpSize,
+                height: sharpSize,
+                borderRadius: sharpSize * 0.2,
+              }}
+            />
+          </Animated.View>
+        </Animated.View>
+      ) : null}
     </Animated.View>
   );
 }
@@ -448,6 +546,11 @@ const styles = StyleSheet.create({
   logo: {
     width: LOGO,
     height: LOGO,
+  },
+  logoSharp: {
+    position: 'absolute',
+    shadowColor: '#3a2a1a',
+    shadowOpacity: 0.18,
   },
   sheen: {
     position: 'absolute',

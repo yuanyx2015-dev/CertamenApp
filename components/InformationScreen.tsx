@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -9,6 +9,7 @@ import {
   Modal,
   Platform,
   Linking,
+  PanResponder,
 } from 'react-native';
 import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
@@ -35,7 +36,7 @@ import { useIPadScaledStyles } from '../lib/layout';
 import { showDataLoadErrorAlert } from '../lib/dataLoadErrorAlert';
 import { PRIVACY_POLICY_URL } from '../constants/urls';
 import { FillUpProgressFill } from './FillUpProgressFill';
-import { playButtonSound, playCancelSound, playDailySound } from '../lib/buttonSound';
+import { duckSounds, playButtonSound, playDailySound, startSlideSound, stopSlideSound, unduckSounds } from '../lib/buttonSound';
 
 function AnimatedCardButton({
   label,
@@ -176,6 +177,88 @@ export function InformationScreen({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  const slideX = useRef(new Animated.Value(0)).current;
+  const slideTrack = useRef(0);
+  const slideKnob = useRef(28);
+  const slideOrigin = useRef(0);
+  const slidePos = useRef(0);
+  const deleteArmedRef = useRef(false);
+  const deletingRef = useRef(false);
+  deletingRef.current = isDeleting;
+
+  const setSlideArmed = (next: boolean) => {
+    if (deleteArmedRef.current === next) return;
+    deleteArmedRef.current = next;
+    setDeleteArmed(next);
+  };
+
+  const slidePan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => !deletingRef.current,
+      onMoveShouldSetPanResponder: () => !deletingRef.current,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: () => {
+        slideOrigin.current = slidePos.current;
+        startSlideSound();
+      },
+      onPanResponderMove: (_, gesture) => {
+        const max = Math.max(0, slideTrack.current - slideKnob.current - 8);
+        const next = Math.min(max, Math.max(0, slideOrigin.current + gesture.dx));
+        slidePos.current = next;
+        slideX.setValue(next);
+        setSlideArmed(max > 0 && next >= max - 4);
+      },
+      onPanResponderRelease: () => {
+        stopSlideSound();
+        const max = Math.max(0, slideTrack.current - slideKnob.current - 8);
+        if (max > 0 && slidePos.current >= max - 6) {
+          slidePos.current = max;
+          slideOrigin.current = max;
+          slideX.setValue(max);
+          setSlideArmed(true);
+          return;
+        }
+        slidePos.current = 0;
+        slideOrigin.current = 0;
+        setSlideArmed(false);
+        Animated.spring(slideX, {
+          toValue: 0,
+          useNativeDriver: true,
+          bounciness: 0,
+          speed: 20,
+        }).start();
+      },
+      onPanResponderTerminate: () => {
+        stopSlideSound();
+        slidePos.current = 0;
+        slideOrigin.current = 0;
+        setSlideArmed(false);
+        Animated.spring(slideX, {
+          toValue: 0,
+          useNativeDriver: true,
+          bounciness: 0,
+          speed: 20,
+        }).start();
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    if (showDeleteModal) return;
+    deleteArmedRef.current = false;
+    setDeleteArmed(false);
+    slidePos.current = 0;
+    slideOrigin.current = 0;
+    slideX.setValue(0);
+    stopSlideSound();
+  }, [showDeleteModal, slideX]);
+
+  useEffect(() => {
+    if (!showLogoutModal && !showDeleteModal) return;
+    duckSounds();
+    return () => unduckSounds();
+  }, [showLogoutModal, showDeleteModal]);
 
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
@@ -519,7 +602,7 @@ export function InformationScreen({
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
-                  playCancelSound();
+                  playButtonSound();
                   setShowLogoutModal(false);
                 }}
               >
@@ -554,11 +637,31 @@ export function InformationScreen({
               score, rank, and progress will be permanently lost. This action cannot be undone.
             </Text>
 
+            <View style={styles.deleteSlideWrap}>
+              <Text style={styles.deleteSlideLabel}>
+                {deleteArmed ? 'Delete unlocked' : 'Slide across to unlock Delete'}
+              </Text>
+              <View
+                style={styles.deleteSlideTrack}
+                onLayout={(event) => {
+                  slideTrack.current = event.nativeEvent.layout.width;
+                }}
+              >
+                <Animated.View
+                  style={[styles.deleteSlideKnob, { transform: [{ translateX: slideX }] }]}
+                  onLayout={(event) => {
+                    slideKnob.current = event.nativeEvent.layout.width;
+                  }}
+                  {...slidePan.panHandlers}
+                />
+              </View>
+            </View>
+
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
-                  playCancelSound();
+                  playButtonSound();
                   setShowDeleteModal(false);
                 }}
                 disabled={isDeleting}
@@ -567,12 +670,17 @@ export function InformationScreen({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalButton, styles.confirmDeleteButton]}
+                style={[
+                  styles.modalButton,
+                  styles.confirmDeleteButton,
+                  !deleteArmed && styles.confirmDeleteButtonLocked,
+                ]}
                 onPress={() => {
+                  if (!deleteArmed) return;
                   playButtonSound();
                   void handleDeleteAccount();
                 }}
-                disabled={isDeleting}
+                disabled={!deleteArmed || isDeleting}
               >
                 {isDeleting ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -919,6 +1027,31 @@ const baseStyles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
   },
+  deleteSlideWrap: {
+    marginTop: -8,
+    marginBottom: 18,
+  },
+  deleteSlideLabel: {
+    fontSize: 13,
+    color: '#8a8176',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  deleteSlideTrack: {
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f4f1ec',
+    borderWidth: 1,
+    borderColor: '#e4ddd2',
+    justifyContent: 'center',
+  },
+  deleteSlideKnob: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginLeft: 4,
+    backgroundColor: '#d32f2f',
+  },
   modalButtons: {
     flexDirection: 'row',
     gap: 12,
@@ -944,6 +1077,9 @@ const baseStyles = StyleSheet.create({
   },
   confirmDeleteButton: {
     backgroundColor: '#d32f2f',
+  },
+  confirmDeleteButtonLocked: {
+    opacity: 0.4,
   },
   confirmDeleteButtonText: {
     color: '#fff',

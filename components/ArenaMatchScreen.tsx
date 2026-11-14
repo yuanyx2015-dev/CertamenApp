@@ -12,12 +12,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
 import {
+  duckSounds,
   playBuzzSound,
+  playButtonSound,
   playCorrectSound,
   playNextSound,
   playWrongSound,
   startTypewriter,
   stopTypewriter,
+  unduckSounds,
 } from '../lib/buttonSound';
 import {
   arenaAnswer,
@@ -111,6 +114,12 @@ export function ArenaMatchScreen({
       clearInterval(beat);
     };
   }, [matchId, onExit, refresh]);
+
+  useEffect(() => {
+    if (!showForfeit) return;
+    duckSounds();
+    return () => unduckSounds();
+  }, [showForfeit]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
@@ -311,6 +320,7 @@ export function ArenaMatchScreen({
             <TouchableOpacity
               style={styles.primaryBtn}
               onPress={() => {
+                playButtonSound();
                 void arenaDismissForfeitNotice();
                 setShowForfeit(false);
               }}
@@ -320,6 +330,7 @@ export function ArenaMatchScreen({
             <TouchableOpacity
               style={styles.textBtn}
               onPress={() => {
+                playButtonSound();
                 void AsyncStorage.setItem(HIDE_FORFEIT_KEY, '1');
                 void arenaDismissForfeitNotice();
                 setShowForfeit(false);

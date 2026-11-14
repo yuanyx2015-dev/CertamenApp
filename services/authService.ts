@@ -1,10 +1,11 @@
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import * as WebBrowser from 'expo-web-browser';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import { makeRedirectUri } from 'expo-auth-session';
+import { duckSounds, playButtonSound, unduckSounds } from '../lib/buttonSound';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -16,7 +17,26 @@ const OAUTH_REDIRECT = () =>
     native: 'certamenapp://auth/callback',
   });
 
-/** Shared browser OAuth flow for Google / Apple when native Apple is unavailable. */
+/**
+ * The consent sheet itself makes the app inactive, so that is not a click.
+ * Continue is the moment the app actually backgrounds into the browser.
+ */
+function watchSheetChoice() {
+  let played = false;
+  const started = Date.now();
+  const sub = AppState.addEventListener('change', (state) => {
+    if (played || Date.now() - started < 400) return;
+    if (state === 'background') {
+      played = true;
+      playButtonSound();
+    }
+  });
+  return {
+    heard: () => played,
+    stop: () => sub.remove(),
+  };
+}
+
 async function completeOAuthBrowserSession(
   provider: 'google' | 'apple',
   queryParams?: Record<string, string>
@@ -40,7 +60,19 @@ async function completeOAuthBrowserSession(
     return { error: { message: 'No OAuth URL returned' } };
   }
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+  duckSounds();
+  const choice = watchSheetChoice();
+  let result: Awaited<ReturnType<typeof WebBrowser.openAuthSessionAsync>>;
+  try {
+    result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+  } catch (error) {
+    choice.stop();
+    unduckSounds();
+    throw error;
+  }
+  choice.stop();
+  if (!choice.heard()) playButtonSound();
+  unduckSounds();
 
   if (result.type !== 'success') {
     return { error: { message: `${provider} sign-in was cancelled` } };
@@ -141,10 +173,23 @@ async function signInWithAppleNative(): Promise<AuthResponse> {
       rawNonce
     );
 
-    const credential = await AppleAuthentication.signInAsync({
-      requestedScopes: APPLE_SCOPES,
-      nonce: hashedNonce,
-    });
+    duckSounds();
+    const choice = watchSheetChoice();
+    let credential: AppleAuthentication.AppleAuthenticationCredential;
+    try {
+      credential = await AppleAuthentication.signInAsync({
+        requestedScopes: APPLE_SCOPES,
+        nonce: hashedNonce,
+      });
+    } catch (error) {
+      choice.stop();
+      if (!choice.heard()) playButtonSound();
+      unduckSounds();
+      throw error;
+    }
+    choice.stop();
+    if (!choice.heard()) playButtonSound();
+    unduckSounds();
 
     if (!credential.identityToken) {
       return {

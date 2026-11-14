@@ -27,7 +27,8 @@ type SoundId =
   | 'review'
   | 'practice'
   | 'arena'
-  | 'type';
+  | 'type'
+  | 'slide';
 
 const SOURCES: Record<SoundId, number> = {
   button: require('../assets/ui/button.wav'),
@@ -54,6 +55,7 @@ const SOURCES: Record<SoundId, number> = {
   practice: require('../assets/ui/tab-practice.wav'),
   arena: require('../assets/ui/tab-arena.wav'),
   type: require('../assets/ui/type.wav'),
+  slide: require('../assets/ui/slide.wav'),
 };
 
 const VOLUMES: Record<SoundId, number> = {
@@ -81,9 +83,13 @@ const VOLUMES: Record<SoundId, number> = {
   practice: 0.38,
   arena: 0.4,
   type: 0.22,
+  slide: 0.2,
 };
 
 const players = new Map<SoundId, AudioPlayer>();
+const oneShotVolumes = new Map<AudioPlayer, number>();
+const clickPairs = new Map<SoundId, [AudioPlayer, AudioPlayer]>();
+const clickIndex = new Map<SoundId, number>();
 /** One intro tick is 3175 samples. The file is 250 of them, end to end. */
 const TYPE_MS = (250 * 3175 / 44100) * 1000;
 const typePlayers: AudioPlayer[] = [];
@@ -91,12 +97,14 @@ let typeActive = 0;
 let typeOn = false;
 let typeToken = 0;
 let typeHandoff: ReturnType<typeof setTimeout> | null = null;
+let slideOn = false;
 let audioModeReady: Promise<void> | null = null;
 let masterToken = 0;
 let masterFade: ReturnType<typeof setInterval> | null = null;
 
 let muted = false;
 let muteTouched = false;
+let duckDepth = 0;
 const muteListeners = new Set<(muted: boolean) => void>();
 
 void AsyncStorage.getItem(MUTE_KEY)
@@ -127,6 +135,33 @@ export function setSoundMuted(next: boolean) {
   void AsyncStorage.setItem(MUTE_KEY, next ? '1' : '0').catch(() => undefined);
 }
 
+/** Pauses the typing tick while a popup is up. Other sounds sit quieter underneath it. */
+export function duckSounds() {
+  duckDepth += 1;
+  if (duckDepth > 1) return;
+  for (const player of typePlayers) player.pause();
+  for (const [player, volume] of oneShotVolumes) {
+    player.volume = volume * 0.35;
+  }
+}
+
+/** Brings the typing tick back after the last popup closes. */
+export function unduckSounds() {
+  duckDepth = Math.max(0, duckDepth - 1);
+  if (duckDepth > 0) return;
+  for (const [id, player] of players) {
+    player.volume = VOLUMES[id];
+  }
+  for (const [player, volume] of oneShotVolumes) {
+    player.volume = volume;
+  }
+  if (!typeOn || muted) return;
+  const current = typePlayers[typeActive];
+  if (!current) return;
+  current.volume = VOLUMES.type;
+  current.play();
+}
+
 function clearTypeHandoff() {
   if (typeHandoff) clearTimeout(typeHandoff);
   typeHandoff = null;
@@ -134,9 +169,13 @@ function clearTypeHandoff() {
 
 function pauseUiSounds() {
   typeOn = false;
+  slideOn = false;
   typeToken += 1;
   clearTypeHandoff();
   for (const player of players.values()) {
+    player.pause();
+  }
+  for (const player of oneShotVolumes.keys()) {
     player.pause();
   }
   for (const player of typePlayers) {
@@ -153,25 +192,47 @@ function ensureAudioMode() {
   }
 }
 
+function clickPair(id: SoundId): [AudioPlayer, AudioPlayer] {
+  let pair = clickPairs.get(id);
+  if (!pair) {
+    const make = () => {
+      const player = createAudioPlayer(SOURCES[id]);
+      player.volume = VOLUMES[id];
+      oneShotVolumes.set(player, VOLUMES[id]);
+      return player;
+    };
+    pair = [make(), make()];
+    clickPairs.set(id, pair);
+    clickIndex.set(id, 0);
+    players.set(id, pair[0]);
+    void pair[0].seekTo(0);
+    void pair[1].seekTo(0);
+  }
+  return pair;
+}
+
 function play(id: SoundId) {
   if (muted) return;
   ensureAudioMode();
-  let current = players.get(id);
-  if (!current) {
-    current = createAudioPlayer(SOURCES[id]);
-    players.set(id, current);
-  }
-  current.volume = VOLUMES[id];
-  current.pause();
-  void current.seekTo(0).then(() => {
-    if (muted) return;
-    current.play();
-  });
+  const pair = clickPair(id);
+  const index = clickIndex.get(id) ?? 0;
+  const player = pair[index];
+  player.volume = VOLUMES[id];
+  player.play();
+  const idle = 1 - index;
+  clickIndex.set(id, idle);
+  players.set(id, pair[idle]);
+  void pair[idle].seekTo(0);
 }
 
 /** One short click for Home screen buttons. */
 export function playButtonSound() {
   play('button');
+}
+
+/** Builds the click ahead of time so the first press does not wait on the player. */
+export function warmButtonSound() {
+  clickPair('button');
 }
 
 function typePlayer(index: number) {
@@ -198,7 +259,8 @@ function scheduleTypeHandoff(token: number) {
     typeActive = 1 - typeActive;
     const next = typePlayer(typeActive);
     next.volume = VOLUMES.type;
-    next.play();
+    if (duckDepth === 0 && !muted) next.play();
+    else next.pause();
     prev.pause();
     void prev.seekTo(0);
     scheduleTypeHandoff(token);
@@ -209,11 +271,7 @@ function scheduleTypeHandoff(token: number) {
 export function startTypewriter() {
   if (muted) return;
   ensureAudioMode();
-  if (typeOn) {
-    typePlayer(0).volume = VOLUMES.type;
-    typePlayer(1).volume = VOLUMES.type;
-    return;
-  }
+  if (typeOn) return;
   typeOn = true;
   const token = ++typeToken;
   typeActive = 0;
@@ -225,7 +283,7 @@ export function startTypewriter() {
   second.pause();
   void Promise.all([first.seekTo(0), second.seekTo(0)]).then(() => {
     if (!typeOn || token !== typeToken) return;
-    first.play();
+    if (duckDepth === 0) first.play();
     scheduleTypeHandoff(token);
   });
 }
@@ -323,9 +381,42 @@ export function playUnmuteSound() {
   play('unmute');
 }
 
-/** Deeper pop for Cancel on Log Out and Delete Account. */
+/** Deeper pop for cancel actions outside the account dialogs. */
 export function playCancelSound() {
   play('cancel');
+}
+
+function slidePlayer() {
+  let current = players.get('slide');
+  if (!current) {
+    current = createAudioPlayer(SOURCES.slide);
+    current.loop = true;
+    current.volume = VOLUMES.slide;
+    oneShotVolumes.set(current, VOLUMES.slide);
+    players.set('slide', current);
+    void current.seekTo(0);
+  }
+  return current;
+}
+
+/** Soft noise while the delete slider is moving. */
+export function startSlideSound() {
+  if (muted || slideOn) return;
+  ensureAudioMode();
+  slideOn = true;
+  const current = slidePlayer();
+  current.volume = VOLUMES.slide;
+  current.play();
+}
+
+/** Stops the delete slider as soon as the finger lifts. */
+export function stopSlideSound() {
+  if (!slideOn && !players.get('slide')) return;
+  slideOn = false;
+  const current = players.get('slide');
+  if (!current) return;
+  current.pause();
+  void current.seekTo(0);
 }
 
 /** Daily Challenge click, centered on E with softer notes beside it. */

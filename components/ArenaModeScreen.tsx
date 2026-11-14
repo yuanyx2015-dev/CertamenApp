@@ -16,7 +16,7 @@ import Svg, { G, Path } from 'react-native-svg';
 import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
 import { ArenaSettingsPane } from './ArenaSettingsPane';
-import { playButtonSound, playCancelSound } from '../lib/buttonSound';
+import { duckSounds, playButtonSound, playCancelSound, unduckSounds } from '../lib/buttonSound';
 import { getCurrentUser } from '../services/authService';
 import { getProfileByEmail } from '../services/profileService';
 import {
@@ -299,6 +299,12 @@ export function ArenaModeScreen({
     return () => clearInterval(timer);
   }, [onStartMatch, pane]);
 
+  useEffect(() => {
+    if (!showForfeit) return;
+    duckSounds();
+    return () => unduckSounds();
+  }, [showForfeit]);
+
   const requireName = () => {
     const trimmed = name.trim();
     if (trimmed.length < 1) {
@@ -330,10 +336,22 @@ export function ArenaModeScreen({
           <Text style={styles.modalBody}>
             Closing the app or losing the connection counts as a forfeit. That match was recorded as a loss.
           </Text>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => void dismissForfeit(false)}>
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={() => {
+              playButtonSound();
+              void dismissForfeit(false);
+            }}
+          >
             <Text style={styles.primaryBtnText}>Understood</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.textBtn} onPress={() => void dismissForfeit(true)}>
+          <TouchableOpacity
+            style={styles.textBtn}
+            onPress={() => {
+              playButtonSound();
+              void dismissForfeit(true);
+            }}
+          >
             <Text style={styles.textBtnLabel}>Don’t show this again</Text>
           </TouchableOpacity>
         </View>

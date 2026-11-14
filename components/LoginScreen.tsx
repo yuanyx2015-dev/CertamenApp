@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  Modal,
   Alert,
   Platform,
   Linking,
@@ -16,7 +17,7 @@ import { signInWithGoogle, signInWithApple, type AuthResponse } from '../service
 import { getOrCreateUserStats } from '../services/userStatsService';
 import { getOrCreateUserSettings } from '../services/userSettingsService';
 import { getOrCreateProfile } from '../services/profileService';
-import { startTypewriter, stopTypewriter } from '../lib/buttonSound';
+import { duckSounds, playButtonSound, startTypewriter, stopTypewriter, unduckSounds, warmButtonSound } from '../lib/buttonSound';
 import { useIPadScaledStyles } from '../lib/layout';
 import { PRIVACY_POLICY_URL } from '../constants/urls';
 
@@ -69,6 +70,17 @@ interface LoginScreenProps {
 export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
   const styles = useIPadScaledStyles(baseStyles);
   const [isLoading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState<{ title: string; message: string } | null>(null);
+
+  useEffect(() => {
+    warmButtonSound();
+  }, []);
+
+  useEffect(() => {
+    if (!loginError) return;
+    duckSounds();
+    return () => unduckSounds();
+  }, [loginError]);
 
   // Shared flow for both providers: sign in, then bootstrap profile/stats/settings.
   const runLogin = async (
@@ -82,7 +94,13 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
     setLoading(false);
 
     if (error) {
-      Alert.alert(`${providerLabel} Login Failed`, error.message);
+      // Closing the sign-in sheet is a cancel, not a failure.
+      if (!/cancelled/i.test(error.message)) {
+        setLoginError({
+          title: `${providerLabel} Login Failed`,
+          message: error.message,
+        });
+      }
       return;
     }
     if (user) {
@@ -96,8 +114,14 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
     }
   };
 
-  const handleGoogleLogin = () => runLogin('Google', signInWithGoogle);
-  const handleAppleLogin = () => runLogin('Apple', signInWithApple);
+  const handleGoogleLogin = () => {
+    playButtonSound();
+    void runLogin('Google', signInWithGoogle);
+  };
+  const handleAppleLogin = () => {
+    playButtonSound();
+    void runLogin('Apple', signInWithApple);
+  };
 
   return (
     <View style={styles.container}>
@@ -144,7 +168,10 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
         {onGuestMode && (
           <TouchableOpacity
             style={[styles.guestButton, isLoading && styles.appleButtonDisabled]}
-            onPress={onGuestMode}
+            onPress={() => {
+              playButtonSound();
+              onGuestMode();
+            }}
             disabled={isLoading}
             activeOpacity={0.7}
           >
@@ -153,7 +180,10 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
         )}
 
         <TouchableOpacity
-          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+          onPress={() => {
+            playButtonSound();
+            void Linking.openURL(PRIVACY_POLICY_URL);
+          }}
           disabled={isLoading}
           activeOpacity={0.7}
           accessibilityRole="link"
@@ -162,6 +192,22 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
           <Text style={styles.privacyLink}>Privacy Policy</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal visible={loginError != null} transparent animationType="fade">
+        <View style={styles.errorBackdrop}>
+          <View style={styles.errorCard}>
+            <Text style={styles.errorTitle}>{loginError?.title}</Text>
+            <Text style={styles.errorMessage}>{loginError?.message}</Text>
+            <TouchableOpacity
+              style={styles.errorOk}
+              onPressIn={playButtonSound}
+              onPress={() => setLoginError(null)}
+            >
+              <Text style={styles.errorOkText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -393,5 +439,44 @@ const baseStyles = StyleSheet.create({
     textAlign: 'center',
     textDecorationLine: 'underline',
     letterSpacing: 0.1,
+  },
+  errorBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(40, 28, 16, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  errorCard: {
+    width: '100%',
+    maxWidth: 300,
+    backgroundColor: '#f7f1e6',
+    borderRadius: 14,
+    paddingTop: 18,
+    paddingHorizontal: 18,
+    paddingBottom: 14,
+    alignItems: 'center',
+  },
+  errorTitle: {
+    color: '#3a3a3a',
+    fontSize: 17,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  errorMessage: {
+    color: '#6a6a6a',
+    fontSize: 15,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  errorOk: {
+    marginTop: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 28,
+  },
+  errorOkText: {
+    color: '#8a6a3a',
+    fontSize: 17,
+    fontWeight: '600',
   },
 });

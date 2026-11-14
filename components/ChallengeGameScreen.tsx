@@ -9,7 +9,7 @@ import {
   Modal
 } from 'react-native';
 import { Text } from '../lib/AppText';
-import { playBuzzSound, playMasterSound, playNextSound, playTickSound, startTypewriter, stopMasterSound, stopTypewriter } from '../lib/buttonSound';
+import { duckSounds, playBuzzSound, playButtonSound, playCancelSound, playMasterSound, playNextSound, playTickSound, startTypewriter, stopMasterSound, stopTypewriter, unduckSounds } from '../lib/buttonSound';
 import { FitScrollView } from './FitScrollView';
 import { GameHeaderFade } from './GameHeaderFade';
 import { getCurrentUser } from '../services/authService';
@@ -584,13 +584,21 @@ export function ChallengeGameScreen({
   }, [isFinished, userId]);
 
   const handleRateApp = async () => {
+    playButtonSound();
     setShowReviewModal(false);
     await confirmReview();
   };
 
   const handleReviewNotNow = () => {
+    playCancelSound();
     setShowReviewModal(false);
   };
+
+  useEffect(() => {
+    if (!showReviewModal) return;
+    duckSounds();
+    return () => unduckSounds();
+  }, [showReviewModal]);
 
   // ----- DERIVED -----
   const totalForHeader = useMemo(() => {

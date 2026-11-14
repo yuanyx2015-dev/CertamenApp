@@ -28,7 +28,7 @@ import { StreakConfettiProvider } from './StreakConfetti';
 import { BrandIntroOverlay } from './BrandIntroOverlay';
 import { IPadScaledPhoneColumn } from './IPadScaledPhoneColumn';
 import { isIPad, isIPhone } from '../lib/layout';
-import { playLogoSound } from '../lib/buttonSound';
+import { playButtonSound, playLogoSound } from '../lib/buttonSound';
 import { MuteButton } from './MuteButton';
 
 export function RomanBackground() {
@@ -482,6 +482,7 @@ export function RomanBackground() {
       {isGuestMode && currentScreen !== 'login' && (
         <TouchableOpacity
           style={styles.guestLoginBtn}
+          onPressIn={playButtonSound}
           onPress={() => void handleReturnToLogin()}
           accessibilityRole="button"
           accessibilityLabel="Return to log in"
@@ -601,11 +602,11 @@ const styles = StyleSheet.create({
   },
   guestLoginBtn: {
     position: 'absolute',
-    top: 54,
+    top: 68,
     right: 18,
     zIndex: 25,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
     borderWidth: 1,
     borderColor: 'rgba(138, 106, 58, 0.35)',
     borderRadius: 10,
@@ -613,7 +614,7 @@ const styles = StyleSheet.create({
   },
   guestLoginText: {
     color: '#8a6a3a',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '400',
   },
   logoTitleHit: {
