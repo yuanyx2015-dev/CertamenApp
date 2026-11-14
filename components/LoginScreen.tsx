@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -18,6 +18,41 @@ import { getOrCreateUserSettings } from '../services/userSettingsService';
 import { getOrCreateProfile } from '../services/profileService';
 import { useIPadScaledStyles } from '../lib/layout';
 import { PRIVACY_POLICY_URL } from '../constants/urls';
+
+const TOSSUP_STEMS = [
+  'After seizing the golden fleece, this hero fled Colchis with…',
+  'Fought off the coast of Actium in 31 BC, this naval battle…',
+  'Marking the indirect object, this Latin case…',
+  'Commissioned to celebrate the glory of Rome, this epic poet…',
+];
+
+function LoopingTossup() {
+  const styles = useIPadScaledStyles(baseStyles);
+  const [line, setLine] = useState(0);
+  const [count, setCount] = useState(0);
+  const hold = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const stem = TOSSUP_STEMS[line];
+    if (count < stem.length) {
+      const id = setTimeout(() => setCount((n) => n + 1), 32);
+      return () => clearTimeout(id);
+    }
+    hold.current = setTimeout(() => {
+      setCount(0);
+      setLine((i) => (i + 1) % TOSSUP_STEMS.length);
+    }, 1600);
+    return () => {
+      if (hold.current) clearTimeout(hold.current);
+    };
+  }, [line, count]);
+
+  return (
+    <Text style={styles.tossupLine}>
+      {TOSSUP_STEMS[line].slice(0, count)}
+    </Text>
+  );
+}
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -70,6 +105,7 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
           CertamenPrep
         </Text>
         <Text style={styles.tagline}>Practice like it's real.</Text>
+        <LoopingTossup />
       </View>
 
       <View style={styles.googleSlot}>
@@ -204,9 +240,10 @@ const baseStyles = StyleSheet.create({
     maxWidth: 448,
     alignSelf: 'center',
     width: '100%',
+    paddingTop: 10,
   },
   googleSlot: {
-    flex: 0.62,
+    flex: 0.4,
     justifyContent: 'flex-end',
   },
   belowGoogle: {
@@ -256,6 +293,16 @@ const baseStyles = StyleSheet.create({
     letterSpacing: 0.2,
     marginTop: 12,
     textAlign: 'center',
+  },
+  tossupLine: {
+    marginTop: 16,
+    minHeight: 44,
+    paddingHorizontal: 18,
+    color: '#6a6a6a',
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    letterSpacing: 0.1,
   },
   loginSection: {
     width: '100%',
