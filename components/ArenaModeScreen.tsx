@@ -22,6 +22,7 @@ import {
   playCancelSound,
   playDailySound,
   playNextSound,
+  playStartSetArpeggio,
   playTickSound,
   unduckSounds,
 } from '../lib/buttonSound';
@@ -527,7 +528,7 @@ export function ArenaModeScreen({
             onPress={() => {
               const trimmed = requireName();
               if (!trimmed) return;
-              playNextSound();
+              playStartSetArpeggio();
               setBusy(true);
               void arenaJoinMatch(code, trimmed).then((row) => {
                 setBusy(false);
@@ -561,7 +562,7 @@ export function ArenaModeScreen({
             onPress={() => {
               const trimmed = requireName();
               if (!trimmed) return;
-              playDailySound();
+              playStartSetArpeggio();
               setBusy(true);
               void arenaCreateMatch(trimmed, settings).then((row) => {
                 setBusy(false);

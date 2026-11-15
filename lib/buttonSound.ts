@@ -437,7 +437,7 @@ export function playSetSizeSound(size: keyof typeof SET_SIZE_SOUNDS) {
   play(SET_SIZE_SOUNDS[size]);
 }
 
-/** A5, C#6, E5, D5 arpeggio for Start #-question set. */
+/** Ascend's C5 as a soft trumpet: da, then dadaaa on a C dominant chord, with a fading echo. */
 export function playStartSetArpeggio() {
   play('setStart');
 }
