@@ -15,8 +15,10 @@ import {
   duckSounds,
   playBuzzSound,
   playButtonSound,
+  playCancelSound,
   playCorrectSound,
   playNextSound,
+  playTickSound,
   playWrongSound,
   startTypewriter,
   stopTypewriter,
@@ -354,7 +356,10 @@ export function ArenaMatchScreen({
             <TouchableOpacity
               style={[styles.primaryBtn, !view.guest_name && styles.disabled]}
               disabled={!view.guest_name}
-              onPress={() => void arenaStartMatch(matchId).then(() => refresh())}
+              onPress={() => {
+                playButtonSound();
+                void arenaStartMatch(matchId).then(() => refresh());
+              }}
             >
               <Text style={styles.primaryBtnText}>Start the match</Text>
             </TouchableOpacity>
@@ -363,7 +368,10 @@ export function ArenaMatchScreen({
           )}
           <TouchableOpacity
             style={styles.textBtn}
-            onPress={() => void arenaLeave(matchId).then(() => onExit())}
+            onPress={() => {
+              playCancelSound();
+              void arenaLeave(matchId).then(() => onExit());
+            }}
           >
             <Text style={styles.textBtnLabel}>Leave</Text>
           </TouchableOpacity>
@@ -420,6 +428,7 @@ export function ArenaMatchScreen({
                 style={[styles.buzz, view.buzz_locked && styles.buzzLocked]}
                 onPress={() => {
                   if (view.buzz_locked) {
+                    playCancelSound();
                     setLockNote(true);
                     setTimeout(() => setLockNote(false), 2500);
                     return;
@@ -446,7 +455,10 @@ export function ArenaMatchScreen({
                     key={`${option}-${index}`}
                     style={[styles.option, isCorrect && styles.optionCorrect]}
                     disabled={view.phase !== 'answering'}
-                    onPress={() => void arenaAnswer(matchId, index).then(() => refresh())}
+                    onPress={() => {
+                      playTickSound();
+                      void arenaAnswer(matchId, index).then(() => refresh());
+                    }}
                   >
                     <Text style={[styles.optionText, isCorrect && styles.optionTextCorrect]}>
                       {option}
@@ -465,7 +477,10 @@ export function ArenaMatchScreen({
           </View>
           <TouchableOpacity
             style={styles.forfeit}
-            onPress={() => void arenaLeave(matchId).then(() => refresh())}
+            onPress={() => {
+              playCancelSound();
+              void arenaLeave(matchId).then(() => refresh());
+            }}
           >
             <Text style={styles.textBtnLabel}>Forfeit</Text>
           </TouchableOpacity>
@@ -515,14 +530,20 @@ export function ArenaMatchScreen({
           {theyHere && (
             <TouchableOpacity
               style={styles.primaryBtn}
-              onPress={() => void arenaRematch(matchId).then(() => refresh())}
+              onPress={() => {
+                playButtonSound();
+                void arenaRematch(matchId).then(() => refresh());
+              }}
             >
               <Text style={styles.primaryBtnText}>Play again</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
             style={styles.secondaryBtn}
-            onPress={() => void arenaLeave(matchId).then(() => onExit())}
+            onPress={() => {
+              playCancelSound();
+              void arenaLeave(matchId).then(() => onExit());
+            }}
           >
             <Text style={styles.secondaryBtnText}>Leave the match</Text>
           </TouchableOpacity>
@@ -530,7 +551,15 @@ export function ArenaMatchScreen({
             const open = openQ === index;
             const first = q.question_text.split('\n')[0];
             return (
-              <Pressable key={index} style={styles.qRow} onPress={() => setOpenQ(open ? null : index)}>
+              <Pressable
+                key={index}
+                style={styles.qRow}
+                onPress={() => {
+                  if (open) playCancelSound();
+                  else playTickSound();
+                  setOpenQ(open ? null : index);
+                }}
+              >
                 <Text style={styles.qChevron}>{open ? '⌄' : '⌃'}</Text>
                 {open ? (
                   <View style={styles.qBody}>

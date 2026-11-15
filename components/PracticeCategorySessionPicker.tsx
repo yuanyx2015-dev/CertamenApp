@@ -6,6 +6,7 @@ import {
   Animated,
 } from 'react-native';
 import { Text } from '../lib/AppText';
+import { playCategorySound } from '../lib/buttonSound';
 import { useIPadScaledStyles } from '../lib/layout';
 import { getCurrentUser } from '../services/authService';
 import {
@@ -162,12 +163,15 @@ export function PracticeCategorySessionPicker({ onNavigate }: { onNavigate?: Nav
 
   return (
     <View style={styles.grid}>
-      {PRACTICE_CATEGORIES.map(({ key, label }) => (
+      {PRACTICE_CATEGORIES.map(({ key, label }, index) => (
         <CategoryBox
           key={key}
           label={label}
           count={pool === 'all' || !counts ? null : (counts[key] ?? 0)}
-          onPress={() => onNavigate?.('practice-game', key)}
+          onPress={() => {
+            playCategorySound(index);
+            onNavigate?.('practice-game', key);
+          }}
         />
       ))}
     </View>

@@ -8,6 +8,7 @@ import {
   Alert
 } from 'react-native';
 import { Text } from '../lib/AppText';
+import { playCancelSound, playCategorySound } from '../lib/buttonSound';
 import { getCurrentUser } from '../services/authService';
 import { getCategoryStats } from '../services/questionReviewService';
 import { FitScrollView } from './FitScrollView';
@@ -131,10 +132,13 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
   };
 
   const handleCategoryPress = (categoryKey: string, isEnabled: boolean) => {
+    const index = REVIEW_CATEGORIES.findIndex((c) => c.key === categoryKey);
     if (!isEnabled) {
+      playCancelSound();
       Alert.alert('Coming Soon!', 'Developers are still working on this category. Stay tuned!');
       return;
     }
+    playCategorySound(index);
     onNavigate?.('categoryQuestions', categoryKey);
   };
 
@@ -181,7 +185,10 @@ export function ReviewCategoryScreen({ onNavigate }: { onNavigate?: (screen: str
 
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => onNavigate?.('main')}
+          onPress={() => {
+            playCancelSound();
+            onNavigate?.('main');
+          }}
           activeOpacity={0.85}
         >
           <Text style={styles.backButtonText}>Back to Profile</Text>

@@ -13,6 +13,14 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Text } from '../lib/AppText';
+import {
+  playButtonSound,
+  playCancelSound,
+  playCategorySound,
+  playCountPitch,
+  playDifficultySound,
+  playTickSound,
+} from '../lib/buttonSound';
 import { fontFamilyForRole } from '../lib/fonts';
 import { getCurrentUser } from '../services/authService';
 import {
@@ -457,9 +465,14 @@ export function SettingsScreen({
   };
 
   const handleQuestionPoolSelect = async (pool: PracticeQuestionPool) => {
-    if (pool === questionPool) return;
+    const poolIndex = pool === 'wrong' ? 1 : pool === 'mastered' ? 2 : 0;
+    if (pool === questionPool) {
+      playCategorySound(poolIndex);
+      return;
+    }
     const requested = pool === 'wrong' ? wrongPool : pool === 'mastered' ? masteredPool : null;
     if (pool !== 'all' && requested === null) {
+      playCancelSound();
       Alert.alert(
         'Couldn’t load your questions',
         'Your ' +
@@ -469,6 +482,7 @@ export function SettingsScreen({
       return;
     }
     if (pool === 'wrong' && requested?.length === 0) {
+      playCancelSound();
       Alert.alert(
         'No wrong questions yet',
         'You have no wrong questions to review right now. Take a Challenge set first.'
@@ -476,25 +490,34 @@ export function SettingsScreen({
       return;
     }
     if (pool === 'mastered' && requested?.length === 0) {
+      playCancelSound();
       Alert.alert(
         'No mastered questions yet',
         'Master questions in Challenge or Review first, then you can drill them here.'
       );
       return;
     }
+    playCategorySound(poolIndex);
     await applyPoolChange(pool);
   };
 
   // Multi-select difficulties; never allow zero checked.
   const handlePracticeDifficultyToggle = async (id: PracticeSessionDifficulty) => {
-    if (!userId) return;
+    if (!userId) {
+      playCancelSound();
+      return;
+    }
     const selected = new Set(practiceSessionDifficulties);
     if (selected.has(id)) {
-      if (selected.size <= 1) return;
+      if (selected.size <= 1) {
+        playCancelSound();
+        return;
+      }
       selected.delete(id);
     } else {
       selected.add(id);
     }
+    playDifficultySound(id);
     const next = PRACTICE_DIFFICULTY_OPTIONS.filter((d) => selected.has(d));
     setPracticeSessionDifficulties(next);
     await updateSetting(userId, 'practice_session_difficulty', next);
@@ -505,8 +528,13 @@ export function SettingsScreen({
 
   const handleNumTossupsChange = async (newValue: number) => {
     const { min, max } = setSizeBoundsFor(questionPool, practiceSessionDifficulties);
-    if (max <= 0) return;
-    await persistSetSize(Math.max(min, Math.min(max, newValue)));
+    if (max <= 0) {
+      playCancelSound();
+      return;
+    }
+    const next = Math.max(min, Math.min(max, newValue));
+    playCountPitch(next);
+    await persistSetSize(next);
   };
 
   const handlePreBuzzSecondsChange = async (newValue: number) => {
@@ -565,6 +593,7 @@ export function SettingsScreen({
   };
 
   const handleResetPracticeSession = async () => {
+    playCancelSound();
     setNumTossups(PRACTICE_SESSION_DEFAULTS.num_tossups);
     setQuestionPool(PRACTICE_SESSION_DEFAULTS.practice_question_pool);
     setPracticeSessionDifficulties(PRACTICE_SESSION_DEFAULTS.practice_session_difficulty);
@@ -574,6 +603,7 @@ export function SettingsScreen({
   };
 
   const handleResetFurtherAdjustments = async () => {
+    playCancelSound();
     setPreBuzzSeconds(FURTHER_ADJUSTMENT_DEFAULTS.pre_buzz_seconds);
     setAnswerSeconds(FURTHER_ADJUSTMENT_DEFAULTS.answer_seconds);
     setPreBuzzText(String(FURTHER_ADJUSTMENT_DEFAULTS.pre_buzz_seconds));
@@ -633,7 +663,10 @@ export function SettingsScreen({
         {poolLoadFailed && (
           <TouchableOpacity
             style={styles.poolWarningRow}
-            onPress={loadSettingsData}
+            onPress={() => {
+              playButtonSound();
+              void loadSettingsData();
+            }}
             activeOpacity={0.8}
             accessibilityRole="button"
           >
@@ -769,7 +802,10 @@ export function SettingsScreen({
         <View style={styles.furtherSection}>
           <TouchableOpacity
             style={styles.furtherHeader}
-            onPress={() => setFurtherOpen((open) => !open)}
+            onPress={() => {
+              playTickSound();
+              setFurtherOpen((open) => !open);
+            }}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityState={{ expanded: furtherOpen }}
@@ -888,7 +924,13 @@ export function SettingsScreen({
       >
         <View style={styles.contentContainer}>{settingsBody}</View>
         <View style={styles.backInScroll}>
-          <AnimatedButton label="Back" onPress={() => onNavigate?.(previousScreen || 'main')} />
+          <AnimatedButton
+            label="Back"
+            onPress={() => {
+              playCancelSound();
+              onNavigate?.(previousScreen || 'main');
+            }}
+          />
         </View>
       </FitScrollView>
     </View>

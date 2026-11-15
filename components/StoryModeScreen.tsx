@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Text } from '../lib/AppText';
+import { playDailySound } from '../lib/buttonSound';
 import { PracticeCategorySessionPicker } from './PracticeCategorySessionPicker';
 import { FitScrollView } from './FitScrollView';
 import { useIPadScaledStyles } from '../lib/layout';
@@ -47,7 +48,10 @@ export function StoryModeScreen({
         <View style={styles.settingsRow}>
           <TouchableOpacity
             style={styles.settingsButton}
-            onPress={() => onNavigate?.('settings-practice')}
+            onPress={() => {
+              playDailySound();
+              onNavigate?.('settings-practice');
+            }}
           >
             <SettingsGearIcon />
             <Text style={styles.settingsButtonText}>Settings</Text>

@@ -12,9 +12,10 @@ import Svg, { Path } from 'react-native-svg';
 import { Text } from '../lib/AppText';
 import {
   playCancelSound,
+  playCategorySound,
+  playCountPitch,
   playDailySound,
-  playNextSound,
-  playSetSizeSound,
+  playDifficultySound,
   playTickSound,
 } from '../lib/buttonSound';
 import { fontFamilyForRole } from '../lib/fonts';
@@ -38,27 +39,6 @@ import {
   ARENA_DIFFICULTIES,
   type ArenaSettings,
 } from '../services/arenaService';
-
-const COUNT_PITCHES = [10, 20, 30, 40, 50] as const;
-
-function playCountPitch(count: number) {
-  const nearest = COUNT_PITCHES.reduce((best, size) =>
-    Math.abs(size - count) < Math.abs(best - count) ? size : best
-  );
-  playSetSizeSound(nearest);
-}
-
-function playDifficultySound(id: string) {
-  if (id === 'easy') playTickSound();
-  else if (id === 'hard') playNextSound();
-  else playSetSizeSound(30);
-}
-
-function playCategorySound(index: number) {
-  const pitch = COUNT_PITCHES[index];
-  if (pitch) playSetSizeSound(pitch);
-  else playDailySound();
-}
 
 const READING_SPEED_THUMB_INSET = 10;
 const READING_SPEED_LABEL_HALF = 24;

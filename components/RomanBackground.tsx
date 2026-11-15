@@ -200,13 +200,12 @@ export function RomanBackground() {
 
   /** Logo / wreath tap: jump straight to Home. */
   const handleNavigateToHome = () => {
+    playLogoSound();
     if (isGuestModeRef.current) return;
     if (currentScreenRef.current === 'arena-match' && arenaMatchId) {
       void arenaLeave(arenaMatchId);
       setArenaMatchId(null);
     }
-    const alreadyHome = currentScreen === 'main' && mainTab === 'profile';
-    if (!alreadyHome) playLogoSound();
     setLogoPressed(false);
     if (currentScreen !== 'settings-practice') {
       previousScreen.current = currentScreen;

@@ -635,7 +635,10 @@ export function ChallengeGameScreen({
           <Text style={styles.errorText}>{loadError}</Text>
           <TouchableOpacity
             style={styles.secondaryBtn}
-            onPress={() => onNavigate?.('main')}
+            onPress={() => {
+              playCancelSound();
+              onNavigate?.('main');
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.secondaryBtnText}>Back to Main</Text>
@@ -673,9 +676,10 @@ export function ChallengeGameScreen({
 
           <TouchableOpacity
             style={styles.primaryBtn}
-            onPress={() =>
-              onStartGame?.(config.mode, config.setSize, config.rankIndex)
-            }
+            onPress={() => {
+              playButtonSound();
+              onStartGame?.(config.mode, config.setSize, config.rankIndex);
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.primaryBtnText}>Another Set</Text>
@@ -683,7 +687,10 @@ export function ChallengeGameScreen({
 
           <TouchableOpacity
             style={styles.secondaryBtn}
-            onPress={() => onNavigate?.('review')}
+            onPress={() => {
+              playNextSound();
+              onNavigate?.('review');
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.secondaryBtnText}>Review Questions</Text>
@@ -692,6 +699,7 @@ export function ChallengeGameScreen({
           <TouchableOpacity
             style={styles.secondaryBtn}
             onPress={() => {
+              playCancelSound();
               onTabChange?.('profile');
               onNavigate?.('main');
             }}
@@ -907,7 +915,10 @@ export function ChallengeGameScreen({
           </Text>
           <TouchableOpacity
             style={styles.footerFinishBtn}
-            onPress={() => onNavigate?.('review')}
+            onPress={() => {
+              playCancelSound();
+              onNavigate?.('review');
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.footerFinishBtnText}>Done reviewing? Click me!</Text>
@@ -918,6 +929,7 @@ export function ChallengeGameScreen({
           <TouchableOpacity
             style={styles.footerFinishBtn}
             onPress={() => {
+              playCancelSound();
               onTabChange?.('challenge');
               onNavigate?.('main');
             }}

@@ -72,14 +72,14 @@ export function MainTabsScreen({
   const rankPane = activeTab === 'review' ? 'review' : 'challenge';
 
   const handleTabPress = (tab: MainTabId) => {
-    if (tab === shownTab) return;
     playTabSound(tab);
+    if (tab === shownTab) return;
     onTabChange(tab);
   };
 
   const handleRankPane = (pane: 'challenge' | 'review') => {
-    if (pane === rankPane && shownTab === 'challenge') return;
     playAscendPaneSound(pane);
+    if (pane === rankPane && shownTab === 'challenge') return;
     onTabChange(pane);
   };
 

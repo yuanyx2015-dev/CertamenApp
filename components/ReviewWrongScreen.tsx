@@ -7,6 +7,7 @@ import {
   Alert
 } from 'react-native';
 import { Text } from '../lib/AppText';
+import { playButtonSound, playCancelSound } from '../lib/buttonSound';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { getWrongCount } from '../services/questionReviewService';
@@ -79,7 +80,10 @@ export function ReviewWrongScreen({
         </Text>
         <TouchableOpacity
           style={styles.signInBtn}
-          onPress={() => onNavigate?.('login')}
+          onPress={() => {
+            playButtonSound();
+            onNavigate?.('login');
+          }}
           activeOpacity={0.85}
         >
           <Text style={styles.signInBtnText}>Sign In</Text>
@@ -103,7 +107,14 @@ export function ReviewWrongScreen({
         <Text style={styles.subtitle}>
           We couldn't load your wrong questions. Check your connection and try again.
         </Text>
-        <TouchableOpacity style={styles.signInBtn} onPress={load} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.signInBtn}
+          onPress={() => {
+            playButtonSound();
+            void load();
+          }}
+          activeOpacity={0.85}
+        >
           <Text style={styles.signInBtnText}>Retry</Text>
         </TouchableOpacity>
       </View>
@@ -112,12 +123,14 @@ export function ReviewWrongScreen({
 
   const handleStart = () => {
     if (wrongCount === 0) {
+      playCancelSound();
       Alert.alert(
         'No wrong questions',
         "You don't have any wrong questions right now. Take a Challenge Mode set and any questions you miss will land here."
       );
       return;
     }
+    playButtonSound();
     onStartChallengeGame?.('review', wrongCount);
   };
 

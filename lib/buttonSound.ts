@@ -437,6 +437,30 @@ export function playSetSizeSound(size: keyof typeof SET_SIZE_SOUNDS) {
   play(SET_SIZE_SOUNDS[size]);
 }
 
+const COUNT_PITCHES = [10, 20, 30, 40, 50] as const;
+
+/** The question-count stepper. The pitch follows the number. */
+export function playCountPitch(count: number) {
+  const nearest = COUNT_PITCHES.reduce((best, size) =>
+    Math.abs(size - count) < Math.abs(best - count) ? size : best
+  );
+  playSetSizeSound(nearest);
+}
+
+/** Easy, Medium, and Hard. Medium sits between the other two. */
+export function playDifficultySound(id: string) {
+  if (id === 'easy') playTickSound();
+  else if (id === 'hard') playNextSound();
+  else playSetSizeSound(30);
+}
+
+/** One pitch per category, in list order. The last one uses the Settings chime. */
+export function playCategorySound(index: number) {
+  const pitch = COUNT_PITCHES[index];
+  if (pitch) playSetSizeSound(pitch);
+  else playDailySound();
+}
+
 /** Ascend's C5 as a soft trumpet: da, then dadaaa on a C dominant chord, with a fading echo. */
 export function playStartSetArpeggio() {
   play('setStart');

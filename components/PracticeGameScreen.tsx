@@ -8,7 +8,7 @@ import {
   Easing
 } from 'react-native';
 import { Text } from '../lib/AppText';
-import { playBuzzSound, playNextSound, playTickSound, startTypewriter, stopTypewriter } from '../lib/buttonSound';
+import { playBuzzSound, playButtonSound, playCancelSound, playMasterSound, playNextSound, playTickSound, startTypewriter, stopMasterSound, stopTypewriter } from '../lib/buttonSound';
 import { getRandomQuestions, Question } from '../services/questionService';
 import { getCurrentUser } from '../services/authService';
 import { FitScrollView } from './FitScrollView';
@@ -566,6 +566,7 @@ export function PracticeGameScreen({
 
   const handleStarPressIn = () => {
     if (!lastAnswerCorrect || starClearedRef.current) return;
+    playMasterSound();
     holdAnim.setValue(0);
     Animated.timing(holdAnim, {
       toValue: 1,
@@ -584,6 +585,7 @@ export function PracticeGameScreen({
 
   const handleStarPressOut = () => {
     if (starClearedRef.current) return;
+    stopMasterSound();
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
@@ -655,7 +657,10 @@ export function PracticeGameScreen({
           <Text style={styles.errorText}>{loadError}</Text>
           <TouchableOpacity 
             style={styles.restartButton}
-            onPress={() => onNavigate?.('main')}
+            onPress={() => {
+              playCancelSound();
+              onNavigate?.('main');
+            }}
           >
             <Text style={styles.restartButtonText}>Back to Menu</Text>
           </TouchableOpacity>
@@ -700,7 +705,10 @@ export function PracticeGameScreen({
               </Text>
               <TouchableOpacity 
                 style={styles.signInPromptButton}
-                onPress={() => onNavigate?.('login')}
+                onPress={() => {
+                  playButtonSound();
+                  onNavigate?.('login');
+                }}
               >
                 <Text style={styles.signInPromptButtonText}>Sign In</Text>
               </TouchableOpacity>
@@ -709,14 +717,20 @@ export function PracticeGameScreen({
 
           <TouchableOpacity 
             style={styles.primaryButton}
-            onPress={() => setReloadNonce((n) => n + 1)}
+            onPress={() => {
+              playButtonSound();
+              setReloadNonce((n) => n + 1);
+            }}
           >
             <Text style={styles.primaryButtonText}>Try Again</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.backButton}
-            onPress={() => onNavigate?.('main')}
+            onPress={() => {
+              playCancelSound();
+              onNavigate?.('main');
+            }}
           >
             <Text style={styles.backButtonText}>Back to Training</Text>
           </TouchableOpacity>
@@ -735,7 +749,10 @@ export function PracticeGameScreen({
           </Text>
           <TouchableOpacity
             style={styles.guestSignInButton}
-            onPress={() => onNavigate?.('login')}
+            onPress={() => {
+              playButtonSound();
+              onNavigate?.('login');
+            }}
             activeOpacity={0.7}
           >
             <Text style={styles.guestSignInButtonText}>Sign In</Text>
@@ -923,6 +940,7 @@ export function PracticeGameScreen({
         <TouchableOpacity
           style={styles.footerFinishBtn}
           onPress={() => {
+            playCancelSound();
             onTabChange?.('practice');
             onNavigate?.('main');
           }}

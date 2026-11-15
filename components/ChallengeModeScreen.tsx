@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Text } from '../lib/AppText';
-import { playDailySound, playSetSizeSound, playStartSetArpeggio } from '../lib/buttonSound';
+import { playButtonSound, playCancelSound, playDailySound, playNextSound, playSetSizeSound, playStartSetArpeggio } from '../lib/buttonSound';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { getRankStats } from '../services/userMasteredService';
@@ -116,7 +116,10 @@ export function ChallengeModeScreen({
         </Text>
         <TouchableOpacity
           style={styles.signInBtn}
-          onPress={() => onNavigate?.('login')}
+          onPress={() => {
+            playButtonSound();
+            onNavigate?.('login');
+          }}
           activeOpacity={0.85}
         >
           <Text style={styles.signInBtnText}>Sign In</Text>
@@ -153,6 +156,7 @@ export function ChallengeModeScreen({
 
   const handleStart = () => {
     if (allDone) {
+      playCancelSound();
       Alert.alert(
         'You have reached the pinnacle!',
         'You have already mastered every question. Try Training to keep sharp.',
@@ -164,6 +168,7 @@ export function ChallengeModeScreen({
       return;
     }
     if (unmasteredHere === 0) {
+      playCancelSound();
       Alert.alert(
         'No unmastered questions',
         `You have nothing left to learn at ${rankName}. Master any wrong questions in Review to finish this rank.`,
@@ -242,7 +247,10 @@ export function ChallengeModeScreen({
           To complete this rank, review and master all wrong questions in{' '}
           <Text
             style={styles.rankNoteLink}
-            onPress={() => onTabChange?.('review')}
+            onPress={() => {
+              playNextSound();
+              onTabChange?.('review');
+            }}
             accessibilityRole="link"
           >
             Review
@@ -375,7 +383,10 @@ export function ChallengeModeScreen({
     >
       <Pressable
         style={styles.infoBackdrop}
-        onPress={() => setInfoRankIdx(null)}
+        onPress={() => {
+          playCancelSound();
+          setInfoRankIdx(null);
+        }}
         accessibilityLabel="Dismiss rank info"
       >
         <Pressable

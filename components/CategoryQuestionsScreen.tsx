@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { Text } from '../lib/AppText';
+import { playButtonSound, playCancelSound, playDailySound, playNextSound } from '../lib/buttonSound';
 import { FitScrollView } from './FitScrollView';
 import { getCurrentUser } from '../services/authService';
 import { 
@@ -293,7 +294,11 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
   };
 
   const handleMarkMastered = async (questionId: string) => {
-    if (!userId) return;
+    if (!userId) {
+      playCancelSound();
+      return;
+    }
+    playButtonSound();
 
     // Atomic master_question RPC: removes from user_wrong_answers AND inserts
     // into user_mastered_answers, so Profile / Challenge progress all update.
@@ -310,6 +315,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
   const handleExplainQuestion = async (questionText: string, correctAnswer: string, questionId: string) => {
     // Toggle off if already expanded
     if (expandedQuestionId === questionId) {
+      playCancelSound();
       setExpandedQuestionId(null);
       setAiExplanation(null);
       setCustomQuestion('');
@@ -318,6 +324,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       return;
     }
 
+    playDailySound();
     setExpandedQuestionId(questionId);
     setIsLoadingExplanation(true);
     setAiExplanation(null);
@@ -347,9 +354,13 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
   };
 
   const handleAskCustomQuestion = async (questionText: string, correctAnswer: string) => {
-    if (!customQuestion.trim() || !userId) return;
+    if (!customQuestion.trim() || !userId) {
+      playCancelSound();
+      return;
+    }
 
     if (remainingQuestions <= 0) {
+      playCancelSound();
       Alert.alert(
         'Daily Limit Reached',
         'You have used your 2 custom questions for today. Come back tomorrow!'
@@ -360,6 +371,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
     const maxFollow = maxFollowUpCharsForContext(questionText, correctAnswer);
     const trimmed = customQuestion.trim();
     if (trimmed.length > maxFollow) {
+      playCancelSound();
       Alert.alert(
         'Follow-up too long',
         maxFollow === 0
@@ -369,6 +381,7 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       return;
     }
 
+    playNextSound();
     setAskedFollowUp(trimmed);
     setCustomQuestion('');
     setCustomAnswer(null);
@@ -447,7 +460,10 @@ export function CategoryQuestionsScreen({ onNavigate, category }: CategoryQuesti
       <View style={styles.headerSection} pointerEvents="box-none">
         <TouchableOpacity
           style={styles.topBackButton}
-          onPress={() => onNavigate?.('reviewCategories')}
+          onPress={() => {
+            playCancelSound();
+            onNavigate?.('reviewCategories');
+          }}
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >

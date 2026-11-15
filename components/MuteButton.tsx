@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 import { isIPad } from '../lib/layout';
-import { isSoundMuted, playUnmuteSound, setSoundMuted, subscribeSoundMuted } from '../lib/buttonSound';
+import { isSoundMuted, playTickSound, playUnmuteSound, setSoundMuted, subscribeSoundMuted } from '../lib/buttonSound';
 
 const GOLD = '#c9a569';
 const SHADOW = 'rgba(55, 40, 18, 0.4)';
@@ -72,6 +72,7 @@ function SpeakerIcon({ muted, size }: { muted: boolean; size: number }) {
 /** Top-left control. Silences every app sound, including the intro. */
 export function MuteButton() {
   const [muted, setMuted] = useState(isSoundMuted);
+  const muteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => subscribeSoundMuted(setMuted), []);
 
@@ -79,11 +80,19 @@ export function MuteButton() {
     <TouchableOpacity
       style={[styles.button, isIPad && styles.buttonIPad]}
       onPress={() => {
+        if (muteTimer.current) {
+          clearTimeout(muteTimer.current);
+          muteTimer.current = null;
+        }
         if (muted) {
           setSoundMuted(false);
           playUnmuteSound();
         } else {
-          setSoundMuted(true);
+          playTickSound();
+          muteTimer.current = setTimeout(() => {
+            muteTimer.current = null;
+            setSoundMuted(true);
+          }, 160);
         }
       }}
       activeOpacity={0.7}
