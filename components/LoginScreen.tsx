@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Animated,
   Modal,
-  Alert,
   Platform,
   Linking,
   Text as SystemText,
@@ -109,7 +108,6 @@ export function LoginScreen({ onLoginSuccess, onGuestMode }: LoginScreenProps) {
       await getOrCreateUserStats(user.id);
       await getOrCreateUserSettings(user.id);
 
-      Alert.alert('Success!', 'Welcome to CertamenPrep!');
       onLoginSuccess();
     }
   };

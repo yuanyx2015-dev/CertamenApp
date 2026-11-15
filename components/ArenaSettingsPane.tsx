@@ -10,6 +10,13 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Text } from '../lib/AppText';
+import {
+  playCancelSound,
+  playDailySound,
+  playNextSound,
+  playSetSizeSound,
+  playTickSound,
+} from '../lib/buttonSound';
 import { fontFamilyForRole } from '../lib/fonts';
 import {
   ANSWER_SECONDS_MAX,
@@ -32,6 +39,27 @@ import {
   type ArenaSettings,
 } from '../services/arenaService';
 
+const COUNT_PITCHES = [10, 20, 30, 40, 50] as const;
+
+function playCountPitch(count: number) {
+  const nearest = COUNT_PITCHES.reduce((best, size) =>
+    Math.abs(size - count) < Math.abs(best - count) ? size : best
+  );
+  playSetSizeSound(nearest);
+}
+
+function playDifficultySound(id: string) {
+  if (id === 'easy') playTickSound();
+  else if (id === 'hard') playNextSound();
+  else playSetSizeSound(30);
+}
+
+function playCategorySound(index: number) {
+  const pitch = COUNT_PITCHES[index];
+  if (pitch) playSetSizeSound(pitch);
+  else playDailySound();
+}
+
 const READING_SPEED_THUMB_INSET = 10;
 const READING_SPEED_LABEL_HALF = 24;
 
@@ -40,7 +68,7 @@ function DifficultyCheckMark() {
     <Svg width={16} height={16} viewBox="0 0 16 16">
       <Path
         d="M3.2 8.2 L6.4 11.3 L12.8 4.5"
-        stroke="#8a6a3a"
+        stroke="#3a3a3a"
         strokeWidth={2.2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -217,12 +245,18 @@ export function ArenaSettingsPane({
   const maxCount = Math.max(5, Math.min(50, available ?? 50));
 
   const setCount = (next: number) => {
-    onChange({ ...settings, question_count: Math.max(5, Math.min(maxCount, next)) });
+    const question_count = Math.max(5, Math.min(maxCount, next));
+    playCountPitch(question_count);
+    onChange({ ...settings, question_count });
   };
 
   const toggleDifficulty = (id: string) => {
     const has = settings.difficulties.includes(id);
-    if (has && settings.difficulties.length <= 1) return;
+    if (has && settings.difficulties.length <= 1) {
+      playCancelSound();
+      return;
+    }
+    playDifficultySound(id);
     const next = has
       ? settings.difficulties.filter((d) => d !== id)
       : ARENA_DIFFICULTIES.filter((d) => settings.difficulties.includes(d) || d === id);
@@ -231,7 +265,11 @@ export function ArenaSettingsPane({
 
   const toggleCategory = (key: string) => {
     const has = settings.categories.includes(key);
-    if (has && settings.categories.length <= 1) return;
+    if (has && settings.categories.length <= 1) {
+      playCancelSound();
+      return;
+    }
+    playCategorySound(ARENA_CATEGORIES.findIndex((c) => c.key === key));
     const next = has
       ? settings.categories.filter((c) => c !== key)
       : ARENA_CATEGORIES.map((c) => c.key).filter((c) => settings.categories.includes(c) || c === key);
@@ -331,14 +369,15 @@ export function ArenaSettingsPane({
           <View style={styles.resetWrap}>
             <TouchableOpacity
               style={[styles.resetButton, sessionAtDefaults && styles.resetDisabled]}
-              onPress={() =>
+              onPress={() => {
+                playCancelSound();
                 onChange({
                   ...settings,
                   question_count: ARENA_DEFAULT_SETTINGS.question_count,
                   difficulties: [...ARENA_DEFAULT_SETTINGS.difficulties],
                   categories: [...ARENA_DEFAULT_SETTINGS.categories],
-                })
-              }
+                });
+              }}
               disabled={sessionAtDefaults}
               activeOpacity={0.7}
             >
@@ -353,12 +392,13 @@ export function ArenaSettingsPane({
           <View style={styles.categoryHeader}>
             <Text style={styles.sectionTitle}>Categories</Text>
             <TouchableOpacity
-              onPress={() =>
+              onPress={() => {
+                playDailySound();
                 onChange({
                   ...settings,
                   categories: ARENA_CATEGORIES.map((c) => c.key),
-                })
-              }
+                });
+              }}
               disabled={settings.categories.length === ARENA_CATEGORIES.length}
               activeOpacity={0.7}
             >
@@ -397,7 +437,10 @@ export function ArenaSettingsPane({
         <View style={styles.furtherSection}>
           <TouchableOpacity
             style={styles.furtherHeader}
-            onPress={() => setFurtherOpen((open) => !open)}
+            onPress={() => {
+              playTickSound();
+              setFurtherOpen((open) => !open);
+            }}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityState={{ expanded: furtherOpen }}
@@ -464,6 +507,7 @@ export function ArenaSettingsPane({
                 <TouchableOpacity
                   style={[styles.resetFurtherButton, furtherAtDefaults && styles.resetDisabled]}
                   onPress={() => {
+                    playCancelSound();
                     setPreBuzzText(String(FURTHER_ADJUSTMENT_DEFAULTS.pre_buzz_seconds));
                     setAnswerText(String(FURTHER_ADJUSTMENT_DEFAULTS.answer_seconds));
                     onChange({
@@ -483,7 +527,14 @@ export function ArenaSettingsPane({
           )}
         </View>
       </View>
-      <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => {
+          playCancelSound();
+          onBack();
+        }}
+        activeOpacity={0.8}
+      >
         <Text style={styles.backButtonText}>Back</Text>
       </TouchableOpacity>
     </View>
@@ -550,8 +601,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   difficultyCheckboxSelected: {
-    borderColor: '#b8954a',
-    backgroundColor: 'rgba(201, 169, 97, 0.35)',
+    borderColor: '#c9a961',
+    backgroundColor: 'rgba(201, 169, 97, 0.25)',
   },
   difficultyLabel: { fontSize: 15, color: '#3a3a3a', letterSpacing: 0.15 },
   resetWrap: { alignItems: 'flex-end', marginTop: -4 },
@@ -600,9 +651,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   categoryBoxOn: {
-    backgroundColor: '#c9a36a',
-    borderColor: '#8a6a3a',
-    transform: [{ scale: 0.96 }, { translateY: 2 }],
+    backgroundColor: '#f0e6d3',
+    borderColor: 'rgba(201, 169, 97, 0.9)',
+    transform: [{ scale: 0.98 }],
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 1,
@@ -625,13 +676,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 12,
     height: 1.5,
-    backgroundColor: 'rgba(90, 60, 20, 0.55)',
+    backgroundColor: 'rgba(201, 169, 97, 0.7)',
   },
   tickV: {
     position: 'absolute',
     width: 1.5,
     height: 12,
-    backgroundColor: 'rgba(90, 60, 20, 0.55)',
+    backgroundColor: 'rgba(201, 169, 97, 0.7)',
   },
   tickTop: { top: 0 },
   tickBottom: { bottom: 0 },

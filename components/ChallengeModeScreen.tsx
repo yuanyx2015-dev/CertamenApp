@@ -506,6 +506,8 @@ const baseStyles = StyleSheet.create({
     backgroundColor: '#eedfc8',
     overflow: 'hidden',
     marginTop: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.85)',
   },
   progressFill: {
     height: '100%',

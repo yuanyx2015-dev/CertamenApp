@@ -1,0 +1,10 @@
+{
+  "name": "certamen-auth-cue",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plays the Continue click when the system sign-in browser opens.",
+  "license": "UNLICENSED",
+  "author": "CertamenPrep",
+  "homepage": "https://certamen.app",
+  "main": "index.js"
+}

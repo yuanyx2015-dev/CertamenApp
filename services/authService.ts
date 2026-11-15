@@ -1,4 +1,5 @@
 import { AppState, Platform } from 'react-native';
+import { EventEmitter, requireOptionalNativeModule } from 'expo-modules-core';
 import { supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import * as WebBrowser from 'expo-web-browser';
@@ -19,22 +20,30 @@ const OAUTH_REDIRECT = () =>
 
 /**
  * The consent sheet itself makes the app inactive, so that is not a click.
- * Continue is the moment the app actually backgrounds into the browser.
+ * Some devices background when Continue opens the browser.
  */
-function watchSheetChoice() {
+function watchSheetChoice(onContinue: () => void) {
   let played = false;
   const started = Date.now();
   const sub = AppState.addEventListener('change', (state) => {
     if (played || Date.now() - started < 400) return;
     if (state === 'background') {
       played = true;
-      playButtonSound();
+      onContinue();
     }
   });
   return {
     heard: () => played,
     stop: () => sub.remove(),
   };
+}
+
+/** Continue presents the in-app browser. The system button itself has no tap event. */
+function watchAuthBrowser(onContinue: () => void) {
+  const native = requireOptionalNativeModule('CertamenAuthCue');
+  if (!native) return () => {};
+  const sub = new EventEmitter(native).addListener('onContinue', onContinue);
+  return () => sub.remove();
 }
 
 async function completeOAuthBrowserSession(
@@ -60,18 +69,27 @@ async function completeOAuthBrowserSession(
     return { error: { message: 'No OAuth URL returned' } };
   }
 
+  let played = false;
+  const playOnce = () => {
+    if (played) return;
+    played = true;
+    playButtonSound();
+  };
+  const stopBrowserWatch = watchAuthBrowser(playOnce);
   duckSounds();
-  const choice = watchSheetChoice();
+  const choice = watchSheetChoice(playOnce);
   let result: Awaited<ReturnType<typeof WebBrowser.openAuthSessionAsync>>;
   try {
     result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
   } catch (error) {
     choice.stop();
+    stopBrowserWatch();
     unduckSounds();
     throw error;
   }
   choice.stop();
-  if (!choice.heard()) playButtonSound();
+  stopBrowserWatch();
+  if (!played && result.type !== 'success') playOnce();
   unduckSounds();
 
   if (result.type !== 'success') {
@@ -174,7 +192,7 @@ async function signInWithAppleNative(): Promise<AuthResponse> {
     );
 
     duckSounds();
-    const choice = watchSheetChoice();
+    const choice = watchSheetChoice(playButtonSound);
     let credential: AppleAuthentication.AppleAuthenticationCredential;
     try {
       credential = await AppleAuthentication.signInAsync({

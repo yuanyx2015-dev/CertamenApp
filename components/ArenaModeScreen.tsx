@@ -16,7 +16,15 @@ import Svg, { G, Path } from 'react-native-svg';
 import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
 import { ArenaSettingsPane } from './ArenaSettingsPane';
-import { duckSounds, playButtonSound, playCancelSound, unduckSounds } from '../lib/buttonSound';
+import {
+  duckSounds,
+  playButtonSound,
+  playCancelSound,
+  playDailySound,
+  playNextSound,
+  playTickSound,
+  unduckSounds,
+} from '../lib/buttonSound';
 import { getCurrentUser } from '../services/authService';
 import { getProfileByEmail } from '../services/profileService';
 import {
@@ -348,7 +356,7 @@ export function ArenaModeScreen({
           <TouchableOpacity
             style={styles.textBtn}
             onPress={() => {
-              playButtonSound();
+              playCancelSound();
               void dismissForfeit(true);
             }}
           >
@@ -406,7 +414,7 @@ export function ArenaModeScreen({
           style={[styles.settingsButton, pane !== 'create' && styles.settingsButtonHidden]}
           disabled={pane !== 'create'}
           onPress={() => {
-            playButtonSound();
+            playDailySound();
             setPane('settings');
           }}
         >
@@ -443,7 +451,7 @@ export function ArenaModeScreen({
             <TouchableOpacity
               style={styles.nameBack}
               onPress={() => {
-                playButtonSound();
+                playTickSound();
                 applyName(homeName);
               }}
               accessibilityRole="button"
@@ -472,7 +480,7 @@ export function ArenaModeScreen({
             kind="outline"
             centerShift={!isGuestMode && homeName ? 22 : 0}
             onPress={() => {
-              playButtonSound();
+              playTickSound();
               setPane('join');
             }}
           />
@@ -484,7 +492,7 @@ export function ArenaModeScreen({
             onPress={() => {
               const trimmed = requireName();
               if (!trimmed) return;
-              playButtonSound();
+              playNextSound();
               setBusy(true);
               void arenaEnqueue(trimmed).then((row) => {
                 setBusy(false);
@@ -519,7 +527,7 @@ export function ArenaModeScreen({
             onPress={() => {
               const trimmed = requireName();
               if (!trimmed) return;
-              playButtonSound();
+              playNextSound();
               setBusy(true);
               void arenaJoinMatch(code, trimmed).then((row) => {
                 setBusy(false);
@@ -533,7 +541,13 @@ export function ArenaModeScreen({
           >
             <Text style={styles.goldBtnText}>Enter</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.textBtn} onPress={() => setPane('home')}>
+          <TouchableOpacity
+            style={styles.textBtn}
+            onPress={() => {
+              playCancelSound();
+              setPane('home');
+            }}
+          >
             <Text style={styles.textBtnLabel}>Back</Text>
           </TouchableOpacity>
         </View>
@@ -547,7 +561,7 @@ export function ArenaModeScreen({
             onPress={() => {
               const trimmed = requireName();
               if (!trimmed) return;
-              playButtonSound();
+              playDailySound();
               setBusy(true);
               void arenaCreateMatch(trimmed, settings).then((row) => {
                 setBusy(false);
@@ -565,7 +579,13 @@ export function ArenaModeScreen({
               <Text style={styles.goldBtnText}>Open the room</Text>
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.textBtn} onPress={() => setPane('home')}>
+          <TouchableOpacity
+            style={styles.textBtn}
+            onPress={() => {
+              playCancelSound();
+              setPane('home');
+            }}
+          >
             <Text style={styles.textBtnLabel}>Back</Text>
           </TouchableOpacity>
         </View>
