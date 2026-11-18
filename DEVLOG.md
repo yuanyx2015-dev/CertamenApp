@@ -20,6 +20,28 @@ That’s it. Older versions stay below; you never reorder past versions.
 
 ---
 
+## 1.3 — November 14, 2026
+
+Arena is here — live 1v1 Certamen.
+
+**ARENA**
+- Create a room and share a Roman-numeral code, join a friend's room, or find a random rival
+- Toss-ups stream letter by letter. The first buzz freezes the question
+- A wrong answer or a timeout sends the rest of the toss-up to your rival
+- The host sets the length, difficulties, and categories before the match
+- Guests can play. Sign in if you want the match kept on your record
+
+**TRAINING**
+- Practice is now Training
+- Set the question count, difficulties, and a pool of all, wrong, or mastered questions before you start
+- Six categories: Mythology, History, Language, Literature, Culture & Life, and Living Latin
+
+**SOUND**
+- Buttons, tabs, and the start of a set or match now have their own sounds
+- Mute, in the corner of every screen, silences the whole app
+
+Good luck in the Arena. Vale!
+
 ## 1.2 — September 24, 2026
 
 Submitted as version **1.2**, build **60**. The binary still reports 1.1.1 internally; the store version is 1.2. Live on the store once Apple approves it.

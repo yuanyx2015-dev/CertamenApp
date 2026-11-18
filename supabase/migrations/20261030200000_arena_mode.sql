@@ -518,8 +518,8 @@ BEGIN
   FROM (
     SELECT shuffled.id, row_number() OVER () AS ord
     FROM (
-      SELECT id
-      FROM public.arena_playable_ids(v_cats, v_diffs)
+      SELECT playable.id
+      FROM public.arena_playable_ids(v_cats, v_diffs) AS playable(id)
       ORDER BY random()
       LIMIT v_n
     ) AS shuffled

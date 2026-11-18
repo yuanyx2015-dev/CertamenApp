@@ -2,7 +2,7 @@
 
 Draft listing copy for App Store Connect. Paste into the store listing; the app does not load this file at runtime. Keep this aligned with the live product when features change.
 
-**Current app version (see `app.json`):** 1.2
+**Current app version (see `app.json`):** 1.3
 
 **Privacy Policy URL (App Store Connect):** https://certamenprep.org/privacy/
 
@@ -10,63 +10,99 @@ Draft listing copy for App Store Connect. Paste into the store listing; the app 
 
 ## Promotional Text (170 characters max — appears at top)
 
-Practice Mode, rebuilt: choose your question pool, pick difficulties, and drill any of six categories. Buzz-in toss-ups and 11 ranks, from Miles to Legatus Legionis.
+Arena is here: live 1v1 Certamen. Create a room, join with a Roman-numeral code, or find a random rival.
 
-*(Character count: 165)*
+*(Character count: 104)*
 
 ---
 
 ## App Store Description (Full)
 
-**CertamenPrep — Practice like it's real.**
+CertamenPrep brings real Certamen competition to your phone. Buzz in on streaming Latin toss-ups, beat the clock, and rise through 11 Roman military ranks — from raw recruit (Miles) all the way to legion commander (Legatus Legionis). With over 1,100 questions and zero ads, it's the focused way to train for tournament day.
 
-Helps middle and high school Certamen competitors practice with real toss-up pacing. Questions stream letter by letter. Buzz in, answer under a short timer, and build lasting knowledge by mastering what you get right.
+Whether you're drilling for a JCL competition or you just love ancient Rome, CertamenPrep turns Latin practice into a game you'll actually want to come back to.
 
-Study six areas of Certamen content: Mythology, History, Language, Literature, Culture & Life, and Living Latin.
+CERTAMEN-AUTHENTIC GAMEPLAY
+- Questions stream letter-by-letter, exactly like a real toss-up
+- Hit BUZZ once the clue is in, then lock in your answer before the timer runs out
+- Practice the buzz-in pressure so tournament day feels familiar, not foreign
 
-**CHALLENGE MODE**
-Your main progression path. Play sets of 10 to 50 questions from your current rank pool. Hold the star on a correct answer to mark it mastered. Misses go to Review. Play at least one Challenge question each day to keep your streak.
+ARENA — LIVE 1V1
+- Face a friend or a random rival on the same toss-up
+- Create a room and share its Roman-numeral code, or join a room with theirs
+- The first buzz freezes the question. A wrong answer or a timeout sends the rest of it to your rival
+- The host sets the length, difficulties, and categories before the match
+- Guests can play. Sign in with Apple or Google if you want the result kept
 
-**ELEVEN ROMAN RANKS**
-Progress by mastering questions, not by racking up points. Climb from Miles to Legatus Legionis:
+CHALLENGE MODE — YOUR PATH TO THE TOP
+- Take on sets of 10 to 50 questions drawn from your current rank
+- Climb all 11 ranks by mastering each pool — progress is earned through real mastery, not points
+- Press and hold the star to mark a question mastered when you know it cold
+- End every set with a clear summary: what you mastered, got right, and missed
+- Open Ascend, then Challenge, whenever you are ready to climb
 
-• Miles
-• Cornicen
-• Signifer
-• Optio
-• Centurio
-• Aquilifer
-• Primus Pilus
-• Praefectus Castrorum
-• Tribunus Angusticlavius
-• Tribunus Laticlavius
-• Legatus Legionis
+REVIEW MODE — TURN MISSES INTO MASTERY
+- Every question you miss in Challenge is saved for you automatically
+- Run a focused review session to work through everything you got wrong
+- Master a question in Review to clear it from your wrong list and add it to your total
+- Misses in Training stay out of this list
 
-**REVIEW MODE**
-Work through questions you missed in Challenge. Master them here to clear them from your wrong list and count them toward your progress. Browse wrongs by category, and use Explain with AI when you want a clear walkthrough. Follow-up questions with the AI Tutor are limited to keep help focused.
+TRAINING — STUDY WITHOUT PRESSURE
+- Drill any of six categories: Mythology, History, Language, Literature, Culture & Life, and Living Latin
+- Same streaming questions and buzz-in timing as Challenge
+- Choose all questions, only ones you missed, or only ones you mastered, and mix Easy, Medium, and Hard
+- Training never changes your rank
 
-**PRACTICE MODE**
-Warm up in any category without filling your Review list. Choose Easy, Medium, or Hard and set how many questions you want. Practice does not advance your daily streak.
+LEARN FROM EVERY MISTAKE WITH AI
+- Get a clear, on-demand explanation for any question you've missed
+- Ask a follow-up when you want to understand it more deeply
+- The AI is built into your review loop — it helps you understand why, not just memorize what
 
-**HOME**
-See your current rank, progress, mastered count, questions left to review, and streak at a glance. Jump into your Daily Challenge when you are ready.
+EVERYTHING AT A GLANCE
+- Track your rank, progress bar, mastered count, questions remaining, and review count on the Home screen
+- Build a daily streak by studying in Challenge or Review each day, and chase your all-time best
 
-**SIGN IN**
-Sign in with Google or Apple (iOS) to save progress in the cloud, or continue as a guest to try Practice first. Delete your account anytime from Home. Privacy questions: support@certamenprep.org
+FREE, PRIVATE, AND YOURS
+- Completely free — no ads, no subscriptions, no in-app purchases
+- Sign in with Google or Apple to save progress, or continue as a Guest to play Training and Arena
+- Your progress saves to the cloud, and you can delete your account anytime from Home
 
-Free to use. No ads. No in-app purchases.
+Built for Certamen competitors, Latin students, teachers who want a dedicated drill tool, and anyone fascinated by the ancient Roman world.
+
+Good luck climbing the ranks. Vale!
 
 ---
 
 ## Keywords (100 characters max)
 
-Latin,Certamen,quiz,Roman,mythology,history,language,literature,study,competition,education
+certamen,latin,JCL,NJCL,classics,mythology,vocabulary,tossup,history,grammar,nle,roman,derivatives
 
-*(Character count: 95 — Apple uses commas; avoid spaces after commas if you need room)*
+*(Character count: 98. Dropped trivia, study, gods, ancient, language, and literature. Latin, mythology, grammar, the National Latin Exam, Roman, and derivatives take those slots. Language, literature, and ancient Rome stay in the description, which Apple already indexes.)*
 
 ---
 
 ## What's New (paste when shipping an update)
+
+Version 1.3
+Arena is here — live 1v1 Certamen.
+
+ARENA
+• Create a room and share a Roman-numeral code, join a friend's room, or find a random rival
+• Toss-ups stream letter by letter. The first buzz freezes the question
+• A wrong answer or a timeout sends the rest of the toss-up to your rival
+• The host sets the length, difficulties, and categories before the match
+• Guests can play. Sign in if you want the match kept on your record
+
+TRAINING
+• Practice is now Training
+• Set the question count, difficulties, and a pool of all, wrong, or mastered questions before you start
+• Six categories: Mythology, History, Language, Literature, Culture & Life, and Living Latin
+
+SOUND
+• Buttons, tabs, and the start of a set or match now have their own sounds
+• Mute, in the corner of every screen, silences the whole app
+
+Good luck in the Arena. Vale!
 
 Version 1.2
 The biggest update since launch — Practice Mode has been rebuilt, and Challenge, Review, and the AI tutor all got sharper.
@@ -210,7 +246,7 @@ Uses only standard HTTPS / OS cryptography (Supabase, Google, Apple, Gemini over
 - Content is family-friendly and educational
 - Free app: no in-app purchases or subscriptions
 - No ads
-- Guest Mode allows Practice without an account; Challenge, Review, and cloud progress require sign-in
+- Guest Mode allows Training and Arena without an account; Challenge, Review, and cloud progress require sign-in
 - Apple Sign-In is offered on iOS alongside Google
 - Signing Team ID (canonical): `YY545WKA4Y` — matches Sign in with Apple config; override locally with `APPLE_TEAM_ID` if needed
 - Refresh App Store screenshots if Practice/Home UI changed since the current listing assets

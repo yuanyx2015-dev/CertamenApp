@@ -200,8 +200,8 @@ export function RomanBackground() {
 
   /** Logo / wreath tap: jump straight to Home. */
   const handleNavigateToHome = () => {
-    playLogoSound();
     if (isGuestModeRef.current) return;
+    playLogoSound();
     if (currentScreenRef.current === 'arena-match' && arenaMatchId) {
       void arenaLeave(arenaMatchId);
       setArenaMatchId(null);
