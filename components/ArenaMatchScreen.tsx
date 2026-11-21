@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Animated,
   AppState,
   Modal,
   Pressable,
@@ -11,15 +10,15 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Text } from '../lib/AppText';
 import { FitScrollView } from './FitScrollView';
+import { GameHeaderFade } from './GameHeaderFade';
+import { FeedbackOverlay, type FeedbackOverlayHandle } from './RomanFeedback';
 import {
   duckSounds,
   playBuzzSound,
   playButtonSound,
   playCancelSound,
-  playCorrectSound,
   playNextSound,
   playTickSound,
-  playWrongSound,
   startTypewriter,
   stopTypewriter,
   unduckSounds,
@@ -76,13 +75,12 @@ export function ArenaMatchScreen({
   const [questions, setQuestions] = useState<ArenaReviewQuestion[]>([]);
   const [openQ, setOpenQ] = useState<number | null>(null);
   const [showForfeit, setShowForfeit] = useState(false);
-  const [mark, setMark] = useState<'correct' | 'wrong' | null>(null);
+  const [myChoice, setMyChoice] = useState<number | null>(null);
   const viewRef = useRef<ArenaView | null>(null);
   const offsetRef = useRef(0);
-  const guards = useRef({ live: false, read: false, answer: false, board: false, next: false });
-  const wobble = useRef(new Animated.Value(0)).current;
-  const fade = useRef(new Animated.Value(0)).current;
-  const lastQuestion = useRef(0);
+  const guards = useRef({ live: false, read: false, answer: false, next: false });
+  const feedbackRef = useRef<FeedbackOverlayHandle>(null);
+  const shownFeedback = useRef('');
 
   useEffect(() => {
     const len = view?.question_text?.length ?? 0;
@@ -211,13 +209,6 @@ export function ArenaMatchScreen({
         }
       }
 
-      if (current.phase === 'reveal' && !guards.current.board) {
-        guards.current.board = true;
-        setTimeout(() => {
-          void arenaToScoreboard(matchId).then(() => refresh());
-        }, 1400);
-      }
-
       if (current.phase === 'scoreboard' && current.next_deadline && !guards.current.next) {
         const mine = current.role === 'host' ? current.host_next : current.guest_next;
         const theirs = current.role === 'host' ? current.guest_next : current.host_next;
@@ -233,36 +224,25 @@ export function ArenaMatchScreen({
   useEffect(() => {
     guards.current.read = false;
     guards.current.answer = false;
-    guards.current.board = false;
     guards.current.next = false;
     if (view?.phase === 'countdown') guards.current.live = false;
   }, [view?.state_version, view?.phase]);
 
   useEffect(() => {
-    if (!view || view.phase !== 'reading') return;
-    if (lastQuestion.current === view.question_number) return;
-    lastQuestion.current = view.question_number;
-    fade.setValue(0);
-    wobble.setValue(6);
-    Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 320, useNativeDriver: true }),
-      Animated.sequence([
-        Animated.timing(wobble, { toValue: -4, duration: 160, useNativeDriver: true }),
-        Animated.timing(wobble, { toValue: 3, duration: 160, useNativeDriver: true }),
-        Animated.timing(wobble, { toValue: 0, duration: 180, useNativeDriver: true }),
-      ]),
-    ]).start();
-  }, [fade, view, wobble]);
+    if (view?.phase === 'reading' || view?.phase === 'rebound') setMyChoice(null);
+  }, [view?.phase, view?.question_number]);
 
   useEffect(() => {
-    if (view?.resolution?.outcome === 'correct') {
-      setMark('correct');
-      playCorrectSound();
-    } else if (view?.resolution?.outcome === 'wrong' || view?.resolution?.outcome === 'miss') {
-      setMark(view.resolution.outcome === 'miss' ? null : 'wrong');
-      if (view.resolution.outcome === 'wrong') playWrongSound();
-    }
-  }, [view?.state_version]);
+    const outcome = view?.resolution?.outcome;
+    const show =
+      (view?.phase === 'reveal' || view?.phase === 'rebound') &&
+      (outcome === 'correct' || outcome === 'wrong' || outcome === 'miss');
+    if (!view || !show || !outcome) return;
+    const key = `${view.question_number}:${view.phase}:${outcome}:${view.resolution?.actor ?? ''}`;
+    if (shownFeedback.current === key) return;
+    shownFeedback.current = key;
+    feedbackRef.current?.show(outcome === 'correct' ? 'correct' : 'wrong');
+  }, [view]);
 
   if (!view) {
     return (
@@ -279,28 +259,55 @@ export function ArenaMatchScreen({
   const theyHere = view.role === 'host' ? view.guest_here : view.host_here;
   const ready = (view.host_rematch ? 1 : 0) + (view.guest_rematch ? 1 : 0);
   const text = (view.question_text ?? '').slice(0, shown);
+  const now = Date.now() + offsetRef.current;
   const selecting =
     view.phase === 'answering' && view.buzz_role && view.buzz_role !== view.role;
-  const answerLeft =
-    view.buzz_at && selecting
+  const myAnswerLeft =
+    view.phase === 'answering' && view.buzz_role === view.role && view.buzz_at
       ? Math.max(
           0,
-          Math.ceil(
-            (Date.parse(view.buzz_at) +
-              view.answer_seconds * 1000 -
-              (Date.now() + offsetRef.current)) /
-              1000
-          )
+          Math.ceil((Date.parse(view.buzz_at) + view.answer_seconds * 1000 - now) / 1000)
         )
-      : view.answer_seconds;
+      : null;
+  let buzzLeft: number | null = null;
+  if (
+    (view.phase === 'reading' || view.phase === 'rebound') &&
+    view.stream_anchor &&
+    view.question_text
+  ) {
+    const len = view.question_text.length;
+    const anchor = Date.parse(view.stream_anchor);
+    const count =
+      view.stream_from +
+      Math.floor(Math.max(0, now - anchor) / Math.max(8, view.stream_ms));
+    if (count >= len) {
+      const doneAt = anchor + (len - view.stream_from) * view.stream_ms;
+      buzzLeft = Math.max(0, view.pre_buzz_seconds - Math.floor((now - doneAt) / 1000));
+    }
+  }
+  const settled = view.phase === 'reveal' || view.phase === 'scoreboard';
   const showOptions =
     (view.phase === 'answering' && view.buzz_role === view.role && view.options) ||
-    ((view.phase === 'reveal' || view.phase === 'scoreboard') &&
-      view.resolution?.options &&
-      view.resolution.correct_index != null);
+    (settled && view.resolution?.options && view.resolution.correct_index != null);
   const optionList =
     view.phase === 'answering' ? view.options : view.resolution?.options ?? null;
-  const correctIndex = view.resolution?.correct_index;
+  const correctIndex = view.resolution?.correct_index ?? null;
+  const iHaveNext = view.role === 'host' ? view.host_next : view.guest_next;
+  const rivalStatus = theyAnswered ? 'Answered' : selecting ? 'Choosing' : 'Listening';
+  const statusText =
+    view.phase === 'answering' && view.buzz_role === view.role
+      ? 'Buzzed! Select your answer...'
+      : selecting
+        ? 'Your rival is choosing'
+        : settled
+          ? view.resolution?.outcome === 'correct'
+            ? 'Correct!'
+            : view.resolution?.outcome === 'miss'
+              ? "Time's up!"
+              : 'Wrong!'
+          : shown >= (view.question_text?.length ?? 0) && view.question_text
+            ? 'Waiting for buzz...'
+            : 'Reading question...';
 
   const countdownMark = () => {
     if (!view.countdown_at || tick < 0) return 3;
@@ -393,126 +400,166 @@ export function ArenaMatchScreen({
       {(view.phase === 'reading' ||
         view.phase === 'answering' ||
         view.phase === 'rebound' ||
-        view.phase === 'reveal') && (
+        view.phase === 'reveal' ||
+        view.phase === 'scoreboard') && (
         <View style={styles.play}>
-          <Text style={styles.progress}>
-            Question {view.question_number} / {view.question_count}
-          </Text>
-          <Text style={styles.scores}>
-            You {myScore} · {theirName ?? 'Rival'} {theirScore}
-          </Text>
-          {selecting && (
-            <Text style={styles.rivalLine}>
-              Your rival is choosing · {answerLeft}s
-            </Text>
-          )}
-          {mark === 'correct' && view.phase === 'reveal' && (
-            <Text style={styles.good}>✓</Text>
-          )}
-          {mark === 'wrong' && (view.phase === 'rebound' || view.phase === 'reveal') && (
-            <Text style={styles.bad}>✕</Text>
-          )}
-          <Animated.View style={{ opacity: fade, transform: [{ translateY: wobble }] }}>
-            <FitScrollView style={styles.questionScroll}>
-              <Text style={styles.question}>
+          <GameHeaderFade />
+          <View style={styles.header}>
+            <View style={styles.headerColLeft}>
+              <Text style={styles.headerText}>
+                Question {view.question_number}/{view.question_count}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.headerColCenter,
+                myAnswerLeft !== null || buzzLeft !== null
+                  ? styles.headerColCenterActive
+                  : styles.headerColCenterHidden,
+              ]}
+            >
+              {myAnswerLeft !== null && (
+                <Text style={styles.headerTimerText}>Time: {myAnswerLeft}s</Text>
+              )}
+              {myAnswerLeft === null && buzzLeft !== null && (
+                <Text style={styles.headerTimerText}>Buzz in: {buzzLeft}s</Text>
+              )}
+            </View>
+            <View style={styles.headerColRight}>
+              <Text style={styles.headerScore} numberOfLines={1}>
+                You {myScore} · {theirName ?? 'Rival'} {theirScore}
+              </Text>
+            </View>
+          </View>
+
+          <FitScrollView
+            style={styles.gameArea}
+            contentContainerStyle={styles.gameAreaContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.statusContainer}>
+              <Text style={[styles.statusText, view.phase === 'answering' && styles.statusTextBuzzed]}>
+                {statusText}
+              </Text>
+            </View>
+
+            <View style={styles.questionBox}>
+              <Text style={styles.questionText}>
                 {text}
                 {(view.phase === 'reading' || view.phase === 'rebound') &&
                   shown < (view.question_text?.length ?? 0) && <Text style={styles.cursor}>|</Text>}
               </Text>
-            </FitScrollView>
-          </Animated.View>
-
-          {(view.phase === 'reading' || view.phase === 'rebound') && (
-            <View>
-              <TouchableOpacity
-                style={[styles.buzz, view.buzz_locked && styles.buzzLocked]}
-                onPress={() => {
-                  if (view.buzz_locked) {
-                    playCancelSound();
-                    setLockNote(true);
-                    setTimeout(() => setLockNote(false), 2500);
-                    return;
-                  }
-                  playBuzzSound();
-                  void arenaBuzz(matchId).then(() => refresh());
-                }}
-              >
-                <Text style={styles.buzzText}>BUZZ</Text>
-              </TouchableOpacity>
-              {lockNote && (
-                <Text style={styles.lockNote}>You already buzzed on this question.</Text>
-              )}
             </View>
-          )}
 
-          {showOptions && optionList && (
-            <View style={styles.options}>
-              {optionList.map((option, index) => {
-                const reveal = view.phase !== 'answering' && correctIndex != null;
-                const isCorrect = reveal && index === correctIndex;
-                return (
-                  <Pressable
-                    key={`${option}-${index}`}
-                    style={[styles.option, isCorrect && styles.optionCorrect]}
-                    disabled={view.phase !== 'answering'}
-                    onPress={() => {
-                      playTickSound();
-                      void arenaAnswer(matchId, index).then(() => refresh());
-                    }}
-                  >
-                    <Text style={[styles.optionText, isCorrect && styles.optionTextCorrect]}>
-                      {option}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+            {(view.phase === 'reading' || view.phase === 'rebound') && (
+              <View>
+                <TouchableOpacity
+                  style={[styles.buzzerBtn, view.buzz_locked && styles.buzzLocked]}
+                  onPress={() => {
+                    if (view.buzz_locked) {
+                      playCancelSound();
+                      setLockNote(true);
+                      setTimeout(() => setLockNote(false), 2500);
+                      return;
+                    }
+                    playBuzzSound();
+                    void arenaBuzz(matchId).then(() => refresh());
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.buzzerText}>BUZZ</Text>
+                </TouchableOpacity>
+                {lockNote && (
+                  <Text style={styles.lockNote}>You already buzzed on this question.</Text>
+                )}
+              </View>
+            )}
+
+            {showOptions && optionList && (
+              <View style={styles.optionsGrid}>
+                {[optionList.slice(0, 2), optionList.slice(2, 4)].map((row, rowIndex) => (
+                  <View key={rowIndex} style={styles.optionRow}>
+                    {row.map((option, col) => {
+                      const index = rowIndex * 2 + col;
+                      const isCorrect = settled && correctIndex != null && index === correctIndex;
+                      const isWrong = settled && myChoice === index && index !== correctIndex;
+                      const cardStyle = [
+                        styles.optionCard,
+                        isCorrect && styles.optionCorrect,
+                        isWrong && styles.optionWrong,
+                      ];
+                      const textStyle = [
+                        styles.optionText,
+                        isCorrect && styles.optionTextCorrect,
+                        isWrong && styles.optionTextWrong,
+                      ];
+                      if (view.phase !== 'answering') {
+                        return (
+                          <View key={`${option}-${index}`} style={cardStyle}>
+                            <Text style={textStyle}>{option}</Text>
+                          </View>
+                        );
+                      }
+                      return (
+                        <TouchableOpacity
+                          key={`${option}-${index}`}
+                          style={cardStyle}
+                          activeOpacity={0.75}
+                          onPress={() => {
+                            setMyChoice(index);
+                            playTickSound();
+                            void arenaAnswer(matchId, index).then(() => refresh());
+                          }}
+                        >
+                          <Text style={textStyle}>{option}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {settled && (
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={[styles.nextBtn, iHaveNext && styles.disabled]}
+                  disabled={iHaveNext}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    playNextSound();
+                    void (async () => {
+                      if (view.phase === 'reveal') await arenaToScoreboard(matchId);
+                      await arenaTapNext(matchId);
+                      await refresh();
+                    })();
+                  }}
+                >
+                  <Text style={styles.nextBtnText}>Next</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </FitScrollView>
+
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.footerBtn}
+              onPress={() => {
+                playCancelSound();
+                void arenaLeave(matchId).then(() => refresh());
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.footerBtnText}>Forfeit</Text>
+            </TouchableOpacity>
+            <View style={styles.footerBtn}>
+              <Text style={styles.footerName} numberOfLines={1}>
+                {theirName ?? 'Rival'}
+              </Text>
+              <Text style={styles.footerState}>{rivalStatus}</Text>
             </View>
-          )}
-
-          <View style={styles.rivalCorner}>
-            <Text style={styles.rivalName} numberOfLines={1}>
-              {theirName ?? 'Rival'}
-            </Text>
-            <Text style={styles.rivalState}>{theyAnswered ? 'Answered' : 'Listening'}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.forfeit}
-            onPress={() => {
-              playCancelSound();
-              void arenaLeave(matchId).then(() => refresh());
-            }}
-          >
-            <Text style={styles.textBtnLabel}>Forfeit</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {view.phase === 'scoreboard' && (
-        <View style={styles.center}>
-          <Text style={styles.progress}>
-            After question {view.question_number}
-          </Text>
-          <Text style={styles.bigScore}>You {myScore}</Text>
-          <Text style={styles.bigScore}>
-            {theirName ?? 'Rival'} {theirScore}
-          </Text>
-          <TouchableOpacity
-            style={styles.primaryBtn}
-            onPress={() => {
-              playNextSound();
-              void arenaTapNext(matchId).then(() => refresh());
-            }}
-          >
-            <Text style={styles.primaryBtnText}>Next</Text>
-          </TouchableOpacity>
-          {view.next_deadline && (
-            <Text style={styles.quiet}>
-              {(view.role === 'host' ? view.host_next : view.guest_next) &&
-              !(view.role === 'host' ? view.guest_next : view.host_next)
-                ? 'Waiting for your rival. The round moves on in 15 seconds.'
-                : ''}
-            </Text>
-          )}
+          <FeedbackOverlay ref={feedbackRef} />
         </View>
       )}
 
@@ -590,7 +637,118 @@ export function ArenaMatchScreen({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
-  play: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },
+  play: { flex: 1, position: 'relative' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#f5efe3',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(201, 169, 97, 0.3)',
+  },
+  headerColLeft: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', minWidth: 0 },
+  headerColCenter: { alignItems: 'center', justifyContent: 'center' },
+  headerColCenterHidden: { width: 0, minWidth: 0, paddingHorizontal: 0, overflow: 'hidden' },
+  headerColCenterActive: { flexShrink: 0, minWidth: 104, paddingHorizontal: 8 },
+  headerColRight: { flex: 1, alignItems: 'flex-end', justifyContent: 'center', minWidth: 0 },
+  headerText: { fontSize: 17, fontWeight: '600', color: '#3a3a3a' },
+  headerTimerText: { fontSize: 18, fontWeight: '700', color: '#c9a961' },
+  headerScore: { fontSize: 14, fontWeight: '600', color: '#3a3a3a' },
+  gameArea: { flex: 1 },
+  gameAreaContent: { width: '100%', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8, gap: 10 },
+  statusContainer: { alignItems: 'center', paddingTop: 4, paddingBottom: 2 },
+  statusText: { fontSize: 14, lineHeight: 19, color: '#7a7a7a', fontStyle: 'italic', textAlign: 'center' },
+  statusTextBuzzed: { color: '#c9a961', fontWeight: '600' },
+  questionBox: {
+    backgroundColor: '#fbf8f4',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.35)',
+    borderRadius: 12,
+    padding: 16,
+    minHeight: 116,
+  },
+  questionText: { fontSize: 17, lineHeight: 26, color: '#3a3a3a' },
+  buzzerBtn: {
+    alignSelf: 'center',
+    width: 136,
+    height: 136,
+    borderRadius: 68,
+    backgroundColor: '#fdfcf9',
+    borderWidth: 3,
+    borderColor: '#c9a961',
+    shadowColor: '#c9a961',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  buzzerText: { color: '#c9a961', fontSize: 27, fontWeight: '700', letterSpacing: 1.4 },
+  optionsGrid: { width: '100%', gap: 10 },
+  optionRow: { flexDirection: 'row', gap: 10, width: '100%' },
+  optionCard: {
+    flex: 1,
+    backgroundColor: '#fbf8f4',
+    borderWidth: 1.5,
+    borderColor: 'rgba(201, 169, 97, 0.45)',
+    borderRadius: 10,
+    padding: 14,
+    minHeight: 74,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionCorrect: {
+    backgroundColor: '#d6dbca',
+    borderColor: 'rgba(52, 120, 72, 0.75)',
+    borderWidth: 2,
+  },
+  optionWrong: {
+    backgroundColor: 'rgba(176, 72, 72, 0.16)',
+    borderColor: 'rgba(160, 52, 52, 0.85)',
+    borderWidth: 2,
+  },
+  optionTextWrong: { color: '#7a2a2a', fontWeight: '600' },
+  actionRow: { alignItems: 'center', marginTop: 6 },
+  nextBtn: {
+    backgroundColor: '#c9a961',
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    borderRadius: 10,
+    shadowColor: '#9d856b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  nextBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.25 },
+  footer: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(201, 169, 97, 0.25)',
+    backgroundColor: '#f5efe3',
+  },
+  footerBtn: {
+    flex: 1,
+    minHeight: 48,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#efe4cf',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 97, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerBtnText: { fontSize: 16, fontWeight: '600', color: '#6a5530' },
+  footerName: { fontSize: 14, fontWeight: '600', color: '#3a3a3a' },
+  footerState: { fontSize: 13, color: '#6a5530', marginTop: 2 },
   title: { fontSize: 26, color: '#4a3728', fontWeight: '600', textAlign: 'center' },
   code: { fontSize: 42, letterSpacing: 4, color: '#4a3728', fontWeight: '600' },
   quiet: { color: '#8a6a3a', textAlign: 'center', fontSize: 15 },
@@ -599,7 +757,7 @@ const styles = StyleSheet.create({
   bigScore: { fontSize: 22, color: '#4a3728', fontWeight: '600' },
   questionScroll: { maxHeight: 220 },
   question: { fontSize: 18, lineHeight: 26, color: '#3d2e22', textAlign: 'center' },
-  cursor: { color: '#c9a961' },
+  cursor: { fontWeight: 'bold', fontSize: 22, color: '#c9a961' },
   buzz: {
     alignSelf: 'center',
     marginTop: 16,
@@ -620,7 +778,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.35)',
   },
   optionCorrect: { backgroundColor: 'rgba(90, 140, 90, 0.25)', borderColor: '#3f7a45' },
-  optionText: { textAlign: 'center', color: '#3d2e22', fontSize: 16 },
+  optionText: { textAlign: 'center', color: '#3a3a3a', fontSize: 16, lineHeight: 21 },
   optionTextCorrect: { color: '#246b32', fontWeight: '700' },
   rivalLine: { textAlign: 'center', color: '#8a6a3a', marginBottom: 8 },
   good: { textAlign: 'center', color: '#246b32', fontSize: 28 },

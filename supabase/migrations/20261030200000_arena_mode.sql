@@ -1782,12 +1782,12 @@ BEGIN
   IF m.host_id = v_uid AND NOT m.host_next THEN
     UPDATE public.arena_matches
     SET host_next = true,
-        next_deadline = COALESCE(next_deadline, clock_timestamp() + interval '15 seconds')
+        next_deadline = COALESCE(next_deadline, clock_timestamp() + interval '5 seconds')
     WHERE id = m.id;
   ELSIF m.guest_id = v_uid AND NOT m.guest_next THEN
     UPDATE public.arena_matches
     SET guest_next = true,
-        next_deadline = COALESCE(next_deadline, clock_timestamp() + interval '15 seconds')
+        next_deadline = COALESCE(next_deadline, clock_timestamp() + interval '5 seconds')
     WHERE id = m.id;
   END IF;
 
