@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   AppState,
   Modal,
   Pressable,
@@ -579,7 +580,10 @@ export function ArenaMatchScreen({
               style={styles.primaryBtn}
               onPress={() => {
                 playButtonSound();
-                void arenaRematch(matchId).then(() => refresh());
+                void arenaRematch(matchId).then((row) => {
+                  if (!row.ok && row.error) Alert.alert('Arena', row.error);
+                  void refresh();
+                });
               }}
             >
               <Text style={styles.primaryBtnText}>Play again</Text>

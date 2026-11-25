@@ -607,6 +607,7 @@ SET search_path = public
 AS $$
 DECLARE
   m public.arena_matches;
+  v_done integer;
 BEGIN
   SELECT * INTO m
   FROM public.arena_matches
@@ -617,6 +618,19 @@ BEGIN
   END IF;
   IF m.status NOT IN ('countdown', 'live') THEN
     RETURN;
+  END IF;
+
+  -- q_index stays the count of questions actually finished, so a forfeit
+  -- review does not list the rest of the set. A question still being read
+  -- does not count. One already revealed or on the score page does.
+  IF p_result IN ('host_forfeit', 'guest_forfeit', 'double_forfeit') THEN
+    IF m.phase IN ('reveal', 'scoreboard') THEN
+      v_done := LEAST(m.q_index + 1, m.q_count);
+    ELSE
+      v_done := m.q_index;
+    END IF;
+  ELSE
+    v_done := m.q_count;
   END IF;
 
   IF p_result = 'host_win' THEN
@@ -647,8 +661,7 @@ BEGIN
       result = p_result,
       stats_applied = true,
       finished_at = clock_timestamp(),
-      host_here = CASE WHEN p_result IN ('host_forfeit', 'double_forfeit') THEN false ELSE host_here END,
-      guest_here = CASE WHEN p_result IN ('guest_forfeit', 'double_forfeit') THEN false ELSE guest_here END,
+      q_index = v_done,
       host_rematch = false,
       guest_rematch = false,
       next_deadline = NULL
@@ -2158,6 +2171,10 @@ BEGIN
     CROSS JOIN LATERAL unnest(s.question_ids) WITH ORDINALITY AS u(id, ord)
     JOIN public.questions q ON q.id = u.id
     WHERE s.match_id = m.id
+      AND u.ord <= CASE
+        WHEN m.result IN ('host_forfeit', 'guest_forfeit', 'double_forfeit') THEN m.q_index
+        ELSE m.q_count
+      END
   ) listed;
 
   RETURN jsonb_build_object(
